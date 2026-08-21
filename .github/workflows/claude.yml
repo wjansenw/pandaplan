@@ -1,0 +1,61 @@
+name: Claude Code
+
+on:
+  issue_comment:
+    types: [created]
+  pull_request_review_comment:
+    types: [created]
+  issues:
+    types: [opened, assigned]
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+jobs:
+  claude:
+    if: |
+      (github.event_name == 'issue_comment' && contains(github.event.comment.body, '@claude')) ||
+      (github.event_name == 'pull_request_review_comment' && contains(github.event.comment.body, '@claude')) ||
+      (github.event_name == 'issues' && contains(github.event.issue.body, '@claude')) ||
+      (github.event_name == 'pull_request' && contains(github.event.pull_request.body, '@claude'))
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+      issues: write
+      id-token: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Run Claude Code
+        uses: anthropics/claude-code-action@v1
+        with:
+          anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
+          prompt: |
+            You are the primary implementation agent for the pandaplan repository.
+
+            Work directly on the current branch/PR and implement the user's requirement.
+            Before changing anything, inspect the relevant existing code and understand how
+            the application currently works. Prefer small, maintainable changes that fit the
+            existing architecture.
+
+            Requirements:
+            - Implement the requested functionality completely, not just partially.
+            - Preserve existing behaviour unless the requirement explicitly changes it.
+            - Validate all user/API input appropriately.
+            - Consider both the frontend and backend when a feature crosses the API boundary.
+            - Keep persistent data backwards compatible where practical; do not casually discard
+              existing data or require a manual migration unless necessary.
+            - For calendar/ICS functionality, preserve valid RFC 5545 output.
+            - For Docker/deployment changes, keep the existing self-hosted deployment model intact.
+            - Do not add secrets, credentials, tokens, or private data to the repository.
+            - Run relevant tests, syntax checks, or other validation available in the repository.
+            - If something cannot be verified, explain that clearly in your final response.
+            - Do not merge pull requests or modify repository settings.
+
+            When working from an issue or pull request, treat the user's latest request as the
+            authoritative requirement. Inspect the repository rather than guessing about its
+            implementation.
