@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>pandaplan · Staff</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/style.css">
+</head>
+<body>
+<div class="nav">
+  <a class="brand" href="/">🐼 pandaplan</a>
+  <div class="links">
+    <a href="/">Attend</a>
+    <a href="/admin.html">Admin</a>
+    <a href="/trainer.html">Trainer</a>
+    <a href="/staff.html" class="current">Staff</a>
+  </div>
+</div>
+
+<div class="wrap">
+  <h1>Staff</h1>
+  <p class="sub">Scorekeepers and referees. Someone can hold both roles, and can also be a participant — that's managed on the <a href="/admin.html">Admin</a> page.</p>
+
+  <div class="card">
+    <div class="card-head"><h2>Staff members</h2></div>
+    <div id="staffList"></div>
+
+    <div class="field-row" style="margin-top:14px;">
+      <div class="field" style="margin-bottom:0;">
+        <input type="text" id="newStaffName" placeholder="Full name">
+      </div>
+    </div>
+    <div class="field" style="margin-top:12px;">
+      <label>Roles</label>
+      <div class="chip-row" id="newStaffRolePicker"></div>
+    </div>
+    <div class="btn-row"><button class="btn" id="addStaffBtn">Add staff member</button></div>
+    <div class="saved-note" id="staffFormNote"></div>
+  </div>
+</div>
+
+<script src="/shared.js"></script>
+<script>
+let persons = [];
+let newStaffRoles = new Set();
+
+async function loadAll() {
+  const state = await api('/api/state');
+  persons = state.persons || [];
+  renderStaffList();
+  renderNewStaffRolePicker();
+}
+
+function isStaff(p) {
+  return STAFF_ROLES.some(r => personHasRole(p, r.id));
+}
+
+function renderNewStaffRolePicker() {
+  renderMultiSelectChips(document.getElementById('newStaffRolePicker'), STAFF_ROLES, newStaffRoles, renderNewStaffRolePicker);
+}
+
+document.getElementById('addStaffBtn').addEventListener('click', async () => {
+  const input = document.getElementById('newStaffName');
+  const note = document.getElementById('staffFormNote');
+  const name = input.value.trim();
+  if (!name) { note.textContent = 'Name is required.'; return; }
+  if (!newStaffRoles.size) { note.textContent = 'Select at least one role.'; return; }
+  try {
+    const res = await api('/api/persons', {
+      method: 'POST',
+      body: JSON.stringify({ name, roles: Array.from(newStaffRoles) })
+    });
+    persons = res.persons;
+    input.value = '';
+    newStaffRoles = new Set();
+    renderNewStaffRolePicker();
+    renderStaffList();
+    note.textContent = 'Added.';
+    setTimeout(() => { note.textContent = ''; }, 1500);
+  } catch (e) {
+    note.textContent = e.message || 'Could not add staff member.';
+  }
+});
+
+function renderStaffList() {
+  const box = document.getElementById('staffList');
+  box.innerHTML = '';
+  const staff = persons.filter(isStaff);
+  if (!staff.length) {
+    box.innerHTML = '<div class="empty">No staff members yet.</div>';
+    return;
+  }
+  staff.forEach(p => {
+    const item = document.createElement('div');
+    item.className = 'person-admin-item';
+    const isAlsoParticipant = personHasRole(p, PARTICIPANT_ROLE);
+    item.innerHTML = `
+      <div class="person-head">
+        <div class="row-main">
+          ${escapeHtml(p.name)}
+          ${isAlsoParticipant ? `<span class="staff-tag">also participant</span>` : ''}
+        </div>
+        <button class="del" data-id="${p.id}">Remove</button>
+      </div>
+      <div class="chip-row" data-roles-for="${p.id}" style="margin-top:8px;"></div>
+    `;
+    box.appendChild(item);
+  });
+
+  staff.forEach(p => {
+    const chipContainer = box.querySelector(`[data-roles-for="${p.id}"]`);
+    const selected = new Set(STAFF_ROLES.filter(r => personHasRole(p, r.id)).map(r => r.id));
+    renderMultiSelectChips(chipContainer, STAFF_ROLES, selected, async () => {
+      // Keep any non-staff roles (e.g. participant) intact while updating
+      // just the staff portion.
+      const nonStaffRoles = (p.roles || []).filter(r => !STAFF_ROLES.some(sr => sr.id === r));
+      const newRoles = [...nonStaffRoles, ...Array.from(selected)];
+      if (!newRoles.length) {
+        if (!confirm('Removing the last role for this person will delete them. Continue?')) {
+          renderStaffList();
+          return;
+        }
+        const res = await api('/api/persons/' + encodeURIComponent(p.id), { method: 'DELETE' });
+        persons = res.persons;
+      } else {
+        const res = await api('/api/persons/' + encodeURIComponent(p.id), {
+          method: 'PUT', body: JSON.stringify({ roles: newRoles })
+        });
+        persons = res.persons;
+      }
+      renderStaffList();
+    });
+  });
+
+  box.querySelectorAll('.del').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      const person = persons.find(x => x.id === btn.dataset.id);
+      if (!person) return;
+      const alsoParticipant = personHasRole(person, PARTICIPANT_ROLE);
+      const msg = alsoParticipant
+        ? 'Remove staff roles from this person? They will remain a participant.'
+        : 'Remove this person entirely? They have no other roles.';
+      if (!confirm(msg)) return;
+      const nonStaffRoles = (person.roles || []).filter(r => !STAFF_ROLES.some(sr => sr.id === r));
+      if (!nonStaffRoles.length) {
+        const res = await api('/api/persons/' + encodeURIComponent(person.id), { method: 'DELETE' });
+        persons = res.persons;
+      } else {
+        const res = await api('/api/persons/' + encodeURIComponent(person.id), {
+          method: 'PUT', body: JSON.stringify({ roles: nonStaffRoles })
+        });
+        persons = res.persons;
+      }
+      renderStaffList();
+    });
+  });
+}
+
+loadAll();
+</script>
+</body>
+</html>

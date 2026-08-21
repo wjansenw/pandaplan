@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>pandaplan</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/style.css">
+</head>
+<body>
+<div class="nav">
+  <a class="brand" href="/">🐼 pandaplan</a>
+  <div class="links">
+    <a href="/" class="current">Attend</a>
+    <a href="/admin.html">Admin</a>
+    <a href="/trainer.html">Trainer</a>
+    <a href="/staff.html">Staff</a>
+  </div>
+</div>
+
+<div class="wrap">
+  <h1>Who's attending?</h1>
+  <p class="sub">Pick a person, then choose which events they'll be at.</p>
+
+  <div class="card">
+    <h3>Person</h3>
+    <div class="chip-row" id="personPicker"></div>
+  </div>
+
+  <div class="card" id="subscribeCard" style="display:none;"></div>
+
+  <div class="card">
+    <h3>Category</h3>
+    <div class="chip-row" id="categoryFilter" style="margin-bottom:16px;"></div>
+    <h3>Date</h3>
+    <div class="chip-row" id="dateFilter"></div>
+  </div>
+
+  <div id="eventsSection"></div>
+
+  <div class="saved-note" id="savedNote"></div>
+</div>
+
+<script src="/shared.js"></script>
+<script>
+let persons = [];
+let categories = [];
+let events = [];
+let attendance = {};
+let selectedPersonId = null;
+let filters = { categoryIds: new Set(), dateMode: 'upcoming' };
+
+async function loadAll() {
+  const state = await api('/api/state');
+  persons = (state.persons || []).filter(p => personHasRole(p, PARTICIPANT_ROLE));
+  categories = state.categories || [];
+  events = state.events || [];
+
+  const remembered = localStorage.getItem('pandaplan:lastPersonId');
+  if (remembered && persons.some(p => p.id === remembered)) {
+    selectedPersonId = remembered;
+  } else if (persons.length === 1) {
+    selectedPersonId = persons[0].id;
+  }
+
+  renderPersonPicker();
+  renderSubscribeCard();
+  renderFilters();
+  await loadAttendanceForSelected();
+  renderEventsSection();
+}
+
+function renderFilters() {
+  renderCategoryFilterChips(document.getElementById('categoryFilter'), categories, filters.categoryIds, () => {
+    renderFilters();
+    renderEventsSection();
+  });
+  renderDateFilterChips(document.getElementById('dateFilter'), filters.dateMode, (mode) => {
+    filters.dateMode = mode;
+    renderFilters();
+    renderEventsSection();
+  });
+}
+
+function renderPersonPicker() {
+  const container = document.getElementById('personPicker');
+  container.innerHTML = '';
+  if (!persons.length) {
+    container.innerHTML = '<div class="empty">No participants yet — add some in Admin first.</div>';
+    return;
+  }
+  persons.forEach(p => {
+    const chip = document.createElement('button');
+    chip.type = 'button';
+    chip.className = 'chip person' + (p.id === selectedPersonId ? ' active' : '');
+    chip.textContent = p.name;
+    chip.addEventListener('click', async () => {
+      selectedPersonId = p.id;
+      localStorage.setItem('pandaplan:lastPersonId', p.id);
+      renderPersonPicker();
+      renderSubscribeCard();
+      await loadAttendanceForSelected();
+      renderEventsSection();
+    });
+    container.appendChild(chip);
+  });
+}
+
+function renderSubscribeCard() {
+  const card = document.getElementById('subscribeCard');
+  if (!selectedPersonId) {
+    card.style.display = 'none';
+    return;
+  }
+  const url = window.location.origin + '/calendar/person/' + encodeURIComponent(selectedPersonId) + '.ics';
+  card.style.display = '';
+  renderSubscribeBox(card, url, 'Sync to calendar');
+}
+
+async function loadAttendanceForSelected() {
+  if (!selectedPersonId) { attendance = {}; return; }
+  const res = await api('/api/attendance/' + encodeURIComponent(selectedPersonId));
+  attendance = res.attendance || {};
+}
+
+function renderEventsSection() {
+  const section = document.getElementById('eventsSection');
+  section.innerHTML = '';
+
+  if (!selectedPersonId) {
+    if (persons.length) {
+      const card = document.createElement('div');
+      card.className = 'card';
+      card.innerHTML = '<div class="empty">Pick a person above to see events.</div>';
+      section.appendChild(card);
+    }
+    return;
+  }
+
+  if (!events.length) {
+    const card = document.createElement('div');
+    card.className = 'card';
+    card.innerHTML = '<div class="empty">No events yet — add some in Admin first.</div>';
+    section.appendChild(card);
+    return;
+  }
+
+  const filtered = filterEvents(events, filters);
+  const sorted = sortByDateTime(filtered);
+  const attendingCount = sorted.filter(e => attendance[e.id]).length;
+
+  const card = document.createElement('div');
+  card.className = 'card';
+  const head = document.createElement('div');
+  head.className = 'card-head';
+  head.innerHTML = `<h3 style="margin:0;">Events</h3><span class="count">${attendingCount} of ${sorted.length} selected</span>`;
+  card.appendChild(head);
+
+  if (!sorted.length) {
+    const empty = document.createElement('div');
+    empty.className = 'empty';
+    empty.textContent = 'No events match the current filters.';
+    card.appendChild(empty);
+    section.appendChild(card);
+    return;
+  }
+
+  const list = document.createElement('div');
+  sorted.forEach(ev => {
+    const entry = attendance[ev.id];
+    const attending = !!entry;
+    const currentNote = (entry && entry.note) || '';
+    const row = document.createElement('div');
+    row.className = 'attend-row';
+    const timeRange = formatTimeRange(ev.startTime, ev.endTime);
+    row.innerHTML = `
+      <div class="attend-row-top">
+        <div class="attend-info">
+          <div class="event-title-line">
+            <span class="event-date">${formatDate(ev.date)}</span>
+            ${categoryBadge(categories, ev.categoryId)}
+          </div>
+          <div class="event-meta">${[timeRange, escapeHtml(ev.location)].filter(Boolean).join(' · ')}</div>
+          ${ev.description ? `<div class="event-desc">${escapeHtml(ev.description)}</div>` : ''}
+        </div>
+        <div class="attend-toggle">
+          <button type="button" class="yes ${attending ? 'active' : ''}" data-event="${ev.id}" data-attend="true">Going</button>
+          <button type="button" class="no ${!attending ? 'active' : ''}" data-event="${ev.id}" data-attend="false">Not going</button>
+        </div>
+      </div>
+      ${attending ? `
+        <div class="note-field">
+          <input type="text" class="note-input" data-event="${ev.id}" maxlength="200"
+                 placeholder="Add a note (optional) — e.g. Will be 10 min late"
+                 value="${escapeHtml(currentNote)}">
+        </div>
+      ` : ''}
+    `;
+    list.appendChild(row);
+  });
+  card.appendChild(list);
+  section.appendChild(card);
+
+  list.querySelectorAll('.attend-toggle button').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      const eventId = btn.dataset.event;
+      const attend = btn.dataset.attend === 'true';
+      // Keep any existing note when just re-confirming "Going"; it's
+      // dropped server-side anyway once "Not going" is chosen.
+      const existingNote = (attendance[eventId] && attendance[eventId].note) || '';
+      const buttons = btn.parentElement.querySelectorAll('button');
+      buttons.forEach(b => b.disabled = true);
+      try {
+        const res = await api(
+          `/api/attendance/${encodeURIComponent(selectedPersonId)}/${encodeURIComponent(eventId)}`,
+          { method: 'PUT', body: JSON.stringify({ attending: attend, note: existingNote }) }
+        );
+        attendance = res.attendance;
+        renderEventsSection();
+        flashSaved();
+      } catch (e) {
+        buttons.forEach(b => b.disabled = false);
+        flashSaved('Could not save — retry');
+      }
+    });
+  });
+
+  list.querySelectorAll('.note-input').forEach(input => {
+    const saveNote = async () => {
+      const eventId = input.dataset.event;
+      input.disabled = true;
+      try {
+        const res = await api(
+          `/api/attendance/${encodeURIComponent(selectedPersonId)}/${encodeURIComponent(eventId)}`,
+          { method: 'PUT', body: JSON.stringify({ attending: true, note: input.value }) }
+        );
+        attendance = res.attendance;
+        flashSaved();
+      } catch (e) {
+        flashSaved('Could not save note — retry');
+      } finally {
+        input.disabled = false;
+      }
+    };
+    input.addEventListener('blur', saveNote);
+    input.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') input.blur();
+    });
+  });
+}
+
+function flashSaved(msg) {
+  const note = document.getElementById('savedNote');
+  note.textContent = msg || 'Saved';
+  clearTimeout(flashSaved._t);
+  flashSaved._t = setTimeout(() => { note.textContent = ''; }, 1500);
+}
+
+loadAll();
+</script>
+</body>
+</html>

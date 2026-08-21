@@ -1,0 +1,12 @@
+{
+  "name": "roll-call",
+  "version": "1.0.0",
+  "description": "Self-hosted event attendance roster",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "express": "^4.19.2"
+  }
+}
