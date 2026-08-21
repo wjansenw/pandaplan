@@ -40,7 +40,7 @@ The application listens on port **3000** by default:
 http://localhost:3000
 ```
 
-The supplied Compose configuration maps port `3000` on the host to port `3000` in the container and persists application data in `./data`. It also connects the container to an existing external Docker network named `swag_network`, which is useful when running pandaplan behind an existing reverse proxy. fileciteturn4file0L2-L2
+The supplied Compose configuration maps port `3000` on the host to port `3000` in the container and persists application data in `./data`. It also connects the container to an existing external Docker network named `swag_network`, which is useful when running pandaplan behind an existing reverse proxy. 
 
 If you do not use that network, remove the `networks` section from `docker-compose.yml` and the corresponding service network entry.
 
@@ -59,7 +59,7 @@ The server uses port `3000` by default. The port and data directory can be chang
 PORT=3000 DATA_DIR=./data npm start
 ```
 
-The application is an Express server with `server.js` as its entry point and Express as its only runtime dependency. fileciteturn3file0L2-L2
+The application is an Express server with `server.js` as its entry point and Express as its only runtime dependency. 
 
 ## Data storage
 
@@ -71,7 +71,7 @@ data/db.json
 
 The database is created automatically on first startup. It contains the application's people, categories, events, and attendance data.
 
-When using Docker Compose, the `./data` directory is mounted to `/app/data` in the container, so data survives container recreation. fileciteturn4file0L2-L2
+When using Docker Compose, the `./data` directory is mounted to `/app/data` in the container, so data survives container recreation. 
 
 **Back up the `data/` directory regularly** if the application contains important event or attendance information.
 
