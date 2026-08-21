@@ -28,8 +28,6 @@
     <div class="chip-row" id="playerPicker"></div>
   </div>
 
-  <div class="card" id="subscribeCard" style="display:none;"></div>
-
   <div class="card">
     <h3>Category</h3>
     <div class="chip-row" id="categoryFilter" style="margin-bottom:16px;"></div>
@@ -39,9 +37,9 @@
 
   <div id="eventsSection"></div>
 
-  <div class="collapsible-section" id="syncSection">
-    <h3>Sync to calendar</h3>
-    <div class="content" id="syncContent"></div>
+  <div class="card">
+    <button class="collapsible-button" id="syncToggle">📅 Sync to calendar</button>
+    <div class="collapsible-content" id="syncContent"></div>
   </div>
 
   <div class="saved-note" id="savedNote"></div>
@@ -74,7 +72,17 @@ async function loadAll() {
   renderFilters();
   await loadAttendanceForSelected();
   renderEventsSection();
+  setupCollapsible();
   setupMobileNav();
+}
+
+function setupCollapsible() {
+  const toggle = document.getElementById('syncToggle');
+  const content = document.getElementById('syncContent');
+  toggle.addEventListener('click', () => {
+    content.style.display = content.style.display === 'none' ? 'block' : 'none';
+  });
+  content.style.display = 'none';
 }
 
 function setupMobileNav() {
@@ -127,13 +135,13 @@ function renderPlayerPicker() {
 }
 
 function renderSubscribeCard() {
-  const card = document.getElementById('subscribeCard');
+  const card = document.getElementById('syncContent');
   if (!selectedPersonId) {
-    card.style.display = 'none';
+    document.getElementById('syncToggle').style.display = 'none';
     return;
   }
+  document.getElementById('syncToggle').style.display = '';
   const url = window.location.origin + '/calendar/person/' + encodeURIComponent(selectedPersonId) + '.ics';
-  card.style.display = '';
   renderSubscribeBox(card, url, 'Sync to calendar');
 }
 

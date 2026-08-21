@@ -32,9 +32,9 @@
 
   <div id="overviewSection"></div>
 
-  <div class="collapsible-section" id="syncSection">
-    <h3>Sync to calendar</h3>
-    <div class="content" id="subscribeCard"></div>
+  <div class="card">
+    <button class="collapsible-button" id="syncToggle">📅 Sync to calendar</button>
+    <div class="collapsible-content" id="subscribeCard"></div>
   </div>
 </div>
 
@@ -61,7 +61,17 @@ async function loadAll() {
   renderFilters();
   renderOverview();
   renderSyncCard();
+  setupCollapsible();
   setupMobileNav();
+}
+
+function setupCollapsible() {
+  const toggle = document.getElementById('syncToggle');
+  const content = document.getElementById('subscribeCard');
+  toggle.addEventListener('click', () => {
+    content.style.display = content.style.display === 'none' ? 'block' : 'none';
+  });
+  content.style.display = 'none';
 }
 
 function setupMobileNav() {
