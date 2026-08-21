@@ -16,7 +16,7 @@ const TIME_RE = /^([01]\d|2[0-3]):([0-5]\d)$/;
 // Fixed role vocabulary. "participant" is the ordinary attendee role;
 // Coach, Assistant-Coach, Trainer are staff roles. A person can hold any combination.
 const PARTICIPANT_ROLE = 'participant';
-const STAFF_ROLE_IDS = ['coach', 'assistant-coach', 'trainer'];
+const STAFF_ROLE_IDS = ['coach', 'assistant-coach', 'trainer', 'scorekeeper', 'referee'];
 const ALL_ROLE_IDS = [PARTICIPANT_ROLE, ...STAFF_ROLE_IDS];
 
 // Attendance status: yes, no, maybe, unknown (undefined)

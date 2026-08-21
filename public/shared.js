@@ -202,6 +202,8 @@ const STAFF_ROLES = [
   { id: 'coach', label: 'Coach' },
   { id: 'assistant-coach', label: 'Assistant Coach' },
   { id: 'trainer', label: 'Trainer' },
+  { id: 'scorekeeper', label: 'Score Keeper'},
+  { id: 'referee', label: 'Referee'}
 ];
 
 function personHasRole(person, roleId) {
