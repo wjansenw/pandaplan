@@ -15,13 +15,14 @@
   <div class="links" id="navLinks">
     <a href="/overview.html">Overview</a>
     <a href="/">Attend</a>
+    <a href="/staff.html">Staff</a>
     <a href="/admin.html" class="current">Admin</a>
   </div>
 </div>
 
 <div class="wrap">
   <h1>Admin</h1>
-  <p class="sub">Manage persons, categories, events, and staff assignments.</p>
+  <p class="sub">Manage persons, categories, and events.</p>
 
   <div class="card">
     <div class="card-head"><h2>Persons</h2></div>
@@ -98,12 +99,6 @@
     <div class="card-head"><h2>Events</h2><span class="count" id="eventCount"></span></div>
     <div id="eventList"></div>
   </div>
-
-  <div class="card">
-    <div class="card-head"><h2>Staff Assignments</h2></div>
-    <p class="sub" style="margin:-6px 0 14px;">Assign staff to events (one per role per event).</p>
-    <div id="staffAssignmentsList"></div>
-  </div>
 </div>
 
 <script src="/shared.js"></script>
@@ -111,7 +106,6 @@
 let persons = [];
 let categories = [];
 let events = [];
-let staffAssignments = {};
 let editingEventId = null;
 let eventCategoryId = null;
 let newPersonRoles = new Set();
@@ -121,13 +115,11 @@ async function loadAll() {
   persons = state.persons || [];
   categories = state.categories || [];
   events = state.events || [];
-  staffAssignments = state.staffAssignments || {};
   renderPersons();
   renderNewPersonRolePicker();
   renderCategories();
   renderEventCategoryPicker();
   renderEvents();
-  renderStaffAssignments();
   setupMobileNav();
 }
 
@@ -373,7 +365,6 @@ document.getElementById('saveEventBtn').addEventListener('click', async () => {
     note.textContent = 'Saved.';
     clearEventForm();
     renderEvents();
-    renderStaffAssignments();
     setTimeout(() => { note.textContent = ''; }, 1500);
   } catch (e) {
     note.textContent = e.message || 'Could not save event.';
@@ -430,87 +421,7 @@ function renderEvents() {
       events = res.events;
       if (editingEventId === id) clearEventForm();
       renderEvents();
-      renderStaffAssignments();
     });
-  });
-}
-
-function renderStaffAssignments() {
-  const box = document.getElementById('staffAssignmentsList');
-  box.innerHTML = '';
-  const sorted = sortByDateTime(events);
-  if (!sorted.length) {
-    box.innerHTML = '<div class="empty">No events yet.</div>';
-    return;
-  }
-  sorted.forEach(ev => {
-    const cat = categoryById(categories, ev.categoryId);
-    const requiredRoles = cat ? (cat.requiredStaffRoles || []) : [];
-    if (!requiredRoles.length) return;
-    
-    const assignments = staffAssignments[ev.id] || {};
-    const row = document.createElement('div');
-    row.className = 'person-admin-item';
-    row.innerHTML = `
-      <div class="row-main" style="margin-bottom:10px;">
-        <strong>${formatDate(ev.date)}</strong> — ${escapeHtml(categoryById(categories, ev.categoryId)?.name || 'Event')}
-      </div>
-    `;
-    row.appendChild(document.createElement('div'));
-    const assignContainer = row.lastElementChild;
-    assignContainer.style.display = 'flex';
-    assignContainer.style.flexDirection = 'column'
-    assignContainer.style.gap = '8px';
-    
-    requiredRoles.forEach(role => {
-      const roleLabel = STAFF_ROLES.find(r => r.id === role)?.label || role;
-      const assigned = assignments[role];
-      const assignedPerson = assigned ? persons.find(p => p.id === assigned) : null;
-      
-      const div = document.createElement('div');
-      div.style.display = 'flex';
-      div.style.gap = '8px';
-      div.style.alignItems = 'center';
-      
-      const label = document.createElement('label');
-      label.textContent = roleLabel + ':';
-      label.style.minWidth = '120px';
-      
-      const select = document.createElement('select');
-      select.style.flex = '1';
-      
-      const option0 = document.createElement('option');
-      option0.value = '';
-      option0.textContent = '— None —';
-      select.appendChild(option0);
-      
-      persons.filter(p => personHasRole(p, role)).forEach(p => {
-        const opt = document.createElement('option');
-        opt.value = p.id;
-        opt.textContent = p.name;
-        if (assigned === p.id) opt.selected = true;
-        select.appendChild(opt);
-      });
-      
-      select.addEventListener('change', async () => {
-        try {
-          const res = await api(`/api/staffAssignments/${ev.id}`, {
-            method: 'PUT',
-            body: JSON.stringify({ role, personId: select.value || null })
-          });
-          staffAssignments[ev.id] = res.staffAssignments;
-          renderStaffAssignments();
-        } catch (e) {
-          alert('Could not save assignment');
-        }
-      });
-      
-      div.appendChild(label);
-      div.appendChild(select);
-      assignContainer.appendChild(div);
-    });
-    
-    box.appendChild(row);
   });
 }
 
