@@ -10,22 +10,22 @@
 </head>
 <body>
 <div class="nav">
-  <a class="brand" href="/">🐼 pandaplan</a>
-  <div class="links">
+  <a class="brand" href="/overview.html">🐼 pandaplan</a>
+  <button class="hamburger" id="navToggle">☰</button>
+  <div class="links" id="navLinks">
+    <a href="/overview.html">Overview</a>
     <a href="/" class="current">Attend</a>
     <a href="/admin.html">Admin</a>
-    <a href="/trainer.html">Trainer</a>
-    <a href="/staff.html">Staff</a>
   </div>
 </div>
 
 <div class="wrap">
   <h1>Who's attending?</h1>
-  <p class="sub">Pick a person, then choose which events they'll be at.</p>
+  <p class="sub">Pick a player, then choose which events they'll be at.</p>
 
   <div class="card">
-    <h3>Person</h3>
-    <div class="chip-row" id="personPicker"></div>
+    <h3>Player</h3>
+    <div class="chip-row" id="playerPicker"></div>
   </div>
 
   <div class="card" id="subscribeCard" style="display:none;"></div>
@@ -38,6 +38,11 @@
   </div>
 
   <div id="eventsSection"></div>
+
+  <div class="collapsible-section" id="syncSection">
+    <h3>Sync to calendar</h3>
+    <div class="content" id="syncContent"></div>
+  </div>
 
   <div class="saved-note" id="savedNote"></div>
 </div>
@@ -64,11 +69,25 @@ async function loadAll() {
     selectedPersonId = persons[0].id;
   }
 
-  renderPersonPicker();
+  renderPlayerPicker();
   renderSubscribeCard();
   renderFilters();
   await loadAttendanceForSelected();
   renderEventsSection();
+  setupMobileNav();
+}
+
+function setupMobileNav() {
+  const toggle = document.getElementById('navToggle');
+  const links = document.getElementById('navLinks');
+  toggle.addEventListener('click', () => {
+    links.classList.toggle('mobile-open');
+  });
+  links.querySelectorAll('a').forEach(a => {
+    a.addEventListener('click', () => {
+      links.classList.remove('mobile-open');
+    });
+  });
 }
 
 function renderFilters() {
@@ -83,11 +102,11 @@ function renderFilters() {
   });
 }
 
-function renderPersonPicker() {
-  const container = document.getElementById('personPicker');
+function renderPlayerPicker() {
+  const container = document.getElementById('playerPicker');
   container.innerHTML = '';
   if (!persons.length) {
-    container.innerHTML = '<div class="empty">No participants yet — add some in Admin first.</div>';
+    container.innerHTML = '<div class="empty">No players yet — add some in Admin first.</div>';
     return;
   }
   persons.forEach(p => {
@@ -98,7 +117,7 @@ function renderPersonPicker() {
     chip.addEventListener('click', async () => {
       selectedPersonId = p.id;
       localStorage.setItem('pandaplan:lastPersonId', p.id);
-      renderPersonPicker();
+      renderPlayerPicker();
       renderSubscribeCard();
       await loadAttendanceForSelected();
       renderEventsSection();
@@ -132,7 +151,7 @@ function renderEventsSection() {
     if (persons.length) {
       const card = document.createElement('div');
       card.className = 'card';
-      card.innerHTML = '<div class="empty">Pick a person above to see events.</div>';
+      card.innerHTML = '<div class="empty">Pick a player above to see events.</div>';
       section.appendChild(card);
     }
     return;
@@ -148,13 +167,13 @@ function renderEventsSection() {
 
   const filtered = filterEvents(events, filters);
   const sorted = sortByDateTime(filtered);
-  const attendingCount = sorted.filter(e => attendance[e.id]).length;
+  const confirmCount = sorted.filter(e => attendance[e.id] && attendance[e.id].status === 'yes').length;
 
   const card = document.createElement('div');
   card.className = 'card';
   const head = document.createElement('div');
   head.className = 'card-head';
-  head.innerHTML = `<h3 style="margin:0;">Events</h3><span class="count">${attendingCount} of ${sorted.length} selected</span>`;
+  head.innerHTML = `<h3 style="margin:0;">Events</h3><span class="count">${confirmCount} of ${sorted.length} confirmed</span>`;
   card.appendChild(head);
 
   if (!sorted.length) {
@@ -169,11 +188,15 @@ function renderEventsSection() {
   const list = document.createElement('div');
   sorted.forEach(ev => {
     const entry = attendance[ev.id];
-    const attending = !!entry;
-    const currentNote = (entry && entry.note) || '';
+    const currentStatus = entry ? entry.status : undefined;
+    const currentNote = entry ? (entry.note || '') : '';
     const row = document.createElement('div');
     row.className = 'attend-row';
     const timeRange = formatTimeRange(ev.startTime, ev.endTime);
+    const locationHtml = ev.location 
+      ? `<a href="${formatMapsLink(ev.location)}" target="_blank" class="location-link">${escapeHtml(ev.location)}</a>`
+      : '';
+    
     row.innerHTML = `
       <div class="attend-row-top">
         <div class="attend-info">
@@ -181,18 +204,19 @@ function renderEventsSection() {
             <span class="event-date">${formatDate(ev.date)}</span>
             ${categoryBadge(categories, ev.categoryId)}
           </div>
-          <div class="event-meta">${[timeRange, escapeHtml(ev.location)].filter(Boolean).join(' · ')}</div>
+          <div class="event-meta">${[timeRange, locationHtml].filter(Boolean).join(' · ')}</div>
           ${ev.description ? `<div class="event-desc">${escapeHtml(ev.description)}</div>` : ''}
         </div>
         <div class="attend-toggle">
-          <button type="button" class="yes ${attending ? 'active' : ''}" data-event="${ev.id}" data-attend="true">Going</button>
-          <button type="button" class="no ${!attending ? 'active' : ''}" data-event="${ev.id}" data-attend="false">Not going</button>
+          <button type="button" class="yes ${currentStatus === 'yes' ? 'active' : ''} ${currentStatus === undefined ? 'unknown' : ''}" data-event="${ev.id}" data-status="yes">Going</button>
+          <button type="button" class="maybe ${currentStatus === 'maybe' ? 'active' : ''} ${currentStatus === undefined ? 'unknown' : ''}" data-event="${ev.id}" data-status="maybe">Maybe</button>
+          <button type="button" class="no ${currentStatus === 'no' ? 'active' : ''} ${currentStatus === undefined ? 'unknown' : ''}" data-event="${ev.id}" data-status="no">Not going</button>
         </div>
       </div>
-      ${attending ? `
+      ${(currentStatus === 'yes' || currentStatus === 'maybe') ? `
         <div class="note-field">
           <input type="text" class="note-input" data-event="${ev.id}" maxlength="200"
-                 placeholder="Add a note (optional) — e.g. Will be 10 min late"
+                 placeholder="Add a note (optional)"
                  value="${escapeHtml(currentNote)}">
         </div>
       ` : ''}
@@ -205,16 +229,14 @@ function renderEventsSection() {
   list.querySelectorAll('.attend-toggle button').forEach(btn => {
     btn.addEventListener('click', async () => {
       const eventId = btn.dataset.event;
-      const attend = btn.dataset.attend === 'true';
-      // Keep any existing note when just re-confirming "Going"; it's
-      // dropped server-side anyway once "Not going" is chosen.
+      const status = btn.dataset.status;
       const existingNote = (attendance[eventId] && attendance[eventId].note) || '';
       const buttons = btn.parentElement.querySelectorAll('button');
       buttons.forEach(b => b.disabled = true);
       try {
         const res = await api(
           `/api/attendance/${encodeURIComponent(selectedPersonId)}/${encodeURIComponent(eventId)}`,
-          { method: 'PUT', body: JSON.stringify({ attending: attend, note: existingNote }) }
+          { method: 'PUT', body: JSON.stringify({ status, note: existingNote }) }
         );
         attendance = res.attendance;
         renderEventsSection();
@@ -231,9 +253,10 @@ function renderEventsSection() {
       const eventId = input.dataset.event;
       input.disabled = true;
       try {
+        const status = attendance[eventId]?.status || 'yes';
         const res = await api(
           `/api/attendance/${encodeURIComponent(selectedPersonId)}/${encodeURIComponent(eventId)}`,
-          { method: 'PUT', body: JSON.stringify({ attending: true, note: input.value }) }
+          { method: 'PUT', body: JSON.stringify({ status, note: input.value }) }
         );
         attendance = res.attendance;
         flashSaved();
