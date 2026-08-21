@@ -1,3 +1,104 @@
+// Internationalization
+const MESSAGES = {
+  'en': {
+    attend: 'Attend',
+    admin: 'Admin',
+    overview: 'Overview',
+    playersAttending: "Who's attending?",
+    pickPlayer: 'Pick a player, then choose which events they\'ll be at.',
+    player: 'Player',
+    syncToCalendar: 'Sync to calendar',
+    category: 'Category',
+    date: 'Date',
+    events: 'Events',
+    goingShort: 'Going',
+    notGoingShort: 'Not going',
+    maybe: 'Maybe',
+    addNote: 'Add a note (optional)',
+    overview: 'Overview',
+    whosComing: "Who's coming?",
+    rosterPerEvent: 'Roster per event, based on everyone\'s pre-registrations.',
+    attending: 'attending',
+    noOneRegistered: 'No one has registered yet.',
+    addPerson: 'Add person',
+    persons: 'Persons',
+    noPersonsYet: 'No persons yet.',
+    categories: 'Categories',
+    noCategoriesYet: 'No categories yet.',
+    addCategory: 'Add category',
+    newEvent: 'New event',
+    cancelEdit: 'Cancel edit',
+    editEvent: 'Edit event',
+    eventDate: 'Date',
+    startTime: 'Start time',
+    endTime: 'End time',
+    location: 'Location',
+    description: 'Description',
+    saveEvent: 'Save event',
+    eventsList: 'Events',
+    noEventsYet: 'No events yet — add one above.',
+    removeEvent: 'Remove',
+    deleteBtnText: 'Delete',
+    editBtnText: 'Edit',
+    staffAssignment: 'Staff assignment',
+    coach: 'Coach',
+    assistantCoach: 'Assistant Coach',
+    trainer: 'Trainer',
+  },
+  'nl-BE': {
+    attend: 'Aanwezig',
+    admin: 'Beheer',
+    overview: 'Overzicht',
+    playersAttending: 'Wie komen er?',
+    pickPlayer: 'Kies een speler en selecteer welke evenementen ze zullen bijwonen.',
+    player: 'Speler',
+    syncToCalendar: 'Synchroniseer met kalender',
+    category: 'Categorie',
+    date: 'Datum',
+    events: 'Evenementen',
+    goingShort: 'Jaaa',
+    notGoingShort: 'Nee',
+    maybe: 'Misschien',
+    addNote: 'Voeg een opmerking toe (optioneel)',
+    overview: 'Overzicht',
+    whosComing: 'Wie komen er?',
+    rosterPerEvent: 'Deelnemerlijst per evenement, gebaseerd op voorinschrijvingen.',
+    attending: 'aanwezig',
+    noOneRegistered: 'Nog niemand heeft zich aangemeld.',
+    addPerson: 'Voeg persoon toe',
+    persons: 'Personen',
+    noPersonsYet: 'Nog geen personen.',
+    categories: 'Categorieën',
+    noCategoriesYet: 'Nog geen categorieën.',
+    addCategory: 'Voeg categorie toe',
+    newEvent: 'Nieuw evenement',
+    cancelEdit: 'Annuleer bewerking',
+    editEvent: 'Bewerk evenement',
+    eventDate: 'Datum',
+    startTime: 'Starttijd',
+    endTime: 'Eindtijd',
+    location: 'Locatie',
+    description: 'Beschrijving',
+    saveEvent: 'Sla evenement op',
+    eventsList: 'Evenementen',
+    noEventsYet: 'Nog geen evenementen — voeg er een toe.',
+    removeEvent: 'Verwijder',
+    deleteBtnText: 'Verwijder',
+    editBtnText: 'Bewerk',
+    staffAssignment: 'Personeelstoewizing',
+    coach: 'Coach',
+    assistantCoach: 'Assistent Coach',
+    trainer: 'Trainer',
+  }
+};
+
+let currentLanguage = navigator.language.startsWith('nl') ? 'nl-BE' : 'en';
+if (!MESSAGES[currentLanguage]) currentLanguage = 'en';
+
+function t(key) {
+  return MESSAGES[currentLanguage][key] || MESSAGES['en'][key] || key;
+}
+
 async function api(path, opts) {
   const res = await fetch(path, {
     headers: { 'Content-Type': 'application/json' },
@@ -19,7 +120,7 @@ function escapeHtml(s) {
 
 function formatDate(iso) {
   const d = new Date(iso + 'T00:00:00');
-  return d.toLocaleDateString(undefined, { weekday: 'short', year: 'numeric', month: 'short', day: 'numeric' });
+  return d.toLocaleDateString(currentLanguage === 'nl-BE' ? 'nl-BE' : undefined, { weekday: 'short', year: 'numeric', month: 'short', day: 'numeric' });
 }
 
 function formatTimeRange(startTime, endTime) {
@@ -41,12 +142,6 @@ function categoryBadge(categories, categoryId) {
   </span>`;
 }
 
-// Renders a row of chip buttons for choosing a single category (plus a
-// "No category" option). Only one chip is active at a time.
-// Deliberately not a <select>: once options are built dynamically and
-// re-rendered, native <select>/<option> selection state is handled
-// inconsistently across browsers (notably Firefox), so plain clickable
-// buttons are used everywhere a persistent single-choice picker is needed.
 function renderCategoryChips(container, categories, selectedId, onSelect, opts) {
   opts = opts || {};
   container.innerHTML = '';
@@ -78,8 +173,6 @@ function sortByDateTime(events) {
   });
 }
 
-// Renders a readonly URL field + copy button for subscribing a calendar
-// app to an .ics feed. `label` is shown above the field.
 function renderSubscribeBox(container, url, label) {
   container.innerHTML = `
     <h3>${escapeHtml(label)}</h3>
@@ -103,13 +196,12 @@ function renderSubscribeBox(container, url, label) {
   });
 }
 
-// Fixed role vocabulary, mirrored from server.js. "participant" is the
-// ordinary attendee role; scorekeeper/referee are staff roles. A person
-// can hold any combination of these at once.
+// Roles
 const PARTICIPANT_ROLE = 'participant';
 const STAFF_ROLES = [
-  { id: 'scorekeeper', label: 'Scorekeeper' },
-  { id: 'referee', label: 'Referee' },
+  { id: 'coach', label: 'Coach' },
+  { id: 'assistant-coach', label: 'Assistant Coach' },
+  { id: 'trainer', label: 'Trainer' },
 ];
 
 function personHasRole(person, roleId) {
@@ -120,9 +212,6 @@ function staffRoleLabels(ids) {
   return STAFF_ROLES.filter(r => (ids || []).includes(r.id)).map(r => r.label);
 }
 
-// Generic multi-select chip row: options = [{id, label}], selectedSet is
-// a Set of selected ids. Toggles membership on click. Used for choosing a
-// person's roles and a category's required staff roles.
 function renderMultiSelectChips(container, options, selectedSet, onToggle) {
   container.innerHTML = '';
   options.forEach(opt => {
@@ -146,8 +235,6 @@ function todayIso() {
   return `${d.getFullYear()}-${m}-${day}`;
 }
 
-// filters = { categoryIds: Set<string|null>, dateMode: 'upcoming'|'past'|'all' }
-// An empty categoryIds set means "no category filter applied" (show all).
 function filterEvents(events, filters) {
   const today = todayIso();
   return events.filter(ev => {
@@ -158,9 +245,6 @@ function filterEvents(events, filters) {
   });
 }
 
-// Multi-select category filter chips. selectedIds is a Set (possibly
-// containing null for "Uncategorized"). Clicking "All" clears the set.
-// Clicking a category toggles its membership.
 function renderCategoryFilterChips(container, categories, selectedIds, onChange) {
   container.innerHTML = '';
   function makeChip(id, name, color, isAll) {
@@ -209,4 +293,10 @@ function renderDateFilterChips(container, currentMode, onChange) {
     chip.addEventListener('click', () => onChange(opt.mode));
     container.appendChild(chip);
   });
+}
+
+function formatMapsLink(location) {
+  if (!location) return '';
+  const encoded = encodeURIComponent(location);
+  return `https://www.google.com/maps/search/${encoded}`;
 }

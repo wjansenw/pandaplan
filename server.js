@@ -1,9 +1,11 @@
 const express = require('express');
 const fs = require('fs');
 const path = require('path');
+const crypto = require('crypto');
 
 const DATA_DIR = process.env.DATA_DIR || path.join(__dirname, 'data');
 const DB_FILE = path.join(DATA_DIR, 'db.json');
+const LOGS_FILE = path.join(DATA_DIR, 'logs.jsonl');
 const PORT = process.env.PORT || 3000;
 
 const CATEGORY_COLORS = ['#4F7942', '#B5503F', '#B8933F', '#4A6FA5', '#7B5EA7', '#A34F72', '#3A6B6E', '#8C6239'];
@@ -12,10 +14,13 @@ const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
 const TIME_RE = /^([01]\d|2[0-3]):([0-5]\d)$/;
 
 // Fixed role vocabulary. "participant" is the ordinary attendee role;
-// scorekeeper/referee are staff roles. A person can hold any combination.
+// Coach, Assistant-Coach, Trainer are staff roles. A person can hold any combination.
 const PARTICIPANT_ROLE = 'participant';
-const STAFF_ROLE_IDS = ['scorekeeper', 'referee'];
+const STAFF_ROLE_IDS = ['coach', 'assistant-coach', 'trainer'];
 const ALL_ROLE_IDS = [PARTICIPANT_ROLE, ...STAFF_ROLE_IDS];
+
+// Attendance status: yes, no, maybe, unknown (undefined)
+const ATTENDANCE_STATUS = ['yes', 'no', 'maybe'];
 
 function sanitizeRoles(input, allowed) {
   if (!Array.isArray(input)) return null;
@@ -23,9 +28,31 @@ function sanitizeRoles(input, allowed) {
   return Array.from(set);
 }
 
+function hashIp(ip) {
+  return crypto.createHash('sha256').update(ip).digest('hex').slice(0, 16);
+}
+
 const app = express();
 app.use(express.json());
 app.use(express.static(path.join(__dirname, 'public')));
+
+// ---- logging -------------------------------------------------
+
+function logAction(req, action, details) {
+  const hashedIp = hashIp(req.ip || req.connection.remoteAddress || 'unknown');
+  const timestamp = new Date().toISOString();
+  const logEntry = {
+    timestamp,
+    hashedIp,
+    action,
+    details,
+  };
+  try {
+    fs.appendFileSync(LOGS_FILE, JSON.stringify(logEntry) + '\n');
+  } catch (e) {
+    console.error('Failed to write log:', e);
+  }
+}
 
 // ---- storage helpers -------------------------------------------------
 
@@ -33,7 +60,7 @@ function ensureDb() {
   if (!fs.existsSync(DATA_DIR)) fs.mkdirSync(DATA_DIR, { recursive: true });
   if (!fs.existsSync(DB_FILE)) {
     fs.writeFileSync(DB_FILE, JSON.stringify({
-      persons: [], categories: [], events: [], attendance: {}
+      persons: [], categories: [], events: [], attendance: {}, staffAssignments: {}
     }, null, 2));
   }
 }
@@ -45,9 +72,9 @@ function readDb() {
   if (!Array.isArray(db.categories)) db.categories = [];
   if (!Array.isArray(db.events)) db.events = [];
   if (typeof db.attendance !== 'object' || db.attendance === null) db.attendance = {};
-  // Persons/categories created before roles/staff-requirements existed
-  // won't have these fields — default them gracefully rather than
-  // requiring a migration step.
+  if (typeof db.staffAssignments !== 'object' || db.staffAssignments === null) db.staffAssignments = {};
+  
+  // Backward compatibility
   db.persons.forEach((p) => {
     const roles = sanitizeRoles(p.roles, ALL_ROLE_IDS);
     p.roles = roles && roles.length ? roles : [PARTICIPANT_ROLE];
@@ -84,7 +111,6 @@ function icsEscape(s) {
     .replace(/\r?\n/g, '\\n');
 }
 
-// RFC 5545 line folding: continuation lines start with a single space.
 function foldLine(line) {
   if (line.length <= 75) return line;
   let out = line.slice(0, 75);
@@ -137,8 +163,6 @@ function buildVEvent(ev, categoryName, attendeeNames) {
   lines.push(`UID:${ev.id}@pandaplan`);
   lines.push(`DTSTAMP:${new Date().toISOString().replace(/[-:]/g, '').split('.')[0]}Z`);
 
-  // Times are stored/rendered as floating local time (no stored timezone),
-  // consistent with how they're entered in the admin form.
   if (ev.startTime) {
     lines.push(`DTSTART:${icsDateTime(ev.date, ev.startTime)}`);
     lines.push(`DTEND:${icsDateTime(ev.date, ev.endTime || ev.startTime)}`);
@@ -151,10 +175,6 @@ function buildVEvent(ev, categoryName, attendeeNames) {
   const summary = categoryName ? `${categoryName}${ev.location ? ' · ' + ev.location : ''}` : (ev.location || 'pandaplan event');
   lines.push(`SUMMARY:${icsEscape(summary)}`);
   if (ev.location) lines.push(`LOCATION:${icsEscape(ev.location)}`);
-  // DESCRIPTION is kept as structured plain text (sections separated by
-  // blank lines) rather than HTML: calendar clients (Google, Apple,
-  // Outlook) don't render HTML in the plain DESCRIPTION field consistently,
-  // so plain text with clear separation is the safe cross-client choice.
   lines.push(`DESCRIPTION:${icsEscape(buildDescription(ev, categoryName, timeRange, attendeeNames))}`);
   if (categoryName) lines.push(`CATEGORIES:${icsEscape(categoryName)}`);
   lines.push('END:VEVENT');
@@ -188,7 +208,12 @@ function buildCalendar(calName, events, categories, persons, attendanceByPerson)
 
 app.get('/api/state', (req, res) => {
   const db = readDb();
-  res.json({ persons: db.persons, categories: db.categories, events: db.events });
+  res.json({ 
+    persons: db.persons, 
+    categories: db.categories, 
+    events: db.events,
+    staffAssignments: db.staffAssignments 
+  });
 });
 
 // ---- persons -------------------------------------------------------------
@@ -196,10 +221,6 @@ app.get('/api/state', (req, res) => {
 app.post('/api/persons', async (req, res) => {
   const name = (req.body.name || '').trim();
   if (!name) return res.status(400).json({ error: 'name is required' });
-  // If roles isn't provided at all, default to plain participant (keeps
-  // the Participants page simple). If it IS provided (even as an array
-  // containing only staff roles), respect it as-is — this is how the
-  // Staff page creates a staff-only person.
   const roles = req.body.roles === undefined
     ? [PARTICIPANT_ROLE]
     : (sanitizeRoles(req.body.roles, ALL_ROLE_IDS) || []);
@@ -208,12 +229,10 @@ app.post('/api/persons', async (req, res) => {
     db.persons.push({ id: uid(), name, roles });
     return db.persons;
   });
+  logAction(req, 'create_person', { name, roles });
   res.json({ persons });
 });
 
-// Partial update: only the fields provided are changed. Used to rename a
-// person or to toggle their roles without recreating the record (so
-// someone can hold both a participant role and staff roles at once).
 app.put('/api/persons/:id', async (req, res) => {
   const { id } = req.params;
   if (req.body.roles !== undefined) {
@@ -228,6 +247,7 @@ app.put('/api/persons/:id', async (req, res) => {
     }
     return db.persons;
   });
+  logAction(req, 'update_person', { personId: id, changes: req.body });
   res.json({ persons });
 });
 
@@ -236,8 +256,15 @@ app.delete('/api/persons/:id', async (req, res) => {
   const persons = await writeDb((db) => {
     db.persons = db.persons.filter((p) => p.id !== id);
     delete db.attendance[id];
+    Object.keys(db.staffAssignments).forEach(eventId => {
+      const assignments = db.staffAssignments[eventId];
+      Object.keys(assignments).forEach(role => {
+        if (assignments[role] === id) delete assignments[role];
+      });
+    });
     return db.persons;
   });
+  logAction(req, 'delete_person', { personId: id });
   res.json({ persons });
 });
 
@@ -252,10 +279,10 @@ app.post('/api/categories', async (req, res) => {
     db.categories.push({ id: uid(), name, color, requiredStaffRoles });
     return db.categories;
   });
+  logAction(req, 'create_category', { name, requiredStaffRoles });
   res.json({ categories });
 });
 
-// Partial update — currently only requiredStaffRoles is editable this way.
 app.put('/api/categories/:id', async (req, res) => {
   const { id } = req.params;
   const categories = await writeDb((db) => {
@@ -265,6 +292,7 @@ app.put('/api/categories/:id', async (req, res) => {
     }
     return db.categories;
   });
+  logAction(req, 'update_category', { categoryId: id, changes: req.body });
   res.json({ categories });
 });
 
@@ -277,6 +305,7 @@ app.delete('/api/categories/:id', async (req, res) => {
     });
     return { categories: db.categories, events: db.events };
   });
+  logAction(req, 'delete_category', { categoryId: id });
   res.json(result);
 });
 
@@ -307,6 +336,7 @@ app.post('/api/events', async (req, res) => {
     });
     return db.events;
   });
+  logAction(req, 'create_event', { date, location });
   res.json({ events });
 });
 
@@ -327,6 +357,7 @@ app.put('/api/events/:id', async (req, res) => {
     }
     return db.events;
   });
+  logAction(req, 'update_event', { eventId: id });
   res.json({ events });
 });
 
@@ -337,8 +368,10 @@ app.delete('/api/events/:id', async (req, res) => {
     Object.keys(db.attendance).forEach((personId) => {
       delete db.attendance[personId][id];
     });
+    delete db.staffAssignments[id];
     return db.events;
   });
+  logAction(req, 'delete_event', { eventId: id });
   res.json({ events });
 });
 
@@ -358,28 +391,62 @@ const NOTE_MAX_LEN = 200;
 
 app.put('/api/attendance/:personId/:eventId', async (req, res) => {
   const { personId, eventId } = req.params;
-  const attending = !!req.body.attending;
+  const status = req.body.status; // 'yes', 'no', 'maybe', or undefined (unknown)
   const note = typeof req.body.note === 'string' ? req.body.note.trim().slice(0, NOTE_MAX_LEN) : '';
+  
+  if (status && !ATTENDANCE_STATUS.includes(status)) {
+    return res.status(400).json({ error: 'invalid status' });
+  }
+  
   const attendance = await writeDb((db) => {
     if (!db.attendance[personId]) db.attendance[personId] = {};
-    if (attending) {
-      // Presence of the key means "attending"; the object carries an
-      // optional free-text note (e.g. "will be 10 min late"). Older data
-      // written before notes existed stored plain `true` here — reading
-      // `.note` off a boolean simply yields undefined in JS, so those
-      // entries keep working and just show no note (no migration needed).
-      db.attendance[personId][eventId] = { note };
+    if (status) {
+      db.attendance[personId][eventId] = { status, note };
     } else {
       delete db.attendance[personId][eventId];
     }
     return db.attendance[personId];
   });
+  logAction(req, 'update_attendance', { personId, eventId, status });
   res.json({ attendance });
+});
+
+// ---- staff assignments -------------------------------------------------
+
+app.get('/api/staffAssignments/:eventId', (req, res) => {
+  const db = readDb();
+  const { eventId } = req.params;
+  res.json({ staffAssignments: db.staffAssignments[eventId] || {} });
+});
+
+app.put('/api/staffAssignments/:eventId', async (req, res) => {
+  const { eventId } = req.params;
+  const { role, personId } = req.body;
+  
+  if (!STAFF_ROLE_IDS.includes(role)) {
+    return res.status(400).json({ error: 'invalid role' });
+  }
+  
+  const staffAssignments = await writeDb((db) => {
+    if (!db.staffAssignments[eventId]) db.staffAssignments[eventId] = {};
+    if (personId) {
+      // Verify person exists and has this role
+      const person = db.persons.find(p => p.id === personId);
+      if (!person || !person.roles.includes(role)) {
+        throw new Error('Person does not have this role');
+      }
+      db.staffAssignments[eventId][role] = personId;
+    } else {
+      delete db.staffAssignments[eventId][role];
+    }
+    return db.staffAssignments[eventId] || {};
+  });
+  logAction(req, 'assign_staff', { eventId, role, personId });
+  res.json({ staffAssignments });
 });
 
 // ---- calendar feeds (.ics) -------------------------------------------------
 
-// Full schedule, regardless of attendance — useful for admins/trainers.
 app.get('/calendar/all.ics', (req, res) => {
   const db = readDb();
   const ics = buildCalendar('pandaplan', db.events, db.categories, db.persons, db.attendance);
@@ -388,7 +455,6 @@ app.get('/calendar/all.ics', (req, res) => {
   res.send(ics);
 });
 
-// Only the events a specific person is registered to attend.
 app.get('/calendar/person/:personId.ics', (req, res) => {
   const db = readDb();
   const person = db.persons.find((p) => p.id === req.params.personId);
