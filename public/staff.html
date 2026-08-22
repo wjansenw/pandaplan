@@ -13,21 +13,21 @@
   <a class="brand" href="/overview.html">🐼 pandaplan</a>
   <button class="hamburger" id="navToggle">☰</button>
   <div class="links" id="navLinks">
-    <a href="/overview.html">Overview</a>
-    <a href="/">Attend</a>
-    <a href="/staff.html" class="current">Staff</a>
-    <a href="/admin.html">Admin</a>
+    <a href="/overview.html" id="navOverview">Overview</a>
+    <a href="/" id="navAttend">Attend</a>
+    <a href="/staff.html" class="current" id="navStaff">Staff</a>
+    <a href="/admin.html" id="navAdmin">Admin</a>
   </div>
 </div>
 
 <div class="wrap">
-  <h1>Staff assignments</h1>
-  <p class="sub">Assign staff members to events based on required roles.</p>
+  <h1 id="pageTitle">Staff assignments</h1>
+  <p class="sub" id="pageSubtitle">Assign staff members to events based on required roles.</p>
 
   <div class="card">
-    <h3>Category</h3>
+    <h3 id="categoryLabel">Category</h3>
     <div class="chip-row" id="categoryFilter" style="margin-bottom:16px;"></div>
-    <h3>Date</h3>
+    <h3 id="dateLabel">Date</h3>
     <div class="chip-row" id="dateFilter"></div>
   </div>
 
@@ -45,6 +45,15 @@ let staffAssignments = {};
 let filters = { categoryIds: new Set(), dateMode: 'upcoming' };
 
 async function loadAll() {
+  document.getElementById('navOverview').textContent = t('overview');
+  document.getElementById('navAttend').textContent = t('attend');
+  document.getElementById('navStaff').textContent = t('staffNav');
+  document.getElementById('navAdmin').textContent = t('admin');
+  document.getElementById('pageTitle').textContent = t('staffAssignmentsTitle');
+  document.getElementById('pageSubtitle').textContent = t('staffAssignmentsSubtitle');
+  document.getElementById('categoryLabel').textContent = t('category');
+  document.getElementById('dateLabel').textContent = t('date');
+
   const state = await api('/api/state');
   persons = state.persons || [];
   categories = state.categories || [];
@@ -88,7 +97,7 @@ function renderStaffSection() {
   if (!events.length) {
     const card = document.createElement('div');
     card.className = 'card';
-    card.innerHTML = '<div class="empty">No events yet — add some in Admin first.</div>';
+    card.innerHTML = `<div class="empty">${t('noEventsYet')}</div>`;
     section.appendChild(card);
     return;
   }
@@ -98,7 +107,7 @@ function renderStaffSection() {
   if (!filtered.length) {
     const card = document.createElement('div');
     card.className = 'card';
-    card.innerHTML = '<div class="empty">No events match the current filters.</div>';
+    card.innerHTML = `<div class="empty">${t('noFilterMatch')}</div>`;
     section.appendChild(card);
     return;
   }
@@ -168,7 +177,7 @@ function renderStaffSection() {
       const noneChip = document.createElement('button');
       noneChip.type = 'button';
       noneChip.className = 'chip' + (assignment ? '' : ' active');
-      noneChip.textContent = '— None —';
+      noneChip.textContent = t('noneAssigned');
       noneChip.addEventListener('click', async () => {
         try {
           await api(`/api/staffAssignments/${ev.id}`, {
@@ -180,7 +189,7 @@ function renderStaffSection() {
           renderStaffSection();
           flashSaved();
         } catch (e) {
-          flashSaved('Could not save — retry');
+          flashSaved(t('retry'));
         }
       });
       chipContainer.appendChild(noneChip);
@@ -202,7 +211,7 @@ function renderStaffSection() {
             renderStaffSection();
             flashSaved();
           } catch (e) {
-            flashSaved('Could not save — retry');
+            flashSaved(t('retry'));
           }
         });
         chipContainer.appendChild(chip);
@@ -211,7 +220,7 @@ function renderStaffSection() {
       if (staffWithRole.length === 0) {
         const empty = document.createElement('div');
         empty.className = 'empty';
-        empty.textContent = 'No staff members with this role available.';
+        empty.textContent = t('noEligibleStaff');
         chipContainer.appendChild(empty);
       }
 
@@ -226,7 +235,7 @@ function renderStaffSection() {
 
 function flashSaved(msg) {
   const note = document.getElementById('savedNote');
-  note.textContent = msg || 'Saved';
+  note.textContent = msg || t('saved');
   clearTimeout(flashSaved._t);
   flashSaved._t = setTimeout(() => { note.textContent = ''; }, 1500);
 }

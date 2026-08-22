@@ -13,21 +13,21 @@
   <a class="brand" href="/overview.html">🐼 pandaplan</a>
   <button class="hamburger" id="navToggle">☰</button>
   <div class="links" id="navLinks">
-    <a href="/overview.html" class="current">Overview</a>
-    <a href="/">Attend</a>
-    <a href="/staff.html">Staff</a>
-    <a href="/admin.html">Admin</a>
+    <a href="/overview.html" class="current" id="navOverview">Overview</a>
+    <a href="/" id="navAttend">Attend</a>
+    <a href="/staff.html" id="navStaff">Staff</a>
+    <a href="/admin.html" id="navAdmin">Admin</a>
   </div>
 </div>
 
 <div class="wrap">
-  <h1>Who's coming?</h1>
-  <p class="sub">Overview of all events with attendance and staff assignments.</p>
+  <h1 id="pageTitle">Who's coming?</h1>
+  <p class="sub" id="pageSubtitle">Overview of all events with attendance and staff assignments.</p>
 
   <div class="card">
-    <h3>Category</h3>
+    <h3 id="categoryLabel">Category</h3>
     <div class="chip-row" id="categoryFilter" style="margin-bottom:16px;"></div>
-    <h3>Date</h3>
+    <h3 id="dateLabel">Date</h3>
     <div class="chip-row" id="dateFilter"></div>
   </div>
 
@@ -49,6 +49,16 @@ let staffAssignments = {};
 let filters = { categoryIds: new Set(), dateMode: 'upcoming' };
 
 async function loadAll() {
+  document.getElementById('navOverview').textContent = t('overview');
+  document.getElementById('navAttend').textContent = t('attend');
+  document.getElementById('navStaff').textContent = t('staffNav');
+  document.getElementById('navAdmin').textContent = t('admin');
+  document.getElementById('pageTitle').textContent = t('whosComing');
+  document.getElementById('pageSubtitle').textContent = t('overviewSubtitle');
+  document.getElementById('categoryLabel').textContent = t('category');
+  document.getElementById('dateLabel').textContent = t('date');
+  document.getElementById('syncToggle').textContent = '📅 ' + t('syncToCalendar');
+
   const [state, attendanceRes] = await Promise.all([
     api('/api/state'),
     api('/api/attendance'),
@@ -119,7 +129,7 @@ function renderOverview() {
   if (!events.length) {
     const card = document.createElement('div');
     card.className = 'card';
-    card.innerHTML = '<div class="empty">No events yet — add some in Admin first.</div>';
+    card.innerHTML = `<div class="empty">${t('noEventsYet')}</div>`;
     section.appendChild(card);
     return;
   }
@@ -129,7 +139,7 @@ function renderOverview() {
   if (!filtered.length) {
     const card = document.createElement('div');
     card.className = 'card';
-    card.innerHTML = '<div class="empty">No events match the current filters.</div>';
+    card.innerHTML = `<div class="empty">${t('noFilterMatch')}</div>`;
     section.appendChild(card);
     return;
   }
@@ -149,7 +159,8 @@ function renderOverview() {
     const staffHtml = Object.entries(staffAssign)
       .map(([role, personId]) => {
         const person = persons.find(p => p.id === personId);
-        return person ? `<span class="roster-name">${escapeHtml(role)}: ${escapeHtml(person.name)}</span>` : '';
+        const roleLabel = STAFF_ROLES.find(r => r.id === role)?.label || role;
+        return person ? `<span class="roster-name">${escapeHtml(roleLabel)}: ${escapeHtml(person.name)}</span>` : '';
       })
       .join('');
     
@@ -163,22 +174,22 @@ function renderOverview() {
           <div class="event-title-line">
             <span class="event-date">${formatDate(ev.date)}</span>
             ${categoryBadge(categories, ev.categoryId)}
-            ${staffLabels.length ? `<span class="staff-badge">Staff needed: ${escapeHtml(staffLabels.join(', '))}</span>` : ''}
+            ${staffLabels.length ? `<span class="staff-badge">${escapeHtml(t('staffNeeded'))}: ${escapeHtml(staffLabels.join(', '))}</span>` : ''}
           </div>
           <div class="event-meta">${[timeRange, locationHtml].filter(Boolean).join(' · ')}</div>
         </div>
       </div>
       ${ev.description ? `<div class="event-desc">${escapeHtml(ev.description)}</div>` : ''}
-      ${yes.length ? `<div style="margin-top:12px;"><strong>Going (${yes.length}):</strong>
+      ${yes.length ? `<div style="margin-top:12px;"><strong>${escapeHtml(t('goingLabel', { count: yes.length }))}</strong>
         <div class="roster-names">${yes.map(a => `<span class="roster-name">${escapeHtml(a.name)}${a.note ? `<span class="roster-note"> · ${escapeHtml(a.note)}</span>` : ''}</span>`).join('')}</div>
       </div>` : ''}
-      ${maybe.length ? `<div style="margin-top:12px;"><strong>Maybe (${maybe.length}):</strong>
+      ${maybe.length ? `<div style="margin-top:12px;"><strong>${escapeHtml(t('maybeLabel', { count: maybe.length }))}</strong>
         <div class="roster-names">${maybe.map(a => `<span class="roster-name">${escapeHtml(a.name)}${a.note ? `<span class="roster-note"> · ${escapeHtml(a.note)}</span>` : ''}</span>`).join('')}</div>
       </div>` : ''}
-      ${no.length ? `<div style="margin-top:12px;"><strong>Not going (${no.length}):</strong>
+      ${no.length ? `<div style="margin-top:12px;"><strong>${escapeHtml(t('notGoingLabel', { count: no.length }))}</strong>
         <div class="roster-names">${no.map(a => `<span class="roster-name">${escapeHtml(a.name)}</span>`).join('')}</div>
       </div>` : ''}
-      ${staffHtml ? `<div style="margin-top:12px;"><strong>Staff:</strong>
+      ${staffHtml ? `<div style="margin-top:12px;"><strong>${escapeHtml(t('staffLabel'))}</strong>
         <div class="roster-names">${staffHtml}</div>
       </div>` : ''}
     `;
@@ -189,7 +200,7 @@ function renderOverview() {
 function renderSyncCard() {
   const card = document.getElementById('subscribeCard');
   const url = window.location.origin + '/calendar/all.ics';
-  renderSubscribeBox(card, url, 'Sync full schedule to calendar');
+  renderSubscribeBox(card, url, t('syncFullSchedule'));
 }
 
 loadAll();

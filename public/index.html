@@ -13,26 +13,26 @@
   <a class="brand" href="/overview.html">🐼 pandaplan</a>
   <button class="hamburger" id="navToggle">☰</button>
   <div class="links" id="navLinks">
-    <a href="/overview.html">Overview</a>
-    <a href="/" class="current">Attend</a>
-    <a href="/staff.html">Staff</a>
-    <a href="/admin.html">Admin</a>
+    <a href="/overview.html" id="navOverview">Overview</a>
+    <a href="/" class="current" id="navAttend">Attend</a>
+    <a href="/staff.html" id="navStaff">Staff</a>
+    <a href="/admin.html" id="navAdmin">Admin</a>
   </div>
 </div>
 
 <div class="wrap">
-  <h1>Who's attending?</h1>
-  <p class="sub">Pick a player, then choose which events they'll be at.</p>
+  <h1 id="pageTitle">Who's attending?</h1>
+  <p class="sub" id="pageSubtitle">Pick a player, then choose which events they'll be at.</p>
 
   <div class="card">
-    <h3>Player</h3>
+    <h3 id="playerLabel">Player</h3>
     <div class="chip-row" id="playerPicker"></div>
   </div>
 
   <div class="card">
-    <h3>Category</h3>
+    <h3 id="categoryLabel">Category</h3>
     <div class="chip-row" id="categoryFilter" style="margin-bottom:16px;"></div>
-    <h3>Date</h3>
+    <h3 id="dateLabel">Date</h3>
     <div class="chip-row" id="dateFilter"></div>
   </div>
 
@@ -56,6 +56,17 @@ let selectedPersonId = null;
 let filters = { categoryIds: new Set(), dateMode: 'upcoming' };
 
 async function loadAll() {
+  document.getElementById('navOverview').textContent = t('overview');
+  document.getElementById('navAttend').textContent = t('attend');
+  document.getElementById('navStaff').textContent = t('staffNav');
+  document.getElementById('navAdmin').textContent = t('admin');
+  document.getElementById('pageTitle').textContent = t('playersAttending');
+  document.getElementById('pageSubtitle').textContent = t('pickPlayer');
+  document.getElementById('playerLabel').textContent = t('player');
+  document.getElementById('categoryLabel').textContent = t('category');
+  document.getElementById('dateLabel').textContent = t('date');
+  document.getElementById('syncToggle').textContent = '📅 ' + t('syncToCalendar');
+
   const state = await api('/api/state');
   persons = (state.persons || []).filter(p => personHasRole(p, PARTICIPANT_ROLE));
   categories = state.categories || [];
@@ -115,7 +126,7 @@ function renderPlayerPicker() {
   const container = document.getElementById('playerPicker');
   container.innerHTML = '';
   if (!persons.length) {
-    container.innerHTML = '<div class="empty">No players yet — add some in Admin first.</div>';
+    container.innerHTML = `<div class="empty">${t('noPlayersYet')}</div>`;
     return;
   }
   persons.forEach(p => {
@@ -143,7 +154,7 @@ function renderSubscribeCard() {
   }
   document.getElementById('syncToggle').style.display = '';
   const url = window.location.origin + '/calendar/person/' + encodeURIComponent(selectedPersonId) + '.ics';
-  renderSubscribeBox(card, url, 'Sync to calendar');
+  renderSubscribeBox(card, url, t('syncToCalendar'));
 }
 
 async function loadAttendanceForSelected() {
@@ -160,7 +171,7 @@ function renderEventsSection() {
     if (persons.length) {
       const card = document.createElement('div');
       card.className = 'card';
-      card.innerHTML = '<div class="empty">Pick a player above to see events.</div>';
+      card.innerHTML = `<div class="empty">${t('pickPlayerPrompt')}</div>`;
       section.appendChild(card);
     }
     return;
@@ -169,7 +180,7 @@ function renderEventsSection() {
   if (!events.length) {
     const card = document.createElement('div');
     card.className = 'card';
-    card.innerHTML = '<div class="empty">No events yet — add some in Admin first.</div>';
+    card.innerHTML = `<div class="empty">${t('noEventsYet')}</div>`;
     section.appendChild(card);
     return;
   }
@@ -182,13 +193,13 @@ function renderEventsSection() {
   card.className = 'card';
   const head = document.createElement('div');
   head.className = 'card-head';
-  head.innerHTML = `<h3 style="margin:0;">Events</h3><span class="count">${confirmCount} of ${sorted.length} confirmed</span>`;
+  head.innerHTML = `<h3 style="margin:0;">${t('events')}</h3><span class="count">${t('confirmedCount', { going: confirmCount, total: sorted.length })}</span>`;
   card.appendChild(head);
 
   if (!sorted.length) {
     const empty = document.createElement('div');
     empty.className = 'empty';
-    empty.textContent = 'No events match the current filters.';
+    empty.textContent = t('noFilterMatch');
     card.appendChild(empty);
     section.appendChild(card);
     return;
@@ -217,15 +228,15 @@ function renderEventsSection() {
           ${ev.description ? `<div class="event-desc">${escapeHtml(ev.description)}</div>` : ''}
         </div>
         <div class="attend-toggle">
-          <button type="button" class="yes ${currentStatus === 'yes' ? 'active' : ''} ${currentStatus === undefined ? 'unknown' : ''}" data-event="${ev.id}" data-status="yes">Going</button>
-          <button type="button" class="maybe ${currentStatus === 'maybe' ? 'active' : ''} ${currentStatus === undefined ? 'unknown' : ''}" data-event="${ev.id}" data-status="maybe">Maybe</button>
-          <button type="button" class="no ${currentStatus === 'no' ? 'active' : ''} ${currentStatus === undefined ? 'unknown' : ''}" data-event="${ev.id}" data-status="no">Not going</button>
+          <button type="button" class="yes ${currentStatus === 'yes' ? 'active' : ''} ${currentStatus === undefined ? 'unknown' : ''}" data-event="${ev.id}" data-status="yes">${t('goingShort')}</button>
+          <button type="button" class="maybe ${currentStatus === 'maybe' ? 'active' : ''} ${currentStatus === undefined ? 'unknown' : ''}" data-event="${ev.id}" data-status="maybe">${t('maybe')}</button>
+          <button type="button" class="no ${currentStatus === 'no' ? 'active' : ''} ${currentStatus === undefined ? 'unknown' : ''}" data-event="${ev.id}" data-status="no">${t('notGoingShort')}</button>
         </div>
       </div>
       ${(currentStatus === 'yes' || currentStatus === 'maybe') ? `
         <div class="note-field">
           <input type="text" class="note-input" data-event="${ev.id}" maxlength="200"
-                 placeholder="Add a note (optional)"
+                 placeholder="${escapeHtml(t('addNote'))}"
                  value="${escapeHtml(currentNote)}">
         </div>
       ` : ''}
@@ -252,7 +263,7 @@ function renderEventsSection() {
         flashSaved();
       } catch (e) {
         buttons.forEach(b => b.disabled = false);
-        flashSaved('Could not save — retry');
+        flashSaved(t('retry'));
       }
     });
   });
@@ -270,7 +281,7 @@ function renderEventsSection() {
         attendance = res.attendance;
         flashSaved();
       } catch (e) {
-        flashSaved('Could not save note — retry');
+        flashSaved(t('retry'));
       } finally {
         input.disabled = false;
       }
@@ -284,7 +295,7 @@ function renderEventsSection() {
 
 function flashSaved(msg) {
   const note = document.getElementById('savedNote');
-  note.textContent = msg || 'Saved';
+  note.textContent = msg || t('saved');
   clearTimeout(flashSaved._t);
   flashSaved._t = setTimeout(() => { note.textContent = ''; }, 1500);
 }
