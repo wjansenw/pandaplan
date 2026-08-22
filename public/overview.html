@@ -157,11 +157,11 @@ function renderOverview() {
     
     const staffAssign = staffAssignments[ev.id] || {};
     const staffHtml = Object.entries(staffAssign)
-      .map(([role, personId]) => {
+      .flatMap(([role, personIds]) => (personIds || []).map(personId => {
         const person = persons.find(p => p.id === personId);
         const roleLabel = STAFF_ROLES.find(r => r.id === role)?.label || role;
         return person ? `<span class="roster-name">${escapeHtml(roleLabel)}: ${escapeHtml(person.name)}</span>` : '';
-      })
+      }))
       .join('');
     
     const locationHtml = ev.location 

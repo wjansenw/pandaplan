@@ -82,19 +82,57 @@ function readDb() {
   db.categories.forEach((c) => {
     c.requiredStaffRoles = sanitizeRoles(c.requiredStaffRoles, STAFF_ROLE_IDS) || [];
   });
+  // staffAssignments[eventId][role] used to hold a single personId (one
+  // slot per role). It's now an array (multiple people can share a role),
+  // with the invariant that a person appears under at most one role per
+  // event. Normalize old data into the new shape rather than requiring a
+  // migration step.
+  Object.keys(db.staffAssignments).forEach((eventId) => {
+    const perEvent = db.staffAssignments[eventId];
+    if (!perEvent || typeof perEvent !== 'object') {
+      delete db.staffAssignments[eventId];
+      return;
+    }
+    const seenPersonIds = new Set();
+    Object.keys(perEvent).forEach((role) => {
+      if (!STAFF_ROLE_IDS.includes(role)) {
+        delete perEvent[role];
+        return;
+      }
+      let ids = Array.isArray(perEvent[role]) ? perEvent[role] : (perEvent[role] ? [perEvent[role]] : []);
+      ids = ids.filter((personId) => {
+        if (seenPersonIds.has(personId)) return false; // one role per person per event
+        const person = db.persons.find((p) => p.id === personId && p.roles.includes(role));
+        if (!person) return false; // must currently hold that role
+        seenPersonIds.add(personId);
+        return true;
+      });
+      if (ids.length) perEvent[role] = ids;
+      else delete perEvent[role];
+    });
+  });
   return db;
 }
 
 // serialize writes so concurrent requests can't clobber each other
 let writeQueue = Promise.resolve();
 function writeDb(mutateFn) {
-  writeQueue = writeQueue.then(() => {
+  const resultPromise = writeQueue.then(() => {
     const db = readDb();
     const result = mutateFn(db);
     fs.writeFileSync(DB_FILE, JSON.stringify(db, null, 2));
     return result;
   });
-  return writeQueue;
+  // The shared queue itself must never reject: if mutateFn throws (e.g.
+  // a validation error), the caller below still sees it via
+  // `resultPromise`, but `writeQueue` — which every future call chains
+  // onto — is reassigned to a version that swallows the error. Without
+  // this, a single bad write leaves `writeQueue` permanently rejected,
+  // which both breaks every subsequent write and crashes the whole
+  // process via Node's unhandled-rejection handling (verified: this
+  // previously took the entire server down on one invalid request).
+  writeQueue = resultPromise.catch(() => {});
+  return resultPromise;
 }
 
 function uid() {
@@ -259,7 +297,8 @@ app.delete('/api/persons/:id', async (req, res) => {
     Object.keys(db.staffAssignments).forEach(eventId => {
       const assignments = db.staffAssignments[eventId];
       Object.keys(assignments).forEach(role => {
-        if (assignments[role] === id) delete assignments[role];
+        assignments[role] = (assignments[role] || []).filter(personId => personId !== id);
+        if (!assignments[role].length) delete assignments[role];
       });
     });
     return db.persons;
@@ -421,27 +460,47 @@ app.get('/api/staffAssignments/:eventId', (req, res) => {
 
 app.put('/api/staffAssignments/:eventId', async (req, res) => {
   const { eventId } = req.params;
-  const { role, personId } = req.body;
-  
+  const { role, personId, assign } = req.body;
+
   if (!STAFF_ROLE_IDS.includes(role)) {
     return res.status(400).json({ error: 'invalid role' });
   }
-  
+  if (!personId) {
+    return res.status(400).json({ error: 'personId is required' });
+  }
+
+  let invalid = false;
   const staffAssignments = await writeDb((db) => {
     if (!db.staffAssignments[eventId]) db.staffAssignments[eventId] = {};
-    if (personId) {
-      // Verify person exists and has this role
+    const perEvent = db.staffAssignments[eventId];
+
+    if (assign) {
       const person = db.persons.find(p => p.id === personId);
       if (!person || !person.roles.includes(role)) {
-        throw new Error('Person does not have this role');
+        invalid = true;
+        return db.staffAssignments[eventId] || {};
       }
-      db.staffAssignments[eventId][role] = personId;
+      // One role per person per event: drop this person from every
+      // other role on this event before adding them to the new one.
+      Object.keys(perEvent).forEach((r) => {
+        perEvent[r] = (perEvent[r] || []).filter(id => id !== personId);
+        if (!perEvent[r].length) delete perEvent[r];
+      });
+      if (!perEvent[role]) perEvent[role] = [];
+      if (!perEvent[role].includes(personId)) perEvent[role].push(personId);
     } else {
-      delete db.staffAssignments[eventId][role];
+      if (perEvent[role]) {
+        perEvent[role] = perEvent[role].filter(id => id !== personId);
+        if (!perEvent[role].length) delete perEvent[role];
+      }
     }
     return db.staffAssignments[eventId] || {};
   });
-  logAction(req, 'assign_staff', { eventId, role, personId });
+
+  if (invalid) {
+    return res.status(400).json({ error: 'Person does not have this role' });
+  }
+  logAction(req, 'assign_staff', { eventId, role, personId, assign: !!assign });
   res.json({ staffAssignments });
 });
 

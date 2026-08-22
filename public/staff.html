@@ -151,7 +151,7 @@ function renderStaffSection() {
     requiredRoles.forEach(roleId => {
       const roleLabel = STAFF_ROLES.find(r => r.id === roleId)?.label || roleId;
       const staffWithRole = persons.filter(p => personHasRole(p, roleId));
-      const assignment = (staffAssignments[ev.id] || {})[roleId];
+      const assignedIds = (staffAssignments[ev.id] || {})[roleId] || [];
 
       const roleRow = document.createElement('div');
       roleRow.className = 'staff-role-row';
@@ -173,38 +173,20 @@ function renderStaffSection() {
       const chipContainer = document.createElement('div');
       chipContainer.className = 'chip-row';
 
-      // "None" option
-      const noneChip = document.createElement('button');
-      noneChip.type = 'button';
-      noneChip.className = 'chip' + (assignment ? '' : ' active');
-      noneChip.textContent = t('noneAssigned');
-      noneChip.addEventListener('click', async () => {
-        try {
-          await api(`/api/staffAssignments/${ev.id}`, {
-            method: 'PUT',
-            body: JSON.stringify({ role: roleId, personId: null })
-          });
-          const res = await api('/api/state');
-          staffAssignments = res.staffAssignments || {};
-          renderStaffSection();
-          flashSaved();
-        } catch (e) {
-          flashSaved(t('retry'));
-        }
-      });
-      chipContainer.appendChild(noneChip);
-
-      // Staff member options
+      // Multiple staff can share a role on the same event, so every
+      // eligible person gets their own independent toggle chip rather
+      // than a single "which one" choice.
       staffWithRole.forEach(staff => {
         const chip = document.createElement('button');
         chip.type = 'button';
-        chip.className = 'chip' + (assignment === staff.id ? ' active' : '');
+        const isAssigned = assignedIds.includes(staff.id);
+        chip.className = 'chip' + (isAssigned ? ' active' : '');
         chip.textContent = escapeHtml(staff.name);
         chip.addEventListener('click', async () => {
           try {
             await api(`/api/staffAssignments/${ev.id}`, {
               method: 'PUT',
-              body: JSON.stringify({ role: roleId, personId: staff.id })
+              body: JSON.stringify({ role: roleId, personId: staff.id, assign: !isAssigned })
             });
             const res = await api('/api/state');
             staffAssignments = res.staffAssignments || {};
