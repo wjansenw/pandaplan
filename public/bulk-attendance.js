@@ -123,22 +123,21 @@
     } catch (error) { console.error('Could not save bulk attendance:', error); alert(t('couldNotSaveAttendance', { error: error.message || t('tryAgain') })); }
   }
 
+  function syncEditMode() {
+    attendanceEditMode = typeof editMode !== 'undefined' && editMode === true;
+    setTimeout(render, 0);
+  }
+
   function watchEditButtons() {
     const attendanceButton = document.getElementById('editAttendance');
     const staffButton = document.getElementById('editStaff');
     if (attendanceButton && !attendanceButton.dataset.bulkWatched) {
       attendanceButton.dataset.bulkWatched = '1';
-      attendanceButton.addEventListener('click', () => {
-        attendanceEditMode = !attendanceEditMode;
-        setTimeout(render, 0);
-      });
+      attendanceButton.addEventListener('click', syncEditMode);
     }
     if (staffButton && !staffButton.dataset.bulkWatched) {
       staffButton.dataset.bulkWatched = '1';
-      staffButton.addEventListener('click', () => {
-        attendanceEditMode = false;
-        setTimeout(render, 0);
-      });
+      staffButton.addEventListener('click', syncEditMode);
     }
   }
 
@@ -150,7 +149,6 @@
     setTimeout(render, 0);
   });
 
-  // Translate literal UI text rendered by the older team-overview inline code.
   const literalKeys = {
     'Overview':'overview','Team overview':'teamOverview','Attendance and staff assignments for this Team.':'teamOverviewSubtitle',
     'Edit attendance':'editAttendance','Done attendance':'doneAttendance','Edit staff':'editStaff','Done staff':'doneStaff',
