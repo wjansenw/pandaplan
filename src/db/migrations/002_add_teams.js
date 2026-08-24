@@ -15,7 +15,7 @@ module.exports = {
         id TEXT PRIMARY KEY,
         name TEXT NOT NULL,
         slug TEXT NOT NULL UNIQUE,
-        description TEXT NOT NULL DEFAULT ''
+        description TEXT NOT NULL DEFAULT '' CHECK (length(description) <= 500)
       );
 
       CREATE TABLE team_memberships (
