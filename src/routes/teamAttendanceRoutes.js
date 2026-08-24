@@ -24,7 +24,7 @@ function bulkUpdate(req, res) {
   if (!personId) return res.status(400).json({ error: 'personId is required' });
   if (!['yes', 'maybe', 'no'].includes(status)) return res.status(400).json({ error: 'invalid attendance status' });
   if (!eventIds.length && !startDate && !endDate) return res.status(400).json({ error: 'events or a date range is required' });
-  if ((startDate && !/^\\d{4}-\\d{2}-\\d{2}$/.test(startDate)) || (endDate && !/^\\d{4}-\\d{2}-\\d{2}$/.test(endDate))) {
+  if ((startDate && !/^\d{4}-\d{2}-\d{2}$/.test(startDate)) || (endDate && !/^\d{4}-\d{2}-\d{2}$/.test(endDate))) {
     return res.status(400).json({ error: 'invalid date range' });
   }
   if (startDate && endDate && startDate > endDate) return res.status(400).json({ error: 'startDate must not be after endDate' });
