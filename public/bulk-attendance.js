@@ -16,7 +16,11 @@
 
   function isEditMode() {
     const button = document.getElementById('editAttendance');
-    return !!button && /^Done\s+attendance/i.test(button.textContent.trim());
+    if (!button) return false;
+    const text = button.textContent.trim();
+    // Compare with the translated label instead of assuming English. The
+    // page translates the button before this component checks its state.
+    return typeof t === 'function' ? text === t('doneAttendance') : /^Done\s+attendance/i.test(text);
   }
 
   function ensureBlock() {
@@ -139,7 +143,6 @@
   });
 
   // Translate literal UI text rendered by the older team-overview inline code.
-  // This includes attendance status labels that are still produced by statusLabel().
   const literalKeys = {
     'Overview':'overview','Team overview':'teamOverview','Attendance and staff assignments for this Team.':'teamOverviewSubtitle',
     'Edit attendance':'editAttendance','Done attendance':'doneAttendance','Edit staff':'editStaff','Done staff':'doneStaff',
