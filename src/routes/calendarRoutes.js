@@ -11,6 +11,14 @@ router.get('/all.ics', asyncHandler(async (req, res) => {
   res.send(ics);
 }));
 
+router.get('/team/:slug.ics', asyncHandler(async (req, res) => {
+  const result = calendarService.buildTeamCalendarIcs(req.params.slug);
+  if (!result) return res.status(404).send('Unknown team');
+  res.set('Content-Type', 'text/calendar; charset=utf-8');
+  res.set('Content-Disposition', `inline; filename="pandaplan-${result.slug}.ics"`);
+  res.send(result.ics);
+}));
+
 router.get('/person/:personId.ics', asyncHandler(async (req, res) => {
   const result = calendarService.buildPersonCalendarIcs(req.params.personId);
   if (!result) return res.status(404).send('Unknown person');
