@@ -138,8 +138,8 @@
     setTimeout(render, 0);
   });
 
-  // Translate the remaining literal UI text on the team overview. This keeps
-  // older inline HTML compatible with the central translation dictionary.
+  // Translate literal UI text rendered by the older team-overview inline code.
+  // This includes attendance status labels that are still produced by statusLabel().
   const literalKeys = {
     'Overview':'overview','Team overview':'teamOverview','Attendance and staff assignments for this Team.':'teamOverviewSubtitle',
     'Edit attendance':'editAttendance','Done attendance':'doneAttendance','Edit staff':'editStaff','Done staff':'doneStaff',
