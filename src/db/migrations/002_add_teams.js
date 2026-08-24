@@ -65,14 +65,15 @@ module.exports = {
 
       CREATE TABLE staff_assignments_new (
         event_id TEXT NOT NULL REFERENCES events(id) ON DELETE CASCADE,
+        team_id TEXT NOT NULL REFERENCES teams(id) ON DELETE CASCADE,
         person_id TEXT NOT NULL,
         role TEXT NOT NULL,
         PRIMARY KEY (event_id, person_id),
-        FOREIGN KEY (person_id, role) REFERENCES team_membership_roles(person_id, role) ON DELETE CASCADE
+        FOREIGN KEY (team_id, person_id, role) REFERENCES team_membership_roles(team_id, person_id, role) ON DELETE CASCADE
       );
 
-      INSERT INTO staff_assignments_new (event_id, person_id, role)
-      SELECT sa.event_id, sa.person_id, sa.role
+      INSERT INTO staff_assignments_new (event_id, team_id, person_id, role)
+      SELECT sa.event_id, e.team_id, sa.person_id, sa.role
       FROM staff_assignments sa
       JOIN events e ON e.id = sa.event_id
       JOIN team_membership_roles tmr
