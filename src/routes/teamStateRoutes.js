@@ -13,7 +13,13 @@ router.get('/', (req, res) => {
   const team = teamService.getBySlug(req.params.slug);
   const members = teamsRepository.findMembers(team.id);
   const categories = categoriesRepository.findAll().filter((c) => c.teamId === team.id);
-  const events = eventsRepository.findAll().filter((e) => e.teamId === team.id);
+  const events = getDb().prepare(`
+    SELECT id, team_id AS teamId, category_id AS categoryId, subject, date,
+           start_time AS startTime, end_time AS endTime, location, description
+    FROM events
+    WHERE team_id = ?
+    ORDER BY date, start_time
+  `).all(team.id);
   const memberIds = new Set(members.map((p) => p.id));
   const attendance = {};
   for (const personId of memberIds) attendance[personId] = {};
