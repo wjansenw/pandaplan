@@ -11,11 +11,9 @@ app.use(express.json());
 
 const teamPages = {
   overview: 'team-overview.html',
-  attend: 'team-attend.html',
   events: 'team-events.html',
   people: 'team-people.html',
   categories: 'team-categories.html',
-  staff: 'team-staff.html',
 };
 
 app.get('/team/:slug', (req, res) => res.redirect(`/team/${encodeURIComponent(req.params.slug)}/overview`));
