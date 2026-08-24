@@ -4,6 +4,7 @@
   let categoryId = '';
   let startDate = '';
   let endDate = '';
+  let attendanceEditMode = false;
 
   function matchingEvents() {
     if (typeof state === 'undefined' || !state.events) return [];
@@ -15,12 +16,7 @@
   }
 
   function isEditMode() {
-    const button = document.getElementById('editAttendance');
-    if (!button) return false;
-    const text = button.textContent.trim();
-    // Compare with the translated label instead of assuming English. The
-    // page translates the button before this component checks its state.
-    return typeof t === 'function' ? text === t('doneAttendance') : /^Done\s+attendance/i.test(text);
+    return attendanceEditMode;
   }
 
   function ensureBlock() {
@@ -127,18 +123,30 @@
     } catch (error) { console.error('Could not save bulk attendance:', error); alert(t('couldNotSaveAttendance', { error: error.message || t('tryAgain') })); }
   }
 
-  function watchEditButton() {
-    const button = document.getElementById('editAttendance');
-    if (!button || button.dataset.bulkWatched) return;
-    button.dataset.bulkWatched = '1';
-    button.addEventListener('click', () => setTimeout(render, 0));
+  function watchEditButtons() {
+    const attendanceButton = document.getElementById('editAttendance');
+    const staffButton = document.getElementById('editStaff');
+    if (attendanceButton && !attendanceButton.dataset.bulkWatched) {
+      attendanceButton.dataset.bulkWatched = '1';
+      attendanceButton.addEventListener('click', () => {
+        attendanceEditMode = !attendanceEditMode;
+        setTimeout(render, 0);
+      });
+    }
+    if (staffButton && !staffButton.dataset.bulkWatched) {
+      staffButton.dataset.bulkWatched = '1';
+      staffButton.addEventListener('click', () => {
+        attendanceEditMode = false;
+        setTimeout(render, 0);
+      });
+    }
   }
 
   document.addEventListener('DOMContentLoaded', () => {
     const style = document.createElement('style');
     style.textContent = `.bulk-attendance{margin-top:16px}.bulk-attendance-header{display:flex;align-items:center;justify-content:space-between;gap:8px;margin:0;cursor:pointer;user-select:none;font-weight:600}.bulk-attendance-header:focus-visible{outline:2px solid currentColor;outline-offset:3px}.bulk-expand-hint{display:inline-flex;align-items:center;gap:8px;font-size:.85rem;font-weight:400;color:var(--ink-soft)}.bulk-chevron{font-size:1.5em;line-height:1;opacity:.8;font-weight:600}.bulk-attendance #bulkAttendanceContent{font-weight:400}.bulk-attendance .sub{font-weight:400}.bulk-fields{display:flex;gap:12px;flex-wrap:wrap;margin-top:14px}.bulk-fields label{display:flex;flex-direction:column;gap:5px;font-size:.9rem;font-weight:400;min-width:160px}.bulk-fields select,.bulk-fields input{padding:8px 10px;border:1px solid #ccc;border-radius:6px;font:inherit;background:white;font-weight:400}.bulk-actions{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-top:14px;font-weight:400}.bulk-actions button{margin-left:6px}.bulk-actions button:disabled{opacity:.5;cursor:not-allowed}`;
     document.head.appendChild(style);
-    watchEditButton();
+    watchEditButtons();
     setTimeout(render, 0);
   });
 
@@ -146,11 +154,11 @@
   const literalKeys = {
     'Overview':'overview','Team overview':'teamOverview','Attendance and staff assignments for this Team.':'teamOverviewSubtitle',
     'Edit attendance':'editAttendance','Done attendance':'doneAttendance','Edit staff':'editStaff','Done staff':'doneStaff',
-    'Calendar':'calendar','Subscribe to this Team\'s events in your calendar app.':'subscribeTeamCalendar',
-    'Subscribe to a person\'s events':'subscribePersonCalendar','Select a person to get a calendar containing events where that person is going or is assigned as staff.':'subscribePersonCalendarHint',
-    'Select a person…':'selectPerson','Select a person first':'selectPersonFirst','No events match this filter.':'noFilterMatch',
-    'Going':'goingShort','Maybe':'maybe','Not going':'notGoingShort','Unknown':'unknownShort','Staff':'staffLabel',
-    'Add note':'addNoteShort','Edit note':'editNote','Save':'save','Cancel':'cancel','Could not save attendance. Please try again.':'couldNotSaveAttendanceShort','Could not save note. Please try again.':'couldNotSaveNote'
+    'Calendar':'calendar','Subscribe to this Team\'s events in your calendar app.':'subscribeTeamEvents',
+    'Subscribe to a person\'s events':'subscribePersonEvents','Select a person to get a calendar containing events where that person is going or is assigned as staff.':'personCalendarHint',
+    'Select a person…':'selectPersonOption','Select a person first':'selectPersonFirst','No events match this filter.':'noEventsForFilter',
+    'Going':'goingShort','Maybe':'maybe','Not going':'notGoingShort','Unknown':'unknownShort','Staff':'staff',
+    'Add note':'addNoteTitle','Edit note':'editNote','Save':'save','Cancel':'cancel','Could not save attendance. Please try again.':'couldNotSaveAttendanceShort','Could not save note. Please try again.':'couldNotSaveNote'
   };
   function translateLiteralUI(root=document) {
     if (typeof t !== 'function') return;
