@@ -12,22 +12,7 @@ router.get('/', (req, res) => {
   res.json(result);
 });
 
-router.put('/:personId/:eventId', (req, res) => {
-  const team = teamService.getBySlug(req.params.slug);
-  const db = getDb();
-  const valid = db.prepare('SELECT 1 FROM team_memberships tm JOIN events e ON e.team_id = tm.team_id WHERE tm.team_id = ? AND tm.person_id = ? AND e.id = ?').get(team.id, req.params.personId, req.params.eventId);
-  if (!valid) return res.status(404).json({ error: 'person or event not found in team' });
-  if (req.body.status) {
-    db.prepare(`INSERT INTO attendance (person_id, event_id, status, note) VALUES (?, ?, ?, ?)
-      ON CONFLICT(person_id, event_id) DO UPDATE SET status = excluded.status, note = excluded.note`)
-      .run(req.params.personId, req.params.eventId, req.body.status, req.body.note || '');
-  } else {
-    db.prepare('DELETE FROM attendance WHERE person_id = ? AND event_id = ?').run(req.params.personId, req.params.eventId);
-  }
-  res.json({ ok: true });
-});
-
-router.put('/bulk', (req, res) => {
+router.post('/bulk', (req, res) => {
   const team = teamService.getBySlug(req.params.slug);
   const personId = typeof req.body.personId === 'string' ? req.body.personId : '';
   const status = typeof req.body.status === 'string' ? req.body.status : '';
@@ -47,4 +32,18 @@ router.put('/bulk', (req, res) => {
   res.json({ updated: validEvents.length });
 });
 
+router.put('/:personId/:eventId', (req, res) => {
+  const team = teamService.getBySlug(req.params.slug);
+  const db = getDb();
+  const valid = db.prepare('SELECT 1 FROM team_memberships tm JOIN events e ON e.team_id = tm.team_id WHERE tm.team_id = ? AND tm.person_id = ? AND e.id = ?').get(team.id, req.params.personId, req.params.eventId);
+  if (!valid) return res.status(404).json({ error: 'person or event not found in team' });
+  if (req.body.status) {
+    db.prepare(`INSERT INTO attendance (person_id, event_id, status, note) VALUES (?, ?, ?, ?)
+      ON CONFLICT(person_id, event_id) DO UPDATE SET status = excluded.status, note = excluded.note`)
+      .run(req.params.personId, req.params.eventId, req.body.status, req.body.note || '');
+  } else {
+    db.prepare('DELETE FROM attendance WHERE person_id = ? AND event_id = ?').run(req.params.personId, req.params.eventId);
+  }
+  res.json({ ok: true });
+});
 module.exports = router;
