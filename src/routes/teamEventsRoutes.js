@@ -3,10 +3,11 @@ const AppError = require('../errors');
 const { getDb } = require('../db/connection');
 const teamService = require('../services/teamService');
 const { generateId } = require('../utils/id');
+const { fetchUrl, parseIcs } = require('../utils/icsImport');
 const router = express.Router({ mergeParams: true });
 
 function rows(teamId) {
-  return getDb().prepare(`SELECT e.id, e.category_id AS categoryId, e.date, e.start_time AS startTime,
+  return getDb().prepare(`SELECT e.id, e.category_id AS categoryId, e.subject, e.date, e.start_time AS startTime,
     e.end_time AS endTime, e.location, e.description FROM events e
     WHERE e.team_id = ? ORDER BY e.date, e.start_time`).all(teamId);
 }
@@ -23,15 +24,42 @@ router.post('/', (req, res) => {
   const team = teamService.getBySlug(req.params.slug);
   const categoryId = validateCategory(team.id, req.body.categoryId);
   const id = generateId();
-  getDb().prepare(`INSERT INTO events (id, team_id, category_id, date, start_time, end_time, location, description)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?)`).run(id, team.id, categoryId, req.body.date, req.body.startTime || '', req.body.endTime || '', req.body.location || '', req.body.description || '');
+  getDb().prepare(`INSERT INTO events (id, team_id, category_id, subject, date, start_time, end_time, location, description)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`).run(id, team.id, categoryId, req.body.subject || '', req.body.date, req.body.startTime || '', req.body.endTime || '', req.body.location || '', req.body.description || '');
   res.status(201).json(rows(team.id));
+});
+router.post('/import-ics', async (req, res, next) => {
+  try {
+    const team = teamService.getBySlug(req.params.slug);
+    const url = typeof req.body.url === 'string' ? req.body.url.trim() : '';
+    if (!url) return res.status(400).json({ error: 'ICS feed URL is required' });
+    const imported = parseIcs(await fetchUrl(url));
+    const db = getDb();
+    const exists = db.prepare(`SELECT 1 FROM events WHERE team_id = ? AND subject = ? AND date = ? AND start_time = ? AND end_time = ? AND location = ? LIMIT 1`);
+    const insert = db.prepare(`INSERT INTO events (id, team_id, category_id, subject, date, start_time, end_time, location, description)
+      VALUES (?, ?, NULL, ?, ?, ?, ?, ?, '')`);
+    let created = 0;
+    let skipped = 0;
+    db.transaction(() => {
+      for (const event of imported) {
+        if (exists.get(team.id, event.subject, event.date, event.startTime, event.endTime, event.location)) {
+          skipped++;
+          continue;
+        }
+        insert.run(generateId(), team.id, event.subject, event.date, event.startTime, event.endTime, event.location);
+        created++;
+      }
+    })();
+    res.status(201).json({ created, skipped, found: imported.length, events: rows(team.id) });
+  } catch (error) {
+    next(error);
+  }
 });
 router.put('/:eventId', (req, res) => {
   const team = teamService.getBySlug(req.params.slug);
   const categoryId = validateCategory(team.id, req.body.categoryId);
-  getDb().prepare(`UPDATE events SET category_id = ?, date = ?, start_time = ?, end_time = ?, location = ?, description = ?
-    WHERE id = ? AND team_id = ?`).run(categoryId, req.body.date, req.body.startTime || '', req.body.endTime || '', req.body.location || '', req.body.description || '', req.params.eventId, team.id);
+  getDb().prepare(`UPDATE events SET category_id = ?, subject = ?, date = ?, start_time = ?, end_time = ?, location = ?, description = ?
+    WHERE id = ? AND team_id = ?`).run(categoryId, req.body.subject || '', req.body.date, req.body.startTime || '', req.body.endTime || '', req.body.location || '', req.body.description || '', req.params.eventId, team.id);
   res.json(rows(team.id));
 });
 router.delete('/:eventId', (req, res) => {
