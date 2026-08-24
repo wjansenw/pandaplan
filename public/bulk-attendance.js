@@ -124,8 +124,10 @@
   }
 
   function syncEditMode() {
-    attendanceEditMode = typeof editMode !== 'undefined' && editMode === true;
-    setTimeout(render, 0);
+    queueMicrotask(() => {
+      attendanceEditMode = editMode === true;
+      render();
+    });
   }
 
   function watchEditButtons() {
