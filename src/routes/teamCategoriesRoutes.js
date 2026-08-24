@@ -2,7 +2,7 @@ const express = require('express');
 const { getDb } = require('../db/connection');
 const teamService = require('../services/teamService');
 const { generateId } = require('../utils/id');
-const router = express.Router();
+const router = express.Router({ mergeParams: true });
 
 function rows(teamId) {
   const db = getDb();
