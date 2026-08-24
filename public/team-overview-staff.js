@@ -66,4 +66,11 @@ document.addEventListener('click', event => {
   window.__teamOverviewEditSwitching = true;
   otherButton.click();
   window.__teamOverviewEditSwitching = false;
-}, true);
+});
+
+// Attend and Staff are now part of the combined Overview. Remove their
+// obsolete navigation entries rather than leaving dead links in the menu.
+document.addEventListener('DOMContentLoaded', () => {
+  document.getElementById('attend')?.remove();
+  document.getElementById('staff')?.remove();
+});
