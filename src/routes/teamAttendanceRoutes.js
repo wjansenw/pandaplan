@@ -12,7 +12,7 @@ router.get('/', (req, res) => {
   res.json(result);
 });
 
-router.post('/bulk', (req, res) => {
+function bulkUpdate(req, res) {
   const team = teamService.getBySlug(req.params.slug);
   const personId = typeof req.body.personId === 'string' ? req.body.personId : '';
   const status = typeof req.body.status === 'string' ? req.body.status : '';
@@ -30,7 +30,10 @@ router.post('/bulk', (req, res) => {
     ON CONFLICT(person_id, event_id) DO UPDATE SET status = excluded.status`);
   db.transaction(() => validEvents.forEach(eventId => update.run(personId, eventId, status)))();
   res.json({ updated: validEvents.length });
-});
+}
+
+router.post('/bulk', bulkUpdate);
+router.put('/bulk', bulkUpdate);
 
 router.put('/:personId/:eventId', (req, res) => {
   const team = teamService.getBySlug(req.params.slug);
