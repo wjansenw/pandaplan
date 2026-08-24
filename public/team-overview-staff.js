@@ -46,8 +46,6 @@ async function toggleStaffAssignment(personId, eventId, role) {
   }
 }
 
-// Combine assigned staff with the same role into a single pill, e.g.
-// "Referee: Wim, Luk", while keeping the existing styling.
 function groupStaffSummary() {
   document.querySelectorAll('.staff-summary .roster-names').forEach(container => {
     if (container.dataset.grouped === 'true') return;
@@ -72,8 +70,6 @@ function groupStaffSummary() {
   });
 }
 
-// render() rebuilds the event cards, so observe those changes and regroup the
-// normal-mode staff summary after every render.
 const staffSummaryObserver = new MutationObserver(groupStaffSummary);
 document.addEventListener('DOMContentLoaded', () => {
   const events = document.getElementById('events');
@@ -81,89 +77,75 @@ document.addEventListener('DOMContentLoaded', () => {
   groupStaffSummary();
 });
 
-// Attendance and staff editing are deliberately mutually exclusive. The
-// inline handlers in team-overview.html toggle their own mode first; this
-// listener then closes the other mode when necessary. A guard prevents the
-// programmatic click from recursively switching the modes back and forth.
 document.addEventListener('click', event => {
   if (window.__teamOverviewEditSwitching) return;
   const target = event.target.closest('#editAttendance, #editStaff');
   if (!target) return;
-
   const attendanceButton = document.getElementById('editAttendance');
   const staffButton = document.getElementById('editStaff');
   if (!attendanceButton || !staffButton) return;
-
   const otherButton = target.id === 'editAttendance' ? staffButton : attendanceButton;
-  const otherIsEditing = otherButton.textContent.startsWith('Done ');
-  if (!otherIsEditing) return;
-
+  if (!otherButton.textContent.startsWith('Done ')) return;
   window.__teamOverviewEditSwitching = true;
   otherButton.click();
   window.__teamOverviewEditSwitching = false;
 });
 
-// Attend and Staff are now part of the combined Overview. Remove their
-// obsolete navigation entries rather than leaving dead links in the menu.
 document.addEventListener('DOMContentLoaded', () => {
   document.getElementById('attend')?.remove();
   document.getElementById('staff')?.remove();
 });
 
-// Add the event subject to the overview cards without coupling the external
-// helper to the inline render() implementation in team-overview.html.
-// The cards and events use the same date/time sort order, so we can safely
-// match them by their position after each render.
-async function addOverviewSubjects() {
+// Add subjects to the cards after every render. Use the same filtering and
+// sorting functions as team-overview.html so the subject always matches the
+// visible event, including the upcoming/past/all date filters.
+function addOverviewSubjects() {
   const eventBox = document.getElementById('events');
-  if (!eventBox) return;
+  if (!eventBox || typeof state === 'undefined' || !state.events) return;
 
-  const currentSlug = decodeURIComponent(location.pathname.split('/')[2] || '');
-  if (!currentSlug) return;
-
-  try {
-    const overviewState = await api('/api/teams/' + encodeURIComponent(currentSlug) + '/state');
-    const events = [...overviewState.events].sort((a, b) => {
-      const ad = (a.date || '') + 'T' + (a.startTime || '');
-      const bd = (b.date || '') + 'T' + (b.startTime || '');
-      return ad.localeCompare(bd);
+  const apply = () => {
+    if (typeof state === 'undefined' || !state.events) return;
+    const visibleEvents = sortByDateTime(filterEvents(state.events, { categoryIds: new Set(), dateMode }));
+    const cards = eventBox.querySelectorAll('.roster-card');
+    cards.forEach((card, index) => {
+      const ev = visibleEvents[index];
+      if (!ev || !ev.subject || card.querySelector('.event-subject')) return;
+      const titleLine = card.querySelector('.event-title-line');
+      if (!titleLine) return;
+      const subject = document.createElement('div');
+      subject.className = 'event-subject';
+      subject.textContent = ev.subject;
+      titleLine.insertAdjacentElement('afterend', subject);
     });
+  };
 
-    const apply = () => {
-      const cards = eventBox.querySelectorAll('.roster-card');
-      cards.forEach((card, index) => {
-        const ev = events[index];
-        if (!ev || !ev.subject || card.querySelector('.event-subject')) return;
-        const titleLine = card.querySelector('.event-title-line');
-        if (!titleLine) return;
-        const subject = document.createElement('div');
-        subject.className = 'event-subject';
-        subject.textContent = ev.subject;
-        titleLine.insertAdjacentElement('afterend', subject);
-      });
-    };
+  apply();
+  const observer = new MutationObserver(apply);
+  observer.observe(eventBox, { childList: true });
 
-    apply();
-    const observer = new MutationObserver(apply);
-    observer.observe(eventBox, { childList: true });
-
-    if (!document.getElementById('overview-wrap-fix')) {
-      const style = document.createElement('style');
-      style.id = 'overview-wrap-fix';
-      style.textContent = `
-        .roster-card, .attendance-summary, .attendance-group, .staff-summary,
-        .staff-summary .roster-names, .roster-names { min-width: 0; max-width: 100%; }
-        .attendance-summary, .attendance-group, .staff-summary .roster-names,
-        .roster-names { overflow-wrap: anywhere; word-break: normal; }
-        .attendance-group .roster-names { white-space: normal; }
-        .roster-name, .staff-name { overflow-wrap: anywhere; word-break: break-word; }
-        .event-subject { margin-top: 3px; font-size: 1.05rem; font-weight: 600; overflow-wrap: anywhere; }
-      `;
-      document.head.appendChild(style);
-    }
-  } catch (error) {
-    console.error('Could not add event subjects to overview:', error);
+  if (!document.getElementById('overview-wrap-fix')) {
+    const style = document.createElement('style');
+    style.id = 'overview-wrap-fix';
+    style.textContent = `
+      .roster-card, .attendance-summary, .attendance-group, .staff-summary,
+      .staff-summary .roster-names, .roster-names { min-width: 0; max-width: 100%; }
+      .attendance-summary, .attendance-group, .staff-summary .roster-names,
+      .roster-names { overflow-wrap: anywhere; word-break: normal; }
+      .attendance-group .roster-names { white-space: normal; }
+      .roster-name, .staff-name { overflow-wrap: anywhere; word-break: break-word; }
+      .event-subject { margin-top: 3px; font-size: 1.05rem; font-weight: 600; overflow-wrap: anywhere; }
+    `;
+    document.head.appendChild(style);
   }
 }
 
-document.addEventListener('DOMContentLoaded', addOverviewSubjects);
+document.addEventListener('DOMContentLoaded', () => {
+  // load() is async; wait for the first state/render, then observe subsequent renders.
+  const wait = setInterval(() => {
+    if (typeof state !== 'undefined' && state?.events) {
+      clearInterval(wait);
+      addOverviewSubjects();
+    }
+  }, 10);
+  setTimeout(() => clearInterval(wait), 5000);
+});
