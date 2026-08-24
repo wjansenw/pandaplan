@@ -28,12 +28,44 @@ router.post('/', (req, res) => {
     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`).run(id, team.id, categoryId, req.body.subject || '', req.body.date, req.body.startTime || '', req.body.endTime || '', req.body.location || '', req.body.description || '');
   res.status(201).json(rows(team.id));
 });
+
+router.post('/recurring', (req, res) => {
+  const team = teamService.getBySlug(req.params.slug);
+  const body = req.body || {};
+  const subject = typeof body.subject === 'string' ? body.subject.trim() : '';
+  const startDate = typeof body.startDate === 'string' ? body.startDate : '';
+  const endDate = typeof body.endDate === 'string' ? body.endDate : '';
+  const startTime = typeof body.startTime === 'string' ? body.startTime : '';
+  const endTime = typeof body.endTime === 'string' ? body.endTime : '';
+  const weekdays = Array.isArray(body.weekdays) ? [...new Set(body.weekdays.map(Number))] : [];
+  if (!subject) throw new AppError(400, 'subject is required');
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(startDate) || !/^\d{4}-\d{2}-\d{2}$/.test(endDate)) throw new AppError(400, 'start and end dates are required');
+  if (startDate > endDate) throw new AppError(400, 'start date must be before or equal to end date');
+  if (!/^([01]\d|2[0-3]):[0-5]\d$/.test(startTime) || !/^([01]\d|2[0-3]):[0-5]\d$/.test(endTime)) throw new AppError(400, 'valid start and end times are required');
+  if (!weekdays.length || weekdays.some(day => !Number.isInteger(day) || day < 0 || day > 6)) throw new AppError(400, 'at least one weekday is required');
+  const categoryId = validateCategory(team.id, body.categoryId);
+  const db = getDb();
+  const dates = [];
+  for (let cursor = new Date(`${startDate}T00:00:00Z`); cursor <= new Date(`${endDate}T00:00:00Z`); cursor.setUTCDate(cursor.getUTCDate() + 1)) {
+    if (weekdays.includes(cursor.getUTCDay())) dates.push(cursor.toISOString().slice(0, 10));
+  }
+  if (!dates.length) throw new AppError(400, 'no matching dates in the selected range');
+  const insert = db.prepare(`INSERT INTO events (id, team_id, category_id, subject, date, start_time, end_time, location, description)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`);
+  db.transaction(() => {
+    dates.forEach(date => insert.run(generateId(), team.id, categoryId, subject, date, startTime, endTime, body.location || '', body.description || ''));
+  })();
+  res.status(201).json({ created: dates.length, events: rows(team.id) });
+});
+
 router.post('/import-ics', async (req, res, next) => {
   try {
     const team = teamService.getBySlug(req.params.slug);
     const url = typeof req.body.url === 'string' ? req.body.url.trim() : '';
     if (!url) return res.status(400).json({ error: 'ICS feed URL is required' });
-    const categoryId = validateCategory(team.id, req.body.categoryId);
+    const locationContains = typeof req.body.locationContains === 'string' ? req.body.locationContains.trim() : '';
+    const locationCategoryId = validateCategory(team.id, req.body.locationCategoryId);
+    const fallbackCategoryId = validateCategory(team.id, req.body.fallbackCategoryId);
     const imported = parseIcs(await fetchUrl(url));
     const db = getDb();
     const exists = db.prepare(`SELECT 1 FROM events WHERE team_id = ? AND subject = ? AND date = ? AND start_time = ? AND end_time = ? AND location = ? LIMIT 1`);
@@ -47,6 +79,8 @@ router.post('/import-ics', async (req, res, next) => {
           skipped++;
           continue;
         }
+        const matchesLocation = locationContains && event.location.toLocaleLowerCase().includes(locationContains.toLocaleLowerCase());
+        const categoryId = matchesLocation ? locationCategoryId : fallbackCategoryId;
         insert.run(generateId(), team.id, categoryId, event.subject, event.date, event.startTime, event.endTime, event.location);
         created++;
       }
