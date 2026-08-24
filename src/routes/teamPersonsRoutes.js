@@ -6,7 +6,7 @@ const teamService = require('../services/teamService');
 const config = require('../config');
 const { generateId } = require('../utils/id');
 const { sanitizeRoles } = require('../utils/roles');
-const router = express.Router();
+const router = express.Router({ mergeParams: true });
 
 router.get('/', (req, res) => res.json(teamsRepository.findMembers(teamService.getBySlug(req.params.slug).id)));
 router.post('/', (req, res) => {
@@ -16,7 +16,7 @@ router.post('/', (req, res) => {
   const roles = req.body.roles === undefined ? [config.PARTICIPANT_ROLE] : sanitizeRoles(req.body.roles, config.ALL_ROLE_IDS);
   if (!roles || !roles.length) throw new AppError(400, 'at least one role is required');
   const id = generateId();
-  personsRepository.create({ id, name, roles: [] });
+  personsRepository.create({ id, name });
   teamsRepository.addMember(team.id, id, roles);
   res.status(201).json(teamsRepository.findMembers(team.id));
 });
