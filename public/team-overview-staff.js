@@ -45,3 +45,25 @@ async function toggleStaffAssignment(personId, eventId, role) {
     alert('Could not save staff assignment. Please try again.');
   }
 }
+
+// Attendance and staff editing are deliberately mutually exclusive. The
+// inline handlers in team-overview.html toggle their own mode first; this
+// listener then closes the other mode when necessary. A guard prevents the
+// programmatic click from recursively switching the modes back and forth.
+document.addEventListener('click', event => {
+  if (window.__teamOverviewEditSwitching) return;
+  const target = event.target.closest('#editAttendance, #editStaff');
+  if (!target) return;
+
+  const attendanceButton = document.getElementById('editAttendance');
+  const staffButton = document.getElementById('editStaff');
+  if (!attendanceButton || !staffButton) return;
+
+  const otherButton = target.id === 'editAttendance' ? staffButton : attendanceButton;
+  const otherIsEditing = otherButton.textContent.startsWith('Done ');
+  if (!otherIsEditing) return;
+
+  window.__teamOverviewEditSwitching = true;
+  otherButton.click();
+  window.__teamOverviewEditSwitching = false;
+}, true);
