@@ -44,17 +44,29 @@ function update(slug, { name, newSlug, description }) {
 function remove(slug) {
   const team = getBySlug(slug);
   if (teamsRepository.count() <= 1) throw new AppError(400, 'cannot delete the last team');
-  const members = teamsRepository.findMembers(team.id);
+
   const db = require('../db/connection').getDb();
-  const deleteTeam = db.transaction(() => {
-    teamsRepository.removeMember(team.id, '__none__');
+  const members = db.prepare(`
+    SELECT person_id
+    FROM team_memberships
+    WHERE team_id = ?
+  `).all(team.id);
+
+  db.transaction(() => {
     db.prepare('DELETE FROM teams WHERE id = ?').run(team.id);
-    members.forEach((member) => {
-      const remaining = db.prepare('SELECT COUNT(*) AS n FROM team_memberships WHERE person_id = ?').get(member.id).n;
-      if (remaining === 0) db.prepare('DELETE FROM persons WHERE id = ?').run(member.id);
-    });
-  });
-  deleteTeam();
+
+    for (const { person_id: personId } of members) {
+      const remaining = db.prepare(`
+        SELECT COUNT(*) AS n
+        FROM team_memberships
+        WHERE person_id = ?
+      `).get(personId).n;
+
+      if (remaining === 0) {
+        db.prepare('DELETE FROM persons WHERE id = ?').run(personId);
+      }
+    }
+  })();
 }
 
 function addExistingMember(slug, personId) {
