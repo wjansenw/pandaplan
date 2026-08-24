@@ -28,31 +28,31 @@
     block.className = 'card bulk-attendance';
     block.innerHTML = `
       <h2 id="bulkAttendanceToggle" class="bulk-attendance-header" role="button" tabindex="0" aria-expanded="false">
-        <span>Bulk attendance</span>
-        <span class="bulk-expand-hint"><span class="bulk-chevron" aria-hidden="true">▸</span> Click to expand</span>
+        <span>${t('bulkAttendance')}</span>
+        <span class="bulk-expand-hint"><span class="bulk-chevron" aria-hidden="true">▸</span> ${t('clickToExpand')}</span>
       </h2>
       <div id="bulkAttendanceContent" hidden>
-        <p class="sub">Set attendance for multiple events at once. Nothing changes until you choose an action and confirm it.</p>
+        <p class="sub">${t('bulkAttendanceHint')}</p>
         <div class="bulk-fields">
-          <label>Participant
-            <select id="bulkPerson"><option value="">Select a participant…</option></select>
+          <label>${t('participant')}
+            <select id="bulkPerson"><option value="">${t('selectParticipant')}</option></select>
           </label>
-          <label>Category
-            <select id="bulkCategory"><option value="">All categories</option></select>
+          <label>${t('category')}
+            <select id="bulkCategory"><option value="">${t('allCategories')}</option></select>
           </label>
-          <label>From
+          <label>${t('fromDate')}
             <input id="bulkFrom" type="date">
           </label>
-          <label>To
+          <label>${t('toDate')}
             <input id="bulkTo" type="date">
           </label>
         </div>
         <div class="bulk-actions">
-          <span id="bulkCount">0 events selected</span>
+          <span id="bulkCount">${t('eventsSelected', { count: 0 })}</span>
           <div>
-            <button type="button" class="btn" data-bulk="yes">Going</button>
-            <button type="button" class="btn" data-bulk="maybe">Maybe</button>
-            <button type="button" class="btn" data-bulk="no">Not going</button>
+            <button type="button" class="btn" data-bulk="yes">${t('goingShort')}</button>
+            <button type="button" class="btn" data-bulk="maybe">${t('maybe')}</button>
+            <button type="button" class="btn" data-bulk="no">${t('notGoingShort')}</button>
           </div>
         </div>
       </div>`;
@@ -70,7 +70,7 @@
       content.hidden = !expanded;
       toggle.setAttribute('aria-expanded', String(expanded));
       toggle.querySelector('.bulk-chevron').textContent = expanded ? '▾' : '▸';
-      toggle.querySelector('.bulk-expand-hint').lastChild.textContent = expanded ? ' Click to collapse' : ' Click to expand';
+      toggle.querySelector('.bulk-expand-hint').lastChild.textContent = expanded ? ` ${t('clickToCollapse')}` : ` ${t('clickToExpand')}`;
     };
     toggle.addEventListener('click', toggleBlock);
     toggle.addEventListener('keydown', e => {
@@ -124,7 +124,7 @@
     const block = document.getElementById('bulkAttendance');
     if (!block) return;
     const count = matchingEvents().length;
-    block.querySelector('#bulkCount').textContent = `${count} event${count === 1 ? '' : 's'} selected`;
+    block.querySelector('#bulkCount').textContent = t('eventsSelected', { count });
     block.querySelectorAll('[data-bulk]').forEach(button => {
       button.disabled = !participantId || !count || (startDate && endDate && startDate > endDate);
     });
@@ -134,15 +134,21 @@
     const events = matchingEvents();
     if (!participantId || !events.length) return;
     if (startDate && endDate && startDate > endDate) {
-      alert('The start date must not be after the end date.');
+      alert(t('invalidDateRange'));
       return;
     }
     const person = state.persons.find(p => p.id === participantId);
     const category = categoryId && state.categories.find(c => c.id === categoryId);
-    const label = status === 'yes' ? 'Going' : status === 'maybe' ? 'Maybe' : 'Not going';
-    const dateLabel = `${startDate || 'Any date'} → ${endDate || 'Any date'}`;
-    const categoryLabel = category ? category.name : 'All categories';
-    if (!confirm(`Set ${label} for ${person?.name || 'this participant'}?\n\n${categoryLabel} · ${events.length} events\n${dateLabel}\n\nThis will change attendance for all matching events.`)) return;
+    const label = status === 'yes' ? t('goingShort') : status === 'maybe' ? t('maybe') : t('notGoingShort');
+    const dateLabel = `${startDate || t('anyDate')} → ${endDate || t('anyDate')}`;
+    const categoryLabel = category ? category.name : t('allCategories');
+    if (!confirm(t('confirmBulkAttendance', {
+      status: label,
+      person: person?.name || t('thisParticipant'),
+      category: categoryLabel,
+      count: events.length,
+      dates: dateLabel
+    }))) return;
     try {
       const result = await api(`/api/teams/${encodeURIComponent(slug)}/attendance/bulk`, {
         method: 'POST',
@@ -156,11 +162,11 @@
       window.render();
       setTimeout(() => {
         const count = document.getElementById('bulkCount');
-        if (count) count.textContent = `${result.updated || 0} event${result.updated === 1 ? '' : 's'} updated`;
+        if (count) count.textContent = t('eventsUpdated', { count: result.updated || 0 });
       }, 0);
     } catch (error) {
       console.error('Could not save bulk attendance:', error);
-      alert(`Could not save attendance: ${error.message || 'Please try again.'}`);
+      alert(t('couldNotSaveAttendance', { error: error.message || t('tryAgain') }));
     }
   }
 
