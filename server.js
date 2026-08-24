@@ -9,8 +9,6 @@ getDb();
 const app = express();
 app.use(express.json());
 
-// Team URLs are intentionally stable and scoped by slug. Keep the slug in
-// the browser URL so users don't accidentally navigate into another Team.
 const teamPages = {
   overview: 'team-overview.html',
   attend: 'team-attend.html',
@@ -19,7 +17,8 @@ const teamPages = {
   categories: 'team-categories.html',
   staff: 'team-staff.html',
 };
-app.get('/team/:slug', (req, res) => res.sendFile(path.join(__dirname, 'public', 'team.html')));
+
+app.get('/team/:slug', (req, res) => res.redirect(`/team/${encodeURIComponent(req.params.slug)}/overview`));
 Object.entries(teamPages).forEach(([page, file]) => {
   app.get(`/team/:slug/${page}`, (req, res) => res.sendFile(path.join(__dirname, 'public', file)));
 });
