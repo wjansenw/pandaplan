@@ -149,3 +149,145 @@ document.addEventListener('DOMContentLoaded', () => {
   }, 10);
   setTimeout(() => clearInterval(wait), 5000);
 });
+
+// Bulk attendance is deliberately only exposed while Edit attendance is active.
+// The participant selector is limited to people with the participant role, and
+// the action always requires explicit confirmation before changing anything.
+let bulkAttendanceParticipantId = '';
+let bulkAttendanceCategoryId = '';
+
+function bulkAttendanceEvents() {
+  if (typeof state === 'undefined' || !state.events) return [];
+  const filtered = state.events.filter(ev => !bulkAttendanceCategoryId || ev.categoryId === bulkAttendanceCategoryId);
+  return filterEvents(filtered, { categoryIds: new Set(), dateMode });
+}
+
+function updateBulkAttendanceCount() {
+  const count = document.getElementById('bulkAttendanceCount');
+  const action = document.getElementById('bulkAttendanceAction');
+  if (!count || !action) return;
+  const total = bulkAttendanceEvents().length;
+  count.textContent = t('eventsTotal', { count: total });
+  action.disabled = !bulkAttendanceParticipantId || total === 0;
+}
+
+function renderBulkAttendance() {
+  const existing = document.getElementById('bulkAttendance');
+  const editButton = document.getElementById('editAttendance');
+  const editing = editButton && editButton.textContent.startsWith('Done ');
+  if (!editing) {
+    existing?.remove();
+    return;
+  }
+  if (existing) {
+    updateBulkAttendanceCount();
+    return;
+  }
+  const participants = state.persons.filter(p => Array.isArray(p.roles) && p.roles.includes('participant')).sort((a, b) => a.name.localeCompare(b.name));
+  if (!participants.length) return;
+
+  const block = document.createElement('div');
+  block.id = 'bulkAttendance';
+  block.className = 'card bulk-attendance';
+  block.innerHTML = `
+    <h2>${escapeHtml(t('events'))} · ${escapeHtml(t('attend'))}</h2>
+    <p class="sub">${escapeHtml(t('pickPlayer'))}</p>
+    <div class="bulk-attendance-fields">
+      <label>${escapeHtml(t('player'))}<select id="bulkAttendanceParticipant"><option value="">${escapeHtml(t('pickPlayerPrompt'))}</option></select></label>
+      <label>${escapeHtml(t('category'))}<select id="bulkAttendanceCategory"><option value="">${escapeHtml(t('all'))}</option></select></label>
+    </div>
+    <div class="bulk-attendance-actions">
+      <span id="bulkAttendanceCount" class="bulk-attendance-count"></span>
+      <div class="bulk-attendance-buttons">
+        <button type="button" class="btn" data-bulk-status="yes">${escapeHtml(t('goingShort'))}</button>
+        <button type="button" class="btn" data-bulk-status="maybe">${escapeHtml(t('maybe'))}</button>
+        <button type="button" class="btn" data-bulk-status="no">${escapeHtml(t('notGoingShort'))}</button>
+      </div>
+    </div>`;
+
+  participants.forEach(person => {
+    const option = document.createElement('option');
+    option.value = person.id;
+    option.textContent = person.name;
+    block.querySelector('#bulkAttendanceParticipant').appendChild(option);
+  });
+  state.categories.slice().sort((a, b) => a.name.localeCompare(b.name)).forEach(category => {
+    const option = document.createElement('option');
+    option.value = category.id;
+    option.textContent = category.name;
+    block.querySelector('#bulkAttendanceCategory').appendChild(option);
+  });
+
+  document.querySelector('.calendar-section')?.insertAdjacentElement('afterend', block);
+  const participant = block.querySelector('#bulkAttendanceParticipant');
+  const category = block.querySelector('#bulkAttendanceCategory');
+  participant.value = bulkAttendanceParticipantId;
+  category.value = bulkAttendanceCategoryId;
+  participant.onchange = () => { bulkAttendanceParticipantId = participant.value; updateBulkAttendanceCount(); };
+  category.onchange = () => { bulkAttendanceCategoryId = category.value; updateBulkAttendanceCount(); };
+  block.querySelectorAll('[data-bulk-status]').forEach(button => {
+    button.onclick = () => applyBulkAttendance(button.dataset.bulkStatus);
+  });
+  updateBulkAttendanceCount();
+}
+
+async function applyBulkAttendance(status) {
+  if (!bulkAttendanceParticipantId) return;
+  const events = bulkAttendanceEvents();
+  if (!events.length) return;
+  const person = state.persons.find(p => p.id === bulkAttendanceParticipantId);
+  const statusText = status === 'yes' ? t('goingShort') : status === 'maybe' ? t('maybe') : t('notGoingShort');
+  const category = bulkAttendanceCategoryId ? state.categories.find(c => c.id === bulkAttendanceCategoryId) : null;
+  const scope = category ? category.name : t('all');
+  const message = `${statusText} · ${scope} · ${person ? person.name : ''}\n\n${events.length} ${t('events').toLowerCase()}`;
+  if (!window.confirm(message + '\n\nOK?')) return;
+  try {
+    const result = await api('/api/teams/' + encodeURIComponent(slug) + '/attendance/bulk', {
+      method: 'POST',
+      body: JSON.stringify({ personId: bulkAttendanceParticipantId, status, eventIds: events.map(ev => ev.id) })
+    });
+    if (!state.attendance[bulkAttendanceParticipantId]) state.attendance[bulkAttendanceParticipantId] = {};
+    events.forEach(ev => {
+      const current = state.attendance[bulkAttendanceParticipantId][ev.id] || {};
+      state.attendance[bulkAttendanceParticipantId][ev.id] = { status, note: current.note || '' };
+    });
+    render();
+    renderBulkAttendance();
+    updateBulkAttendanceCount();
+    const count = document.getElementById('bulkAttendanceCount');
+    if (count) count.textContent = (result.updated || events.length) + ' · ' + t('saved');
+  } catch (error) {
+    console.error('Could not bulk update attendance:', error);
+    alert('Could not save attendance. Please try again.');
+  }
+}
+
+const originalRenderForBulkAttendance = window.render;
+if (typeof originalRenderForBulkAttendance === 'function') {
+  window.render = function () {
+    originalRenderForBulkAttendance.apply(this, arguments);
+    renderBulkAttendance();
+  };
+}
+
+document.addEventListener('click', event => {
+  if (event.target.closest('#editAttendance')) {
+    setTimeout(renderBulkAttendance, 0);
+  }
+});
+
+document.addEventListener('DOMContentLoaded', () => {
+  const style = document.createElement('style');
+  style.textContent = `
+    .bulk-attendance { margin-top: 16px; }
+    .bulk-attendance h2 { margin-bottom: 4px; }
+    .bulk-attendance-fields { display: flex; gap: 12px; flex-wrap: wrap; margin-top: 14px; }
+    .bulk-attendance-fields label { display: flex; flex-direction: column; gap: 5px; font-size: .9rem; font-weight: 600; min-width: 180px; }
+    .bulk-attendance-fields select { padding: 8px 10px; border: 1px solid #ccc; border-radius: 6px; font: inherit; background: white; }
+    .bulk-attendance-actions { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; margin-top: 14px; }
+    .bulk-attendance-buttons { display: flex; gap: 6px; flex-wrap: wrap; }
+    .bulk-attendance-buttons .btn:disabled { opacity: .5; cursor: not-allowed; }
+    .bulk-attendance-count { color: var(--ink-soft); font-size: .9rem; }
+  `;
+  document.head.appendChild(style);
+});
