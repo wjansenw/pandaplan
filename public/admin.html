@@ -10,34 +10,40 @@
 </head>
 <body>
 <div class="nav">
-  <a class="brand" href="/">🐼 pandaplan</a>
-  <div class="links">
-    <a href="/">Attend</a>
-    <a href="/admin.html" class="current">Admin</a>
-    <a href="/trainer.html">Trainer</a>
-    <a href="/staff.html">Staff</a>
+  <a class="brand" href="/overview.html">🐼 pandaplan</a>
+  <button class="hamburger" id="navToggle">☰</button>
+  <div class="links" id="navLinks">
+    <a href="/overview.html" id="navOverview">Overview</a>
+    <a href="/" id="navAttend">Attend</a>
+    <a href="/staff.html" id="navStaff">Staff</a>
+    <a href="/admin.html" class="current" id="navAdmin">Admin</a>
   </div>
 </div>
 
 <div class="wrap">
-  <h1>Admin</h1>
-  <p class="sub">Manage participants, categories, and events.</p>
+  <h1 id="pageTitle">Admin</h1>
+  <p class="sub" id="pageSubtitle">Manage persons, categories, and events.</p>
 
   <div class="card">
-    <div class="card-head"><h2>Participants</h2></div>
-    <p class="sub" style="margin:-6px 0 14px;">People who pre-register attendance. Staff members are managed separately on the <a href="/staff.html">Staff</a> page.</p>
+    <div class="card-head"><h2 id="personsHeading">Persons</h2></div>
+    <p class="sub" id="peopleHint" style="margin:-6px 0 14px;">People with roles: participants, coaches, assistant coaches, or trainers.</p>
     <div id="personList"></div>
     <div class="field-row" style="margin-top:14px;">
       <div class="field" style="margin-bottom:0;">
         <input type="text" id="newPersonName" placeholder="Full name">
       </div>
     </div>
-    <div class="btn-row"><button class="btn" id="addPersonBtn">Add participant</button></div>
+    <div class="field" style="margin-top:12px;">
+      <label id="rolesLabel">Roles</label>
+      <div class="chip-row" id="newPersonRolePicker"></div>
+    </div>
+    <div class="btn-row"><button class="btn" id="addPersonBtn">Add person</button></div>
+    <div class="saved-note" id="personFormNote"></div>
   </div>
 
   <div class="card">
-    <div class="card-head"><h2>Categories</h2></div>
-    <p class="sub" style="margin:-6px 0 14px;">Toggle which staff roles a category needs — leave both off if no staff is required.</p>
+    <div class="card-head"><h2 id="categoriesHeading">Categories</h2></div>
+    <p class="sub" id="categoriesHint" style="margin:-6px 0 14px;">Toggle which staff roles a category needs.</p>
     <div id="categoryList"></div>
     <div class="field-row" style="margin-top:14px;">
       <div class="field" style="margin-bottom:0;">
@@ -54,32 +60,32 @@
     </div>
 
     <div class="field">
-      <label>Category</label>
+      <label id="eventCategoryLabel">Category</label>
       <div class="chip-row" id="eventCategoryPicker"></div>
     </div>
 
     <div class="field-row">
       <div class="field">
-        <label for="eventDate">Date</label>
+        <label for="eventDate" id="eventDateLabel">Date</label>
         <input type="date" id="eventDate">
       </div>
     </div>
     <div class="field-row">
       <div class="field">
-        <label for="eventStart">Start time</label>
+        <label for="eventStart" id="eventStartLabel">Start time</label>
         <input type="time" id="eventStart">
       </div>
       <div class="field">
-        <label for="eventEnd">End time</label>
+        <label for="eventEnd" id="eventEndLabel">End time</label>
         <input type="time" id="eventEnd">
       </div>
     </div>
     <div class="field">
-      <label for="eventLocation">Location</label>
+      <label for="eventLocation" id="eventLocationLabel">Location</label>
       <input type="text" id="eventLocation" placeholder="e.g. Sports hall, Main street 12">
     </div>
     <div class="field">
-      <label for="eventDescription">Description</label>
+      <label for="eventDescription" id="eventDescriptionLabel">Description</label>
       <textarea id="eventDescription" placeholder="Optional details"></textarea>
     </div>
 
@@ -90,7 +96,7 @@
   </div>
 
   <div class="card">
-    <div class="card-head"><h2>Events</h2><span class="count" id="eventCount"></span></div>
+    <div class="card-head"><h2 id="eventsListHeading">Events</h2><span class="count" id="eventCount"></span></div>
     <div id="eventList"></div>
   </div>
 </div>
@@ -102,16 +108,60 @@ let categories = [];
 let events = [];
 let editingEventId = null;
 let eventCategoryId = null;
+let newPersonRoles = new Set();
 
 async function loadAll() {
+  document.getElementById('navOverview').textContent = t('overview');
+  document.getElementById('navAttend').textContent = t('attend');
+  document.getElementById('navStaff').textContent = t('staffNav');
+  document.getElementById('navAdmin').textContent = t('admin');
+  document.getElementById('pageTitle').textContent = t('admin');
+  document.getElementById('pageSubtitle').textContent = t('adminSubtitle');
+  document.getElementById('personsHeading').textContent = t('persons');
+  document.getElementById('peopleHint').textContent = t('peopleHint');
+  document.getElementById('newPersonName').placeholder = t('namePlaceholder');
+  document.getElementById('rolesLabel').textContent = t('rolesLabel');
+  document.getElementById('addPersonBtn').textContent = t('addPerson');
+  document.getElementById('categoriesHeading').textContent = t('categories');
+  document.getElementById('categoriesHint').textContent = t('categoriesHint');
+  document.getElementById('newCategoryName').placeholder = t('categoryNamePlaceholder');
+  document.getElementById('addCategoryBtn').textContent = t('addCategory');
+  document.getElementById('eventFormTitle').textContent = t('newEvent');
+  document.getElementById('cancelEditBtn').textContent = t('cancelEdit');
+  document.getElementById('eventCategoryLabel').textContent = t('category');
+  document.getElementById('eventDateLabel').textContent = t('date');
+  document.getElementById('eventStartLabel').textContent = t('startTime');
+  document.getElementById('eventEndLabel').textContent = t('endTime');
+  document.getElementById('eventLocation').placeholder = t('locationPlaceholder');
+  document.getElementById('eventLocationLabel').textContent = t('location');
+  document.getElementById('eventDescription').placeholder = t('descriptionPlaceholder');
+  document.getElementById('eventDescriptionLabel').textContent = t('description');
+  document.getElementById('saveEventBtn').textContent = t('saveEvent');
+  document.getElementById('eventsListHeading').textContent = t('events');
+
   const state = await api('/api/state');
   persons = state.persons || [];
   categories = state.categories || [];
   events = state.events || [];
   renderPersons();
+  renderNewPersonRolePicker();
   renderCategories();
   renderEventCategoryPicker();
   renderEvents();
+  setupMobileNav();
+}
+
+function setupMobileNav() {
+  const toggle = document.getElementById('navToggle');
+  const links = document.getElementById('navLinks');
+  toggle.addEventListener('click', () => {
+    links.classList.toggle('mobile-open');
+  });
+  links.querySelectorAll('a').forEach(a => {
+    a.addEventListener('click', () => {
+      links.classList.remove('mobile-open');
+    });
+  });
 }
 
 // ---- persons ----
@@ -119,61 +169,102 @@ async function loadAll() {
 function renderPersons() {
   const box = document.getElementById('personList');
   box.innerHTML = '';
-  const participants = persons.filter(p => personHasRole(p, PARTICIPANT_ROLE));
-  if (!participants.length) {
-    box.innerHTML = '<div class="empty">No participants yet.</div>';
+  if (!persons.length) {
+    box.innerHTML = `<div class="empty">${t('noPersonsYet')}</div>`;
     return;
   }
-  participants.forEach(p => {
+  persons.forEach(p => {
     const row = document.createElement('div');
     row.className = 'person-admin-item';
-    const staffRoles = staffRoleLabels(p.roles);
+    const roleLabels = staffRoleLabels(p.roles.filter(r => r !== 'participant'));
+    const isParticipant = personHasRole(p, 'participant');
     row.innerHTML = `
       <div class="person-head">
         <div class="row-main">
           ${escapeHtml(p.name)}
-          ${staffRoles.length ? `<span class="staff-tag">also staff: ${escapeHtml(staffRoles.join(', '))}</span>` : ''}
+          ${isParticipant ? `<span class="staff-tag">${t('participant')}</span>` : ''}
+          ${roleLabels.length ? `<span class="staff-tag">${escapeHtml(roleLabels.join(', '))}</span>` : ''}
         </div>
-        <button class="del" data-id="${p.id}">Remove</button>
+        <button class="del" data-id="${p.id}">${t('remove')}</button>
       </div>
+      <div class="chip-row" data-roles-for="${p.id}" style="margin-top:8px;"></div>
     `;
     box.appendChild(row);
   });
+  
+  persons.forEach(p => {
+    const chipContainer = box.querySelector(`[data-roles-for="${p.id}"]`);
+    const selected = new Set(p.roles);
+    renderMultiSelectChips([{ id: 'participant', label: t('participant') }, ...STAFF_ROLES], selected, async () => {
+      const newRoles = Array.from(selected);
+      if (!newRoles.length) {
+        if (!confirm(t('confirmRemoveAllRoles'))) {
+          renderPersons();
+          return;
+        }
+        const res = await api('/api/persons/' + encodeURIComponent(p.id), { method: 'DELETE' });
+        persons = res.persons;
+      } else {
+        const res = await api('/api/persons/' + encodeURIComponent(p.id), {
+          method: 'PUT', body: JSON.stringify({ roles: newRoles })
+        });
+        persons = res.persons;
+      }
+      renderPersons();
+    }, chipContainer);
+  });
+
   box.querySelectorAll('.del').forEach(btn => {
     btn.addEventListener('click', async () => {
-      if (!confirm('Remove this participant? Their attendance selections will also be removed.')) return;
-      await removeRoleFromPerson(btn.dataset.id, PARTICIPANT_ROLE);
+      if (!confirm(t('confirmRemovePerson'))) return;
+      const res = await api('/api/persons/' + encodeURIComponent(btn.dataset.id), { method: 'DELETE' });
+      persons = res.persons;
       renderPersons();
     });
   });
 }
 
-// Strips a single role from a person. If no roles remain, the person
-// record is deleted entirely; otherwise it's kept (e.g. someone who is
-// still staff even after being removed as a participant).
-async function removeRoleFromPerson(personId, roleId) {
-  const person = persons.find(p => p.id === personId);
-  if (!person) return;
-  const remaining = (person.roles || []).filter(r => r !== roleId);
-  if (remaining.length === 0) {
-    const res = await api('/api/persons/' + encodeURIComponent(personId), { method: 'DELETE' });
-    persons = res.persons;
-  } else {
-    const res = await api('/api/persons/' + encodeURIComponent(personId), {
-      method: 'PUT', body: JSON.stringify({ roles: remaining })
+function renderNewPersonRolePicker() {
+  renderMultiSelectChips([{ id: 'participant', label: t('participant') }, ...STAFF_ROLES], newPersonRoles, renderNewPersonRolePicker, document.getElementById('newPersonRolePicker'));
+}
+
+function renderMultiSelectChips(options, selectedSet, onToggle, container) {
+  container.innerHTML = '';
+  options.forEach(opt => {
+    const chip = document.createElement('button');
+    chip.type = 'button';
+    chip.className = 'chip' + (selectedSet.has(opt.id) ? ' active' : '');
+    chip.textContent = opt.label;
+    chip.addEventListener('click', () => {
+      if (selectedSet.has(opt.id)) selectedSet.delete(opt.id);
+      else selectedSet.add(opt.id);
+      onToggle();
     });
-    persons = res.persons;
-  }
+    container.appendChild(chip);
+  });
 }
 
 document.getElementById('addPersonBtn').addEventListener('click', async () => {
   const input = document.getElementById('newPersonName');
+  const note = document.getElementById('personFormNote');
   const name = input.value.trim();
-  if (!name) return;
-  const res = await api('/api/persons', { method: 'POST', body: JSON.stringify({ name, roles: [PARTICIPANT_ROLE] }) });
-  persons = res.persons;
-  input.value = '';
-  renderPersons();
+  if (!name) { note.textContent = t('nameRequired'); return; }
+  if (!newPersonRoles.size) { note.textContent = t('roleRequired'); return; }
+  try {
+    const res = await api('/api/persons', {
+      method: 'POST',
+      body: JSON.stringify({ name, roles: Array.from(newPersonRoles) })
+    });
+    persons = res.persons;
+    input.value = '';
+    newPersonRoles = new Set();
+    renderNewPersonRolePicker();
+    renderPersons();
+    note.textContent = t('added');
+    setTimeout(() => { note.textContent = ''; }, 1500);
+  } catch (e) {
+    note.textContent = e.message || t('couldNotAddPerson');
+  }
 });
 
 // ---- categories ----
@@ -182,7 +273,7 @@ function renderCategories() {
   const box = document.getElementById('categoryList');
   box.innerHTML = '';
   if (!categories.length) {
-    box.innerHTML = '<div class="empty">No categories yet.</div>';
+    box.innerHTML = `<div class="empty">${t('noCategoriesYet')}</div>`;
     return;
   }
   categories.forEach(c => {
@@ -193,7 +284,7 @@ function renderCategories() {
         <div class="row-main" style="display:flex;align-items:center;gap:8px;">
           <span class="badge-dot" style="background:${c.color}"></span>${escapeHtml(c.name)}
         </div>
-        <button class="del" data-id="${c.id}">Remove</button>
+        <button class="del" data-id="${c.id}">${t('remove')}</button>
       </div>
       <div class="chip-row" data-staff-for="${c.id}" style="margin-top:8px;"></div>
     `;
@@ -202,18 +293,18 @@ function renderCategories() {
   categories.forEach(c => {
     const chipContainer = box.querySelector(`[data-staff-for="${c.id}"]`);
     const selected = new Set(c.requiredStaffRoles || []);
-    renderMultiSelectChips(chipContainer, STAFF_ROLES, selected, async () => {
+    renderMultiSelectChips(STAFF_ROLES, selected, async () => {
       const res = await api('/api/categories/' + encodeURIComponent(c.id), {
         method: 'PUT', body: JSON.stringify({ requiredStaffRoles: Array.from(selected) })
       });
       categories = res.categories;
       renderCategories();
       renderEvents();
-    });
+    }, chipContainer);
   });
   box.querySelectorAll('.del').forEach(btn => {
     btn.addEventListener('click', async () => {
-      if (!confirm('Remove this category? Events using it will become uncategorized.')) return;
+      if (!confirm(t('confirmRemoveCategory'))) return;
       const id = btn.dataset.id;
       const res = await api('/api/categories/' + encodeURIComponent(id), { method: 'DELETE' });
       categories = res.categories;
@@ -251,7 +342,7 @@ function renderEventCategoryPicker() {
 function clearEventForm() {
   editingEventId = null;
   eventCategoryId = null;
-  document.getElementById('eventFormTitle').textContent = 'New event';
+  document.getElementById('eventFormTitle').textContent = t('newEvent');
   document.getElementById('cancelEditBtn').style.display = 'none';
   document.getElementById('eventDate').value = '';
   document.getElementById('eventStart').value = '';
@@ -264,7 +355,7 @@ function clearEventForm() {
 function loadEventIntoForm(ev) {
   editingEventId = ev.id;
   eventCategoryId = ev.categoryId;
-  document.getElementById('eventFormTitle').textContent = 'Edit event';
+  document.getElementById('eventFormTitle').textContent = t('editEvent');
   document.getElementById('cancelEditBtn').style.display = '';
   document.getElementById('eventDate').value = ev.date;
   document.getElementById('eventStart').value = ev.startTime || '';
@@ -288,7 +379,7 @@ document.getElementById('saveEventBtn').addEventListener('click', async () => {
     description: document.getElementById('eventDescription').value,
   };
   if (!body.date) {
-    note.textContent = 'Date is required.';
+    note.textContent = t('dateRequired');
     return;
   }
   try {
@@ -299,12 +390,12 @@ document.getElementById('saveEventBtn').addEventListener('click', async () => {
       res = await api('/api/events', { method: 'POST', body: JSON.stringify(body) });
     }
     events = res.events;
-    note.textContent = 'Saved.';
+    note.textContent = t('saved');
     clearEventForm();
     renderEvents();
     setTimeout(() => { note.textContent = ''; }, 1500);
   } catch (e) {
-    note.textContent = e.message || 'Could not save event.';
+    note.textContent = e.message || t('couldNotSaveEvent');
   }
 });
 
@@ -312,9 +403,9 @@ function renderEvents() {
   const box = document.getElementById('eventList');
   const countEl = document.getElementById('eventCount');
   box.innerHTML = '';
-  countEl.textContent = events.length ? events.length + ' total' : '';
+  countEl.textContent = events.length ? t('eventsTotal', { count: events.length }) : '';
   if (!events.length) {
-    box.innerHTML = '<div class="empty">No events yet — add one above.</div>';
+    box.innerHTML = `<div class="empty">${t('noEventsAdmin')}</div>`;
     return;
   }
   const sorted = sortByDateTime(events);
@@ -324,17 +415,20 @@ function renderEvents() {
     const timeRange = formatTimeRange(ev.startTime, ev.endTime);
     const cat = categoryById(categories, ev.categoryId);
     const staffLabels = cat ? staffRoleLabels(cat.requiredStaffRoles) : [];
+    const locationHtml = ev.location 
+      ? `<a href="${formatMapsLink(ev.location)}" target="_blank" class="location-link">${escapeHtml(ev.location)}</a>`
+      : '';
     row.innerHTML = `
       <div class="event-title-line">
         <span class="event-date">${formatDate(ev.date)}</span>
         ${categoryBadge(categories, ev.categoryId)}
-        ${staffLabels.length ? `<span class="staff-badge">Staff needed: ${escapeHtml(staffLabels.join(', '))}</span>` : ''}
+        ${staffLabels.length ? `<span class="staff-badge">${escapeHtml(t('staffNeeded'))}: ${escapeHtml(staffLabels.join(', '))}</span>` : ''}
       </div>
-      <div class="event-meta">${[timeRange, escapeHtml(ev.location)].filter(Boolean).join(' · ')}</div>
+      <div class="event-meta">${[timeRange, locationHtml].filter(Boolean).join(' · ')}</div>
       ${ev.description ? `<div class="event-desc">${escapeHtml(ev.description)}</div>` : ''}
       <div class="btn-row" style="margin-top:8px;">
-        <button class="btn secondary edit-btn" type="button" data-id="${ev.id}">Edit</button>
-        <button class="btn danger del-btn" type="button" data-id="${ev.id}">Delete</button>
+        <button class="btn secondary edit-btn" type="button" data-id="${ev.id}">${t('edit')}</button>
+        <button class="btn danger del-btn" type="button" data-id="${ev.id}">${t('delete')}</button>
       </div>
     `;
     box.appendChild(row);
@@ -349,7 +443,7 @@ function renderEvents() {
   box.querySelectorAll('.del-btn').forEach(btn => {
     btn.addEventListener('click', async (e) => {
       e.stopPropagation();
-      if (!confirm('Delete this event? Attendance selections for it will also be removed.')) return;
+      if (!confirm(t('confirmDeleteEvent'))) return;
       const id = btn.dataset.id;
       const res = await api('/api/events/' + encodeURIComponent(id), { method: 'DELETE' });
       events = res.events;

@@ -10,152 +10,216 @@
 </head>
 <body>
 <div class="nav">
-  <a class="brand" href="/">🐼 pandaplan</a>
-  <div class="links">
-    <a href="/">Attend</a>
-    <a href="/admin.html">Admin</a>
-    <a href="/trainer.html">Trainer</a>
-    <a href="/staff.html" class="current">Staff</a>
+  <a class="brand" href="/overview.html">🐼 pandaplan</a>
+  <button class="hamburger" id="navToggle">☰</button>
+  <div class="links" id="navLinks">
+    <a href="/overview.html" id="navOverview">Overview</a>
+    <a href="/" id="navAttend">Attend</a>
+    <a href="/staff.html" class="current" id="navStaff">Staff</a>
+    <a href="/admin.html" id="navAdmin">Admin</a>
   </div>
 </div>
 
 <div class="wrap">
-  <h1>Staff</h1>
-  <p class="sub">Scorekeepers and referees. Someone can hold both roles, and can also be a participant — that's managed on the <a href="/admin.html">Admin</a> page.</p>
+  <h1 id="pageTitle">Staff assignments</h1>
+  <p class="sub" id="pageSubtitle">Assign staff members to events based on required roles.</p>
 
   <div class="card">
-    <div class="card-head"><h2>Staff members</h2></div>
-    <div id="staffList"></div>
-
-    <div class="field-row" style="margin-top:14px;">
-      <div class="field" style="margin-bottom:0;">
-        <input type="text" id="newStaffName" placeholder="Full name">
-      </div>
-    </div>
-    <div class="field" style="margin-top:12px;">
-      <label>Roles</label>
-      <div class="chip-row" id="newStaffRolePicker"></div>
-    </div>
-    <div class="btn-row"><button class="btn" id="addStaffBtn">Add staff member</button></div>
-    <div class="saved-note" id="staffFormNote"></div>
+    <h3 id="categoryLabel">Category</h3>
+    <div class="chip-row" id="categoryFilter" style="margin-bottom:16px;"></div>
+    <h3 id="dateLabel">Date</h3>
+    <div class="chip-row" id="dateFilter"></div>
   </div>
+
+  <div id="staffSection"></div>
+
+  <div class="saved-note" id="savedNote"></div>
 </div>
 
 <script src="/shared.js"></script>
 <script>
 let persons = [];
-let newStaffRoles = new Set();
+let categories = [];
+let events = [];
+let staffAssignments = {};
+let filters = { categoryIds: new Set(), dateMode: 'upcoming' };
 
 async function loadAll() {
+  document.getElementById('navOverview').textContent = t('overview');
+  document.getElementById('navAttend').textContent = t('attend');
+  document.getElementById('navStaff').textContent = t('staffNav');
+  document.getElementById('navAdmin').textContent = t('admin');
+  document.getElementById('pageTitle').textContent = t('staffAssignmentsTitle');
+  document.getElementById('pageSubtitle').textContent = t('staffAssignmentsSubtitle');
+  document.getElementById('categoryLabel').textContent = t('category');
+  document.getElementById('dateLabel').textContent = t('date');
+
   const state = await api('/api/state');
   persons = state.persons || [];
-  renderStaffList();
-  renderNewStaffRolePicker();
+  categories = state.categories || [];
+  events = state.events || [];
+  staffAssignments = state.staffAssignments || {};
+
+  renderFilters();
+  renderStaffSection();
+  setupMobileNav();
 }
 
-function isStaff(p) {
-  return STAFF_ROLES.some(r => personHasRole(p, r.id));
-}
-
-function renderNewStaffRolePicker() {
-  renderMultiSelectChips(document.getElementById('newStaffRolePicker'), STAFF_ROLES, newStaffRoles, renderNewStaffRolePicker);
-}
-
-document.getElementById('addStaffBtn').addEventListener('click', async () => {
-  const input = document.getElementById('newStaffName');
-  const note = document.getElementById('staffFormNote');
-  const name = input.value.trim();
-  if (!name) { note.textContent = 'Name is required.'; return; }
-  if (!newStaffRoles.size) { note.textContent = 'Select at least one role.'; return; }
-  try {
-    const res = await api('/api/persons', {
-      method: 'POST',
-      body: JSON.stringify({ name, roles: Array.from(newStaffRoles) })
+function setupMobileNav() {
+  const toggle = document.getElementById('navToggle');
+  const links = document.getElementById('navLinks');
+  toggle.addEventListener('click', () => {
+    links.classList.toggle('mobile-open');
+  });
+  links.querySelectorAll('a').forEach(a => {
+    a.addEventListener('click', () => {
+      links.classList.remove('mobile-open');
     });
-    persons = res.persons;
-    input.value = '';
-    newStaffRoles = new Set();
-    renderNewStaffRolePicker();
-    renderStaffList();
-    note.textContent = 'Added.';
-    setTimeout(() => { note.textContent = ''; }, 1500);
-  } catch (e) {
-    note.textContent = e.message || 'Could not add staff member.';
-  }
-});
+  });
+}
 
-function renderStaffList() {
-  const box = document.getElementById('staffList');
-  box.innerHTML = '';
-  const staff = persons.filter(isStaff);
-  if (!staff.length) {
-    box.innerHTML = '<div class="empty">No staff members yet.</div>';
+function renderFilters() {
+  renderCategoryFilterChips(document.getElementById('categoryFilter'), categories, filters.categoryIds, () => {
+    renderFilters();
+    renderStaffSection();
+  });
+  renderDateFilterChips(document.getElementById('dateFilter'), filters.dateMode, (mode) => {
+    filters.dateMode = mode;
+    renderFilters();
+    renderStaffSection();
+  });
+}
+
+function renderStaffSection() {
+  const section = document.getElementById('staffSection');
+  section.innerHTML = '';
+
+  if (!events.length) {
+    const card = document.createElement('div');
+    card.className = 'card';
+    card.innerHTML = `<div class="empty">${t('noEventsYet')}</div>`;
+    section.appendChild(card);
     return;
   }
-  staff.forEach(p => {
-    const item = document.createElement('div');
-    item.className = 'person-admin-item';
-    const isAlsoParticipant = personHasRole(p, PARTICIPANT_ROLE);
-    item.innerHTML = `
-      <div class="person-head">
-        <div class="row-main">
-          ${escapeHtml(p.name)}
-          ${isAlsoParticipant ? `<span class="staff-tag">also participant</span>` : ''}
+
+  const filtered = sortByDateTime(filterEvents(events, filters));
+
+  if (!filtered.length) {
+    const card = document.createElement('div');
+    card.className = 'card';
+    card.innerHTML = `<div class="empty">${t('noFilterMatch')}</div>`;
+    section.appendChild(card);
+    return;
+  }
+
+  filtered.forEach(ev => {
+    const cat = categoryById(categories, ev.categoryId);
+    const requiredRoles = cat ? (cat.requiredStaffRoles || []) : [];
+
+    if (!requiredRoles.length) return;
+
+    const card = document.createElement('div');
+    card.className = 'card';
+    const timeRange = formatTimeRange(ev.startTime, ev.endTime);
+    const locationHtml = ev.location 
+      ? `<a href="${formatMapsLink(ev.location)}" target="_blank" class="location-link">${escapeHtml(ev.location)}</a>`
+      : '';
+
+    const header = document.createElement('div');
+    header.className = 'card-head';
+    header.innerHTML = `
+      <div>
+        <div class="event-title-line">
+          <span class="event-date">${formatDate(ev.date)}</span>
+          ${categoryBadge(categories, ev.categoryId)}
         </div>
-        <button class="del" data-id="${p.id}">Remove</button>
+        <div class="event-meta">${[timeRange, locationHtml].filter(Boolean).join(' · ')}</div>
       </div>
-      <div class="chip-row" data-roles-for="${p.id}" style="margin-top:8px;"></div>
     `;
-    box.appendChild(item);
-  });
+    card.appendChild(header);
 
-  staff.forEach(p => {
-    const chipContainer = box.querySelector(`[data-roles-for="${p.id}"]`);
-    const selected = new Set(STAFF_ROLES.filter(r => personHasRole(p, r.id)).map(r => r.id));
-    renderMultiSelectChips(chipContainer, STAFF_ROLES, selected, async () => {
-      // Keep any non-staff roles (e.g. participant) intact while updating
-      // just the staff portion.
-      const nonStaffRoles = (p.roles || []).filter(r => !STAFF_ROLES.some(sr => sr.id === r));
-      const newRoles = [...nonStaffRoles, ...Array.from(selected)];
-      if (!newRoles.length) {
-        if (!confirm('Removing the last role for this person will delete them. Continue?')) {
-          renderStaffList();
-          return;
-        }
-        const res = await api('/api/persons/' + encodeURIComponent(p.id), { method: 'DELETE' });
-        persons = res.persons;
-      } else {
-        const res = await api('/api/persons/' + encodeURIComponent(p.id), {
-          method: 'PUT', body: JSON.stringify({ roles: newRoles })
-        });
-        persons = res.persons;
-      }
-      renderStaffList();
-    });
-  });
+    if (ev.description) {
+      const desc = document.createElement('div');
+      desc.className = 'event-desc';
+      desc.textContent = ev.description;
+      card.appendChild(desc);
+    }
 
-  box.querySelectorAll('.del').forEach(btn => {
-    btn.addEventListener('click', async () => {
-      const person = persons.find(x => x.id === btn.dataset.id);
-      if (!person) return;
-      const alsoParticipant = personHasRole(person, PARTICIPANT_ROLE);
-      const msg = alsoParticipant
-        ? 'Remove staff roles from this person? They will remain a participant.'
-        : 'Remove this person entirely? They have no other roles.';
-      if (!confirm(msg)) return;
-      const nonStaffRoles = (person.roles || []).filter(r => !STAFF_ROLES.some(sr => sr.id === r));
-      if (!nonStaffRoles.length) {
-        const res = await api('/api/persons/' + encodeURIComponent(person.id), { method: 'DELETE' });
-        persons = res.persons;
-      } else {
-        const res = await api('/api/persons/' + encodeURIComponent(person.id), {
-          method: 'PUT', body: JSON.stringify({ roles: nonStaffRoles })
+    const rolesContainer = document.createElement('div');
+    rolesContainer.style.marginTop = '16px';
+
+    requiredRoles.forEach(roleId => {
+      const roleLabel = STAFF_ROLES.find(r => r.id === roleId)?.label || roleId;
+      const staffWithRole = persons.filter(p => personHasRole(p, roleId));
+      const assignedIds = (staffAssignments[ev.id] || {})[roleId] || [];
+
+      const roleRow = document.createElement('div');
+      roleRow.className = 'staff-role-row';
+      roleRow.style.paddingBottom = '12px';
+      roleRow.style.marginBottom = '12px';
+      roleRow.style.borderBottom = '1px solid var(--line)';
+
+      const roleTitle = document.createElement('div');
+      roleTitle.className = 'staff-role-label';
+      roleTitle.style.fontSize = '12px';
+      roleTitle.style.textTransform = 'uppercase';
+      roleTitle.style.letterSpacing = '0.08em';
+      roleTitle.style.color = 'var(--ink-soft)';
+      roleTitle.style.fontWeight = '700';
+      roleTitle.style.marginBottom = '8px';
+      roleTitle.textContent = roleLabel;
+      roleRow.appendChild(roleTitle);
+
+      const chipContainer = document.createElement('div');
+      chipContainer.className = 'chip-row';
+
+      // Multiple staff can share a role on the same event, so every
+      // eligible person gets their own independent toggle chip rather
+      // than a single "which one" choice.
+      staffWithRole.forEach(staff => {
+        const chip = document.createElement('button');
+        chip.type = 'button';
+        const isAssigned = assignedIds.includes(staff.id);
+        chip.className = 'chip' + (isAssigned ? ' active' : '');
+        chip.textContent = escapeHtml(staff.name);
+        chip.addEventListener('click', async () => {
+          try {
+            await api(`/api/staffAssignments/${ev.id}`, {
+              method: 'PUT',
+              body: JSON.stringify({ role: roleId, personId: staff.id, assign: !isAssigned })
+            });
+            const res = await api('/api/state');
+            staffAssignments = res.staffAssignments || {};
+            renderStaffSection();
+            flashSaved();
+          } catch (e) {
+            flashSaved(t('retry'));
+          }
         });
-        persons = res.persons;
+        chipContainer.appendChild(chip);
+      });
+
+      if (staffWithRole.length === 0) {
+        const empty = document.createElement('div');
+        empty.className = 'empty';
+        empty.textContent = t('noEligibleStaff');
+        chipContainer.appendChild(empty);
       }
-      renderStaffList();
+
+      roleRow.appendChild(chipContainer);
+      rolesContainer.appendChild(roleRow);
     });
+
+    card.appendChild(rolesContainer);
+    section.appendChild(card);
   });
+}
+
+function flashSaved(msg) {
+  const note = document.getElementById('savedNote');
+  note.textContent = msg || t('saved');
+  clearTimeout(flashSaved._t);
+  flashSaved._t = setTimeout(() => { note.textContent = ''; }, 1500);
 }
 
 loadAll();
