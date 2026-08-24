@@ -33,7 +33,9 @@ router.post('/import-ics', async (req, res, next) => {
     const team = teamService.getBySlug(req.params.slug);
     const url = typeof req.body.url === 'string' ? req.body.url.trim() : '';
     if (!url) return res.status(400).json({ error: 'ICS feed URL is required' });
-    const categoryId = validateCategory(team.id, req.body.categoryId);
+    const locationContains = typeof req.body.locationContains === 'string' ? req.body.locationContains.trim() : '';
+    const locationCategoryId = validateCategory(team.id, req.body.locationCategoryId);
+    const fallbackCategoryId = validateCategory(team.id, req.body.fallbackCategoryId);
     const imported = parseIcs(await fetchUrl(url));
     const db = getDb();
     const exists = db.prepare(`SELECT 1 FROM events WHERE team_id = ? AND subject = ? AND date = ? AND start_time = ? AND end_time = ? AND location = ? LIMIT 1`);
@@ -47,6 +49,8 @@ router.post('/import-ics', async (req, res, next) => {
           skipped++;
           continue;
         }
+        const matchesLocation = locationContains && event.location.toLocaleLowerCase().includes(locationContains.toLocaleLowerCase());
+        const categoryId = matchesLocation ? locationCategoryId : fallbackCategoryId;
         insert.run(generateId(), team.id, categoryId, event.subject, event.date, event.startTime, event.endTime, event.location);
         created++;
       }
