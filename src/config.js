@@ -2,7 +2,8 @@ const path = require('path');
 
 // project root is one level up from src/
 const DATA_DIR = process.env.DATA_DIR || path.join(__dirname, '..', 'data');
-const DB_FILE = path.join(DATA_DIR, 'db.json');
+const SQLITE_FILE = path.join(DATA_DIR, 'pandaplan.sqlite3');
+const LEGACY_JSON_FILE = path.join(DATA_DIR, 'db.json');
 const LOGS_FILE = path.join(DATA_DIR, 'logs.jsonl');
 const PORT = process.env.PORT || 3000;
 
@@ -24,7 +25,8 @@ const NOTE_MAX_LEN = 200;
 
 module.exports = {
   DATA_DIR,
-  DB_FILE,
+  SQLITE_FILE,
+  LEGACY_JSON_FILE,
   LOGS_FILE,
   PORT,
   CATEGORY_COLORS,

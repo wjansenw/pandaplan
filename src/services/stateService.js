@@ -1,12 +1,14 @@
-const db = require('../repositories/dbRepository');
+const personsRepository = require('../repositories/personsRepository');
+const categoriesRepository = require('../repositories/categoriesRepository');
+const eventsRepository = require('../repositories/eventsRepository');
+const staffAssignmentsRepository = require('../repositories/staffAssignmentsRepository');
 
 function getState() {
-  const state = db.read();
   return {
-    persons: state.persons,
-    categories: state.categories,
-    events: state.events,
-    staffAssignments: state.staffAssignments,
+    persons: personsRepository.findAll(),
+    categories: categoriesRepository.findAll(),
+    events: eventsRepository.findAll(),
+    staffAssignments: staffAssignmentsRepository.findAllGroupedByEvent(),
   };
 }
 

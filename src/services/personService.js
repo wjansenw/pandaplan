@@ -1,10 +1,10 @@
-const db = require('../repositories/dbRepository');
+const personsRepository = require('../repositories/personsRepository');
 const AppError = require('../errors');
 const config = require('../config');
 const { sanitizeRoles } = require('../utils/roles');
 const { generateId } = require('../utils/id');
 
-async function create({ name, roles }) {
+function create({ name, roles }) {
   const trimmedName = (name || '').trim();
   if (!trimmedName) throw new AppError(400, 'name is required');
 
@@ -15,44 +15,22 @@ async function create({ name, roles }) {
     : (sanitizeRoles(roles, config.ALL_ROLE_IDS) || []);
   if (!finalRoles.length) throw new AppError(400, 'at least one role is required');
 
-  const persons = await db.write((state) => {
-    state.persons.push({ id: generateId(), name: trimmedName, roles: finalRoles });
-    return state.persons;
-  });
+  const persons = personsRepository.create({ id: generateId(), name: trimmedName, roles: finalRoles });
   return { persons, name: trimmedName, roles: finalRoles };
 }
 
-async function update(id, { name, roles }) {
+function update(id, { name, roles }) {
   if (roles !== undefined) {
     const sanitized = sanitizeRoles(roles, config.ALL_ROLE_IDS);
     if (!sanitized || !sanitized.length) throw new AppError(400, 'at least one role is required');
   }
-  const persons = await db.write((state) => {
-    const person = state.persons.find((p) => p.id === id);
-    if (person) {
-      if (typeof name === 'string' && name.trim()) person.name = name.trim();
-      if (roles !== undefined) person.roles = sanitizeRoles(roles, config.ALL_ROLE_IDS);
-    }
-    return state.persons;
-  });
-  return persons;
+  return personsRepository.update(id, { name, roles: roles !== undefined ? sanitizeRoles(roles, config.ALL_ROLE_IDS) : undefined });
 }
 
-async function remove(id) {
-  const persons = await db.write((state) => {
-    state.persons = state.persons.filter((p) => p.id !== id);
-    delete state.attendance[id];
-    // Drop this person from any staff role they held on any event.
-    Object.keys(state.staffAssignments).forEach((eventId) => {
-      const assignments = state.staffAssignments[eventId];
-      Object.keys(assignments).forEach((role) => {
-        assignments[role] = (assignments[role] || []).filter((personId) => personId !== id);
-        if (!assignments[role].length) delete assignments[role];
-      });
-    });
-    return state.persons;
-  });
-  return persons;
+function remove(id) {
+  // person_roles, attendance, and staff_assignments rows for this person
+  // are all cleaned up automatically via ON DELETE CASCADE in the schema.
+  return personsRepository.remove(id);
 }
 
 module.exports = { create, update, remove };

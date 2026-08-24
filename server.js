@@ -2,7 +2,14 @@ const express = require('express');
 const path = require('path');
 const config = require('./src/config');
 const AppError = require('./src/errors');
-const dbRepository = require('./src/repositories/dbRepository');
+const { getDb } = require('./src/db/connection');
+
+// Opens the SQLite file, runs any pending schema migrations, and
+// imports a legacy db.json if one is still present. Doing this
+// explicitly up front — rather than relying on whichever repository
+// happens to load first — means a migration/import failure crashes
+// startup loudly instead of surfacing on some later, unrelated request.
+getDb();
 
 const app = express();
 app.use(express.json());
@@ -29,6 +36,5 @@ app.use((err, req, res, next) => {
 });
 
 app.listen(config.PORT, () => {
-  dbRepository.ensureDb();
   console.log(`pandaplan listening on :${config.PORT}`);
 });
