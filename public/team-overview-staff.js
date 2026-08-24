@@ -34,6 +34,9 @@ async function toggleStaffAssignment(personId, eventId, role) {
     } else {
       await api('/api/teams/' + encodeURIComponent(slug) + '/staffAssignments/' + encodeURIComponent(eventId) + '/' + encodeURIComponent(personId), { method: 'PUT', body: JSON.stringify({ role }) });
       if (!state.staffAssignments[eventId]) state.staffAssignments[eventId] = {};
+      Object.keys(state.staffAssignments[eventId]).forEach(existingRole => {
+        state.staffAssignments[eventId][existingRole] = (state.staffAssignments[eventId][existingRole] || []).filter(id => id !== personId);
+      });
       state.staffAssignments[eventId][role] = [...(state.staffAssignments[eventId][role] || []), personId];
     }
     render();
