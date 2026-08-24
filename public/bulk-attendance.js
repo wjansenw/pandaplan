@@ -124,10 +124,13 @@
   }
 
   function syncEditMode() {
-    queueMicrotask(() => {
-      attendanceEditMode = editMode === true;
+    // team-overview.html changes editMode in its onclick handler.  This listener
+    // is registered before that handler, so defer the read until the click has
+    // completed.  The state itself remains the single source of truth.
+    setTimeout(() => {
+      attendanceEditMode = typeof editMode !== 'undefined' && editMode === true;
       render();
-    });
+    }, 0);
   }
 
   function watchEditButtons() {
@@ -149,36 +152,5 @@
     document.head.appendChild(style);
     watchEditButtons();
     setTimeout(render, 0);
-  });
-
-  const literalKeys = {
-    'Overview':'overview','Team overview':'teamOverview','Attendance and staff assignments for this Team.':'teamOverviewSubtitle',
-    'Edit attendance':'editAttendance','Done attendance':'doneAttendance','Edit staff':'editStaff','Done staff':'doneStaff',
-    'Calendar':'calendar','Subscribe to this Team\'s events in your calendar app.':'subscribeTeamEvents',
-    'Subscribe to a person\'s events':'subscribePersonEvents','Select a person to get a calendar containing events where that person is going or is assigned as staff.':'personCalendarHint',
-    'Select a person…':'selectPersonOption','Select a person first':'selectPersonFirst','No events match this filter.':'noEventsForFilter',
-    'Going':'goingShort','Maybe':'maybe','Not going':'notGoingShort','Unknown':'unknownShort','Staff':'staff',
-    'Add note':'addNoteTitle','Edit note':'editNote','Save':'save','Cancel':'cancel','Could not save attendance. Please try again.':'couldNotSaveAttendanceShort','Could not save note. Please try again.':'couldNotSaveNote'
-  };
-  function translateLiteralUI(root=document) {
-    if (typeof t !== 'function') return;
-    const walk = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
-    const nodes=[];
-    while(walk.nextNode()) nodes.push(walk.currentNode);
-    nodes.forEach(node=>{
-      const raw=node.nodeValue;
-      const trimmed=raw.trim();
-      const key=literalKeys[trimmed];
-      if(key){ node.nodeValue=raw.replace(trimmed,t(key)); }
-    });
-    root.querySelectorAll?.('input[placeholder],input[title],button[title]').forEach(el=>{
-      const attr=el.placeholder!==undefined?'placeholder':'title';
-      const key=literalKeys[el.getAttribute(attr)];
-      if(key) el.setAttribute(attr,t(key));
-    });
-  }
-  document.addEventListener('DOMContentLoaded',()=>{
-    translateLiteralUI();
-    new MutationObserver(mutations=>mutations.forEach(m=>m.addedNodes.forEach(n=>{if(n.nodeType===Node.ELEMENT_NODE) translateLiteralUI(n);}))).observe(document.body,{childList:true,subtree:true});
   });
 })();
