@@ -2,7 +2,7 @@ const express = require('express');
 const { getDb } = require('../db/connection');
 const teamService = require('../services/teamService');
 const { generateId } = require('../utils/id');
-const router = express.Router();
+const router = express.Router({ mergeParams: true });
 
 function rows(teamId) {
   return getDb().prepare(`
@@ -17,8 +17,7 @@ router.post('/', (req, res) => {
   const team = teamService.getBySlug(req.params.slug);
   const id = generateId();
   getDb().prepare(`INSERT INTO events (id, team_id, category_id, date, start_time, end_time, location, description)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?)`)
-    .run(id, team.id, req.body.categoryId || null, req.body.date, req.body.startTime || '', req.body.endTime || '', req.body.location || '', req.body.description || '');
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?)`).run(id, team.id, req.body.categoryId || null, req.body.date, req.body.startTime || '', req.body.endTime || '', req.body.location || '', req.body.description || '');
   res.status(201).json(rows(team.id));
 });
 router.put('/:eventId', (req, res) => {
