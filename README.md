@@ -9,10 +9,14 @@ pandaplan is designed for groups that need a simple way to manage people, event 
 - **People management** – maintain participants and staff in one place.
 - **Multiple roles** – a person can be a participant and/or hold staff roles such as coach, assistant coach, trainer, scorekeeper, or referee.
 - **Event categories** – organise events and define the staff roles required for each category.
-- **Event management** – create events with dates, times, descriptions, and locations.
+- **Event management** – create individual events or generate recurring event series by date range, weekdays, times, location, subject, and category.
+- **ICS import** – import calendar events and automatically assign categories based on event location, with a fallback category when no location rule matches.
 - **Attendance tracking** – record yes/no/maybe attendance and optional notes.
+- **Bulk attendance** – in Edit attendance mode, select a participant, filter events by category and date range, and set attendance for all matching events at once.
 - **Staff assignments** – assign people with appropriate roles to individual events.
-- **Calendar export** – generate iCalendar (`.ics`) calendars containing event details and attendees.
+- **Team overview** – view events, attendance, and staff assignments from a single team overview page, with dedicated edit modes for attendance and staff.
+- **Calendar subscription** – copy calendar feed URLs for a team or individual person and subscribe to them from a calendar application.
+- **Translations** – frontend text is translated through the shared `t()` translation system, with Dutch (`nl-BE`) and English support and locale fallback handling.
 - **SQLite persistence** – application data is stored in a transactional SQLite database with foreign-key constraints and schema migrations.
 - **Legacy data import** – an existing `data/db.json` is automatically imported into SQLite on first startup when applicable.
 - **Docker support** – ready to run as a Docker container using Docker Compose.
@@ -181,9 +185,25 @@ Then start the server:
 npm start
 ```
 
-There is currently no separate frontend build step.
+There is currently no separate frontend build step. The frontend is plain HTML/CSS/JavaScript and shared frontend code is kept in the `public/` directory.
 
 When changing the database schema, add a new migration under `src/db/migrations/`. Start the application normally to apply pending migrations automatically.
+
+### Frontend translations
+
+Frontend user-facing strings should use the shared `t()` translation function rather than hard-coded text. Add new translation keys to the shared message dictionaries for all supported languages.
+
+Application state should not be inferred from translated button labels or other rendered text. Use explicit state, element IDs, data attributes, or events instead. This is particularly important for edit-mode controls and bulk attendance.
+
+### Formatting
+
+Prettier can be used to format frontend JavaScript, for example:
+
+```bash
+npx prettier --write public/shared.js
+```
+
+Keeping the frontend formatted makes translation and UI changes easier to review and maintain.
 
 ## Configuration
 
