@@ -39,9 +39,9 @@ router.post('/recurring', (req, res) => {
   const endTime = typeof body.endTime === 'string' ? body.endTime : '';
   const weekdays = Array.isArray(body.weekdays) ? [...new Set(body.weekdays.map(Number))] : [];
   if (!subject) throw new AppError(400, 'subject is required');
-  if (!/^\\d{4}-\\d{2}-\\d{2}$/.test(startDate) || !/^\\d{4}-\\d{2}-\\d{2}$/.test(endDate)) throw new AppError(400, 'start and end dates are required');
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(startDate) || !/^\d{4}-\d{2}-\d{2}$/.test(endDate)) throw new AppError(400, 'start and end dates are required');
   if (startDate > endDate) throw new AppError(400, 'start date must be before or equal to end date');
-  if (!/^([01]\\d|2[0-3]):[0-5]\\d$/.test(startTime) || !/^([01]\\d|2[0-3]):[0-5]\\d$/.test(endTime)) throw new AppError(400, 'valid start and end times are required');
+  if (!/^([01]\d|2[0-3]):[0-5]\d$/.test(startTime) || !/^([01]\d|2[0-3]):[0-5]\d$/.test(endTime)) throw new AppError(400, 'valid start and end times are required');
   if (!weekdays.length || weekdays.some(day => !Number.isInteger(day) || day < 0 || day > 6)) throw new AppError(400, 'at least one weekday is required');
   const categoryId = validateCategory(team.id, body.categoryId);
   const db = getDb();
