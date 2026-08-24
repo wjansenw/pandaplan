@@ -109,3 +109,61 @@ document.addEventListener('DOMContentLoaded', () => {
   document.getElementById('attend')?.remove();
   document.getElementById('staff')?.remove();
 });
+
+// Add the event subject to the overview cards without coupling the external
+// helper to the inline render() implementation in team-overview.html.
+// The cards and events use the same date/time sort order, so we can safely
+// match them by their position after each render.
+async function addOverviewSubjects() {
+  const eventBox = document.getElementById('events');
+  if (!eventBox) return;
+
+  const currentSlug = decodeURIComponent(location.pathname.split('/')[2] || '');
+  if (!currentSlug) return;
+
+  try {
+    const overviewState = await api('/api/teams/' + encodeURIComponent(currentSlug) + '/state');
+    const events = [...overviewState.events].sort((a, b) => {
+      const ad = (a.date || '') + 'T' + (a.startTime || '');
+      const bd = (b.date || '') + 'T' + (b.startTime || '');
+      return ad.localeCompare(bd);
+    });
+
+    const apply = () => {
+      const cards = eventBox.querySelectorAll('.roster-card');
+      cards.forEach((card, index) => {
+        const ev = events[index];
+        if (!ev || !ev.subject || card.querySelector('.event-subject')) return;
+        const titleLine = card.querySelector('.event-title-line');
+        if (!titleLine) return;
+        const subject = document.createElement('div');
+        subject.className = 'event-subject';
+        subject.textContent = ev.subject;
+        titleLine.insertAdjacentElement('afterend', subject);
+      });
+    };
+
+    apply();
+    const observer = new MutationObserver(apply);
+    observer.observe(eventBox, { childList: true });
+
+    if (!document.getElementById('overview-wrap-fix')) {
+      const style = document.createElement('style');
+      style.id = 'overview-wrap-fix';
+      style.textContent = `
+        .roster-card, .attendance-summary, .attendance-group, .staff-summary,
+        .staff-summary .roster-names, .roster-names { min-width: 0; max-width: 100%; }
+        .attendance-summary, .attendance-group, .staff-summary .roster-names,
+        .roster-names { overflow-wrap: anywhere; word-break: normal; }
+        .attendance-group .roster-names { white-space: normal; }
+        .roster-name, .staff-name { overflow-wrap: anywhere; word-break: break-word; }
+        .event-subject { margin-top: 3px; font-size: 1.05rem; font-weight: 600; overflow-wrap: anywhere; }
+      `;
+      document.head.appendChild(style);
+    }
+  } catch (error) {
+    console.error('Could not add event subjects to overview:', error);
+  }
+}
+
+document.addEventListener('DOMContentLoaded', addOverviewSubjects);
