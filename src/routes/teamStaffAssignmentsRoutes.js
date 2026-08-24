@@ -1,7 +1,7 @@
 const express = require('express');
 const { getDb } = require('../db/connection');
 const teamService = require('../services/teamService');
-const router = express.Router();
+const router = express.Router({ mergeParams: true });
 
 router.get('/:eventId', (req, res) => {
   const team = teamService.getBySlug(req.params.slug);
@@ -15,9 +15,8 @@ router.put('/:eventId/:personId', (req, res) => {
   const db = getDb();
   if (!db.prepare('SELECT 1 FROM events WHERE id = ? AND team_id = ?').get(req.params.eventId, team.id)) return res.status(404).json({ error: 'event not found in team' });
   if (!db.prepare('SELECT 1 FROM team_membership_roles WHERE team_id = ? AND person_id = ? AND role = ?').get(team.id, req.params.personId, req.body.role)) return res.status(400).json({ error: 'person does not have this role in the team' });
-  db.prepare(`INSERT INTO staff_assignments (event_id,team_id,person_id,role) VALUES (?, ?, ?, ?)
-    ON CONFLICT(event_id, person_id, role) DO NOTHING`)
-    .run(req.params.eventId, team.id, req.params.personId, req.body.role);
+  db.prepare(`INSERT INTO staff_assignments (event_id, team_id, person_id, role) VALUES (?, ?, ?, ?)
+    ON CONFLICT(event_id, person_id, role) DO NOTHING`).run(req.params.eventId, team.id, req.params.personId, req.body.role);
   res.json({ ok: true });
 });
 router.delete('/:eventId/:personId/:role', (req, res) => {
