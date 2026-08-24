@@ -33,11 +33,12 @@ router.post('/import-ics', async (req, res, next) => {
     const team = teamService.getBySlug(req.params.slug);
     const url = typeof req.body.url === 'string' ? req.body.url.trim() : '';
     if (!url) return res.status(400).json({ error: 'ICS feed URL is required' });
+    const categoryId = validateCategory(team.id, req.body.categoryId);
     const imported = parseIcs(await fetchUrl(url));
     const db = getDb();
     const exists = db.prepare(`SELECT 1 FROM events WHERE team_id = ? AND subject = ? AND date = ? AND start_time = ? AND end_time = ? AND location = ? LIMIT 1`);
     const insert = db.prepare(`INSERT INTO events (id, team_id, category_id, subject, date, start_time, end_time, location, description)
-      VALUES (?, ?, NULL, ?, ?, ?, ?, ?, '')`);
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, '')`);
     let created = 0;
     let skipped = 0;
     db.transaction(() => {
@@ -46,7 +47,7 @@ router.post('/import-ics', async (req, res, next) => {
           skipped++;
           continue;
         }
-        insert.run(generateId(), team.id, event.subject, event.date, event.startTime, event.endTime, event.location);
+        insert.run(generateId(), team.id, categoryId, event.subject, event.date, event.startTime, event.endTime, event.location);
         created++;
       }
     })();
