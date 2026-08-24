@@ -46,6 +46,41 @@ async function toggleStaffAssignment(personId, eventId, role) {
   }
 }
 
+// Combine assigned staff with the same role into a single pill, e.g.
+// "Referee: Wim, Luk", while keeping the existing styling.
+function groupStaffSummary() {
+  document.querySelectorAll('.staff-summary .roster-names').forEach(container => {
+    if (container.dataset.grouped === 'true') return;
+    const groups = new Map();
+    container.querySelectorAll('.staff-name').forEach(item => {
+      const text = item.textContent.trim();
+      const separator = text.indexOf(':');
+      const role = separator >= 0 ? text.slice(0, separator).trim() : '';
+      const person = separator >= 0 ? text.slice(separator + 1).trim() : text;
+      if (!groups.has(role)) groups.set(role, []);
+      groups.get(role).push(person);
+    });
+    if (!groups.size) return;
+    container.innerHTML = '';
+    groups.forEach((people, role) => {
+      const item = document.createElement('span');
+      item.className = 'staff-name';
+      item.textContent = role ? role + ': ' + people.join(', ') : people.join(', ');
+      container.appendChild(item);
+    });
+    container.dataset.grouped = 'true';
+  });
+}
+
+// render() rebuilds the event cards, so observe those changes and regroup the
+// normal-mode staff summary after every render.
+const staffSummaryObserver = new MutationObserver(groupStaffSummary);
+document.addEventListener('DOMContentLoaded', () => {
+  const events = document.getElementById('events');
+  if (events) staffSummaryObserver.observe(events, { childList: true, subtree: true });
+  groupStaffSummary();
+});
+
 // Attendance and staff editing are deliberately mutually exclusive. The
 // inline handlers in team-overview.html toggle their own mode first; this
 // listener then closes the other mode when necessary. A guard prevents the
