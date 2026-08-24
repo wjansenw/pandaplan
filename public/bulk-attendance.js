@@ -143,32 +143,39 @@
 
     if (!confirm(`Set ${label} for ${person?.name || 'this participant'}?\n\n${categoryLabel} · ${events.length} events\n${dateLabel}\n\nThis will change attendance for all matching events.`)) return;
 
-    try {
-      const result = await api(`/api/teams/${encodeURIComponent(slug)}/attendance/bulk`, {
-        method: 'POST',
-        body: JSON.stringify({
-          personId: participantId,
-          status,
-          eventIds: events.map(e => e.id),
-          startDate,
-          endDate,
-          categoryId
-        })
-      });
+    const count = document.getElementById('bulkCount');
+    count.textContent = `Updating ${events.length} events…`;
+    document.querySelectorAll('#bulkAttendance [data-bulk]').forEach(button => { button.disabled = true; });
 
-      if (!state.attendance[participantId]) state.attendance[participantId] = {};
-      events.forEach(event => {
-        const old = state.attendance[participantId][event.id] || {};
-        state.attendance[participantId][event.id] = { status, note: old.note || '' };
-      });
+    try {
+      // Use the same single-event endpoint as the normal attendance controls.
+      // This keeps bulk editing on exactly the same persistence path and avoids
+      // having two subtly different attendance implementations.
+      await Promise.all(events.map(event => api(
+        `/api/teams/${encodeURIComponent(slug)}/attendance/${encodeURIComponent(participantId)}/${encodeURIComponent(event.id)}`,
+        {
+          method: 'PUT',
+          body: JSON.stringify({
+            status,
+            note: state.attendance[participantId]?.[event.id]?.note || ''
+          })
+        }
+      )));
+
+      // Refresh from the server rather than relying on local state. This also
+      // makes a failed persistence path immediately visible to the user.
+      const fresh = await api(`/api/teams/${encodeURIComponent(slug)}/state`);
+      state = fresh;
       window.render();
+
       setTimeout(() => {
-        const count = document.getElementById('bulkCount');
-        if (count) count.textContent = `${result.updated || 0} event${result.updated === 1 ? '' : 's'} updated`;
+        const updatedCount = document.getElementById('bulkCount');
+        if (updatedCount) updatedCount.textContent = `${events.length} event${events.length === 1 ? '' : 's'} updated`;
       }, 0);
     } catch (error) {
       console.error('Could not save bulk attendance:', error);
       alert(`Could not save attendance: ${error.message || 'Please try again.'}`);
+      update();
     }
   }
 
@@ -194,8 +201,4 @@
     watchEditButton();
     setTimeout(render, 0);
   });
-
-  // The overview's render() is a lexical global, not a window property, so
-  // don't rely on monkey-patching it. The edit button and DOM lifecycle are
-  // sufficient to keep the bulk block in sync.
 })();
