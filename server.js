@@ -8,6 +8,22 @@ getDb();
 
 const app = express();
 app.use(express.json());
+
+// Team URLs are intentionally stable and scoped by slug. Keep the slug in
+// the browser URL so users don't accidentally navigate into another Team.
+const teamPages = {
+  overview: 'team-overview.html',
+  attend: 'team-attend.html',
+  events: 'team-events.html',
+  people: 'team-people.html',
+  categories: 'team-categories.html',
+  staff: 'team-staff.html',
+};
+app.get('/team/:slug', (req, res) => res.sendFile(path.join(__dirname, 'public', 'team.html')));
+Object.entries(teamPages).forEach(([page, file]) => {
+  app.get(`/team/:slug/${page}`, (req, res) => res.sendFile(path.join(__dirname, 'public', file)));
+});
+
 app.use(express.static(path.join(__dirname, 'public')));
 
 app.use('/api/state', require('./src/routes/stateRoutes'));
@@ -22,13 +38,9 @@ app.use('/api/teams/:slug/staffAssignments', require('./src/routes/teamStaffAssi
 app.use('/calendar', require('./src/routes/calendarRoutes'));
 
 app.use((err, req, res, next) => {
-  if (err instanceof AppError) {
-    return res.status(err.status).json({ error: err.message });
-  }
+  if (err instanceof AppError) return res.status(err.status).json({ error: err.message });
   console.error(err);
   res.status(500).json({ error: 'internal server error' });
 });
 
-app.listen(config.PORT, () => {
-  console.log(`pandaplan listening on :${config.PORT}`);
-});
+app.listen(config.PORT, () => console.log(`pandaplan listening on :${config.PORT}`));
