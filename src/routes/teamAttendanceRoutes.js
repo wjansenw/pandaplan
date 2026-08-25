@@ -12,11 +12,18 @@ router.get('/', (req, res) => {
   res.json(result);
 });
 
-// Remove all attendance records for all events belonging to this team.
+// Remove all attendance records and staff assignments for all events belonging to this team.
 router.delete('/', (req, res) => {
   const team = teamService.getBySlug(req.params.slug);
-  const result = getDb().prepare('DELETE FROM attendance WHERE event_id IN (SELECT id FROM events WHERE team_id = ?)').run(team.id);
-  res.json({ ok: true, removed: result.changes });
+  const db = getDb();
+  const removeData = db.transaction(() => {
+    const eventIds = db.prepare('SELECT id FROM events WHERE team_id = ?').all(team.id).map((row) => row.id);
+    const attendance = db.prepare('DELETE FROM attendance WHERE event_id IN (SELECT id FROM events WHERE team_id = ?)').run(team.id);
+    const staff = db.prepare('DELETE FROM staff_assignments WHERE team_id = ?').run(team.id);
+    return { events: eventIds.length, attendance: attendance.changes, staff: staff.changes };
+  });
+  const removed = removeData();
+  res.json({ ok: true, removed: removed.attendance, staffRemoved: removed.staff, events: removed.events });
 });
 
 function bulkUpdate(req, res) {
