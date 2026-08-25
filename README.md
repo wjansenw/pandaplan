@@ -1,4 +1,4 @@
-# pandaplan
+ju# pandaplan
 
 A lightweight, self-hosted event planning and attendance roster application.
 
@@ -80,28 +80,6 @@ data/
 ```
 
 The SQLite database is created automatically on first startup. The schema contains separate tables for people, roles, categories, events, attendance, and staff assignments, with foreign-key constraints enforcing relationships between them.
-
-### Legacy JSON import
-
-Older installations may contain:
-
-```text
-data/db.json
-```
-
-If `db.json` exists and the SQLite database does not yet contain people, pandaplan automatically imports the legacy data into SQLite during startup. After a successful import, the original file is renamed to:
-
-```text
-data/db.json.imported
-```
-
-The legacy file is not used as the active database after migration.
-
-### Database migrations
-
-Database schema changes are handled by numbered migration files in `src/db/migrations/`. Migrations are applied automatically at startup and recorded in the `schema_migrations` table.
-
-Do not edit an already-applied migration. Add a new numbered migration for subsequent schema changes.
 
 ### Backups
 
@@ -194,6 +172,7 @@ When changing the database schema, add a new migration under `src/db/migrations/
 Frontend user-facing strings should use the shared `t()` translation function rather than hard-coded text. Add new translation keys to the shared message dictionaries for all supported languages.
 
 Application state should not be inferred from translated button labels or other rendered text. Use explicit state, element IDs, data attributes, or events instead. This is particularly important for edit-mode controls and bulk attendance.
+Frontend user-facing strings should use the shared `t()` translation function rather than hard-coded text. Add new translation keys to the shared message dictionaries for all supported 
 
 ## Configuration
 
@@ -208,6 +187,3 @@ The following environment variables are supported:
 
 pandaplan is a small personal/self-hosted project and may evolve as new event-management requirements are added. The application focuses on straightforward event planning, attendance management, and staff assignment rather than being a full-featured event-management platform.
 
-## License
-
-No license has currently been specified for this repository. Unless a license is added, the repository should be treated as **all rights reserved**.
