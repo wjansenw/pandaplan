@@ -16,7 +16,6 @@ body { padding-left: var(--sidebar-width); }
   border-right: 1px solid var(--line);
   box-shadow: 2px 0 12px rgba(0, 0, 0, 0.04);
 }
-
 .sidebar-header { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 22px; }
 .sidebar .brand { min-width: 0; color: var(--ink); text-decoration: none; font-family: "Poppins", sans-serif; font-size: 19px; font-weight: 700; white-space: nowrap; }
 .sidebar-menu { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
@@ -34,8 +33,6 @@ body { padding-left: var(--sidebar-width); }
 .sidebar-team-children .sidebar-link { padding: 7px 10px; border-radius: 4px; font-size: 12.5px; font-weight: 500; }
 .sidebar-close { display: none; padding: 2px 7px; border: 0; background: transparent; color: var(--ink-soft); cursor: pointer; font-size: 25px; line-height: 1; }
 .sidebar-close:hover { color: var(--ink); }
-
-/* Mobile drawer */
 .sidebar-open { display: none; }
 .sidebar-backdrop { display: none; }
 
