@@ -51,14 +51,14 @@
     const close = document.createElement("button");
     close.type = "button";
     close.className = "sidebar-close";
-    close.setAttribute("aria-label", "Close navigation");
+    close.setAttribute("aria-label", t("close"));
     close.textContent = "×";
     header.appendChild(close);
     nav.appendChild(header);
 
     const menu = document.createElement("nav");
     menu.className = "sidebar-menu";
-    menu.setAttribute("aria-label", "Main navigation");
+    menu.setAttribute("aria-label", t("mainNavigation"));
 
     const teamsLink = link(
       "/teams.html",
@@ -88,7 +88,7 @@
         toggle.type = "button";
         toggle.className = "sidebar-team-toggle";
         toggle.setAttribute("aria-expanded", String(isCurrent));
-        toggle.setAttribute("aria-label", `${team.name} ${isCurrent ? "expanded" : "collapsed"}`);
+        toggle.setAttribute("aria-label", team.name);
         toggle.textContent = isCurrent ? "▾" : "▸";
         row.appendChild(toggle);
 
