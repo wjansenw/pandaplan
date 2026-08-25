@@ -80,7 +80,7 @@ const MESSAGES = {
     startTime: "Start time",
     endTime: "End time",
     location: "Location",
-    locationPlaceholder: "e.g. Sports hall, Main street 12",
+    locationPlaceholder: "e.g. Sports hall, Main Street 12",
     description: "Description",
     descriptionPlaceholder: "Optional details",
     saveEvent: "Save event",
@@ -89,36 +89,36 @@ const MESSAGES = {
     noPersonsYet: "No persons yet.",
     noCategoriesYet: "No categories yet.",
     nameRequired: "Name is required.",
-    roleRequired: "Select at least one role.",
+    roleRequired: "Choose at least one role.",
     dateRequired: "Date is required.",
     couldNotAddPerson: "Could not add person.",
     couldNotSaveEvent: "Could not save event.",
-    confirmRemoveAllRoles: "Removing all roles will delete this person. Continue?",
+    confirmRemoveAllRoles: "Removing all roles will remove this person. Continue?",
     confirmRemovePerson: "Remove this person?",
     confirmRemoveCategory: "Remove this category?",
     confirmDeleteEvent: "Delete this event?",
     bulkAttendance: "Bulk attendance",
-    bulkAttendanceHint: "Set attendance for multiple events at once. Nothing changes until you choose an action and confirm it.",
+    bulkAttendanceHint: "Set attendance for multiple events at once. Nothing changes until you choose and confirm an action.",
     selectParticipant: "Select a participant…",
     allCategories: "All categories",
     fromDate: "From",
     toDate: "To",
     eventsSelected: "{count} event(s) selected",
-    invalidDateRange: "The start date must not be after the end date.",
+    invalidDateRange: "The start date cannot be after the end date.",
     anyDate: "Any date",
     thisParticipant: "this participant",
-    confirmBulkAttendance: "Set {status} for {person}?\n\n{category} · {count} events\n{dates}\n\nThis will change attendance for all matching events.",
+    confirmBulkAttendance: "Set {status} for {person}?\n\n{category} · {count} events\n{dates}\n\nThis changes attendance for all matching events.",
     eventsUpdated: "{count} event(s) updated",
     couldNotSaveAttendance: "Could not save attendance: {error}",
-    tryAgain: "Please try again.",
+    tryAgain: "Try again.",
     calendar: "Calendar",
     teamOverview: "Team overview",
-    teamOverviewSubtitle: "Attendance and staff assignments for this Team.",
+    teamOverviewSubtitle: "Attendance and staff assignments for this team.",
     editAttendance: "Edit attendance",
     doneAttendance: "Done attendance",
     editStaff: "Edit staff",
     doneStaff: "Done staff",
-    subscribeTeamEvents: "Subscribe to this Team's events in your calendar app.",
+    subscribeTeamEvents: "Subscribe to this team's events in your calendar app.",
     subscribePersonEvents: "Subscribe to a person's events",
     personCalendarHint: "Select a person to get a calendar containing events where that person is going or is assigned as staff.",
     selectPersonFirst: "Select a person first",
@@ -132,35 +132,36 @@ const MESSAGES = {
     peopleNav: "People",
     selectPersonOption: "Select a person…",
     name: "Name",
-    peopleSubtitle: "People in this Team and their Team-specific roles.",
-    confirmRemovePersonFromTeam: "Remove this person from the Team?",
+    peopleSubtitle: "People in this team and their team-specific roles.",
+    confirmRemovePersonFromTeam: "Remove this person from the team?",
     nameAndRoleRequired: "Name and at least one role are required.",
-    categoriesSubtitle: "Categories and required staff roles for this Team.",
+    categoriesSubtitle: "Categories and required staff roles for this team.",
     couldNotSaveCategory: "Could not save category.",
     teams: "Teams",
-    teamsSubtitle: "Manage Teams and cross-Team membership. Team-specific roles are managed inside each Team.",
+    teamsSubtitle: "Manage teams and cross-team membership. Team-specific roles are managed inside each team.",
     createTeam: "Create Team",
     slug: "Slug",
     create: "Create",
     openTeam: "Open",
     memberCount: "{count} members",
-    saveTeam: "Save Team",
-    deleteTeam: "Delete Team",
+    saveTeam: "Save team",
+    deleteTeam: "Delete team",
     addExistingPerson: "Add existing person",
     selectPerson: "Select person…",
     removeAllAttendance: "Remove all attendance",
     removeAllEvents: "Remove all events",
-    deleteTeamConfirm: "Delete this Team and all its events? People who belong to no other Team will also be deleted.",
-    removeAllAttendanceConfirm: "Remove all attendance records for this Team? This cannot be undone.",
-    removeAllEventsConfirm: "Remove all events for this Team? This cannot be undone.",
+    deleteTeamConfirm: "Delete this team and all its events? People who belong to no other team will also be removed.",
+    removeAllAttendanceConfirm: "Remove all attendance data for this team? This cannot be undone.",
+    removeAllEventsConfirm: "Remove all events for this team? This cannot be undone.",
     attendanceRemoved: "Attendance removed.",
     eventsRemoved: "Events removed.",
-    noTeams: "No Teams yet.",
+    noTeams: "No teams yet.",
     created: "Created",
-    teamSaveFailed: "Could not save Team. Please try again.",
-    teamDeleteFailed: "Could not delete Team. Please try again.",
+    teamSaveFailed: "Could not save team. Please try again.",
+    teamDeleteFailed: "Could not delete team. Please try again.",
     teamDataActionFailed: "Could not complete this action. Please try again.",
-    teamCreateFailed: "Could not create Team. Please try again.",
+    teamCreateFailed: "Could not create team. Please try again.",
+    about: "About",
   },
   "nl-BE": {
     overview: "Overzicht",
@@ -175,28 +176,28 @@ const MESSAGES = {
     edit: "Bewerken",
     delete: "Verwijderen",
     close: "Sluiten",
-    retry: "Opslaan mislukt — probeer opnieuw",
+    retry: "Kon niet opslaan — probeer opnieuw",
     noCategory: "Geen categorie",
     uncategorized: "Zonder categorie",
     all: "Alle",
     copy: "Kopiëren",
     copied: "Gekopieerd!",
-    download: "Downloaden",
-    selectAndCopy: "Selecteren & kopiëren",
+    download: "Download",
+    selectAndCopy: "Selecteer en kopieer",
     noEventsYet: "Nog geen events — voeg er eerst toe via Beheer.",
     staffNeeded: "Staff nodig",
     from: "Vanaf",
     until: "Tot",
-    clickToExpand: "Klik om uit te vouwen",
+    clickToExpand: "Klik om uit te klappen",
     clickToCollapse: "Klik om in te klappen",
     category: "Categorie",
     date: "Datum",
     upcoming: "Komend",
     past: "Voorbij",
-    allDates: "Alle data",
-    noFilterMatch: "Geen events komen overeen met de huidige filters.",
+    allDates: "Alle datums",
+    noFilterMatch: "Geen events voldoen aan het huidige filter.",
     syncToCalendar: "Synchroniseren met kalender",
-    syncFullSchedule: "Volledig schema synchroniseren met kalender",
+    syncFullSchedule: "Volledige planning synchroniseren",
     syncHint: 'Plak deze link bij "abonneren via URL" in je kalender-app om automatisch synchroon te blijven.',
     participant: "Deelnemer",
     coach: "Coach",
@@ -323,6 +324,7 @@ const MESSAGES = {
     teamDeleteFailed: "Kon team niet verwijderen. Probeer het opnieuw.",
     teamDataActionFailed: "Kon deze actie niet voltooien. Probeer het opnieuw.",
     teamCreateFailed: "Kon team niet aanmaken. Probeer het opnieuw.",
+    about: "Over",
   },
 };
 
@@ -400,32 +402,40 @@ const STAFF_ROLES = [
   { id: "scorekeeper", label: t("scorekeeper") },
   { id: "referee", label: t("referee") },
 ];
-const ALL_ROLES = [{ id: PARTICIPANT_ROLE, label: t("participant") }, ...STAFF_ROLES];
-function roleLabel(id) { const r = ALL_ROLES.find((x) => x.id === id); return r ? r.label : id; }
-function personHasRole(person, roleId) { return Array.isArray(person.roles) && person.roles.includes(roleId); }
-function staffRoleLabels(ids) { return STAFF_ROLES.filter((r) => (ids || []).includes(r.id)).map((r) => r.label); }
-function renderMultiSelectChips(container, options, selectedSet, onToggle) {
-  container.innerHTML = "";
-  options.forEach((opt) => { const chip = document.createElement("button"); chip.type = "button"; chip.className = "chip" + (selectedSet.has(opt.id) ? " active" : ""); chip.textContent = opt.label; chip.addEventListener("click", () => { if (selectedSet.has(opt.id)) selectedSet.delete(opt.id); else selectedSet.add(opt.id); onToggle(); }); container.appendChild(chip); });
-}
-function todayIso() { const d = new Date(); const m = String(d.getMonth() + 1).padStart(2, "0"); const day = String(d.getDate()).padStart(2, "0"); return `${d.getFullYear()}-${m}-${day}`; }
-function filterEvents(events, filters) {
-  const today = todayIso();
-  return events.filter((ev) => { if (filters.categoryIds && filters.categoryIds.size && !filters.categoryIds.has(ev.categoryId)) return false; if (filters.dateMode === "upcoming" && ev.date < today) return false; if (filters.dateMode === "past" && ev.date >= today) return false; return true; });
-}
-function renderCategoryFilterChips(container, categories, selectedIds, onChange) {
-  container.innerHTML = "";
-  function makeChip(id, name, color, isAll) {
-    const chip = document.createElement("button"); chip.type = "button"; chip.className = "chip"; chip.textContent = name;
-    const isActive = isAll ? selectedIds.size === 0 : selectedIds.has(id);
-    if (isActive) { chip.classList.add("active"); if (color) { chip.style.background = color + "22"; chip.style.borderColor = color; chip.style.color = color; } }
-    chip.addEventListener("click", () => { if (isAll) selectedIds.clear(); else if (selectedIds.has(id)) selectedIds.delete(id); else selectedIds.add(id); onChange(); }); container.appendChild(chip);
-  }
-  makeChip("__all__", t("all"), null, true); categories.forEach((c) => makeChip(c.id, c.name, c.color, false)); makeChip(null, t("uncategorized"), null, false);
-}
-function renderDateFilterChips(container, currentMode, onChange) {
-  container.innerHTML = "";
-  const options = [{ mode: "upcoming", label: t("upcoming") }, { mode: "past", label: t("past") }, { mode: "all", label: t("allDates") }];
-  options.forEach((opt) => { const chip = document.createElement("button"); chip.type = "button"; chip.className = "chip" + (opt.mode === currentMode ? " active" : ""); chip.textContent = opt.label; chip.addEventListener("click", () => onChange(opt.mode)); container.appendChild(chip); });
-}
-function formatMapsLink(location) { if (!location) return ""; const encoded = encodeURIComponent(location); return `https://www.google.com/maps/search/${encoded}`; }
+
+// Shared navigation is loaded from the common script so every page gets the same sidebar.
+(() => {
+  const loadNavigation = () => {
+    if (!document.querySelector('link[data-navigation-css]')) {
+      const css = document.createElement("link");
+      css.rel = "stylesheet";
+      css.href = "/navigation.css";
+      css.dataset.navigationCss = "true";
+      document.head.appendChild(css);
+    }
+    if (!document.querySelector('script[data-navigation-js]')) {
+      const script = document.createElement("script");
+      script.src = "/navigation.js";
+      script.dataset.navigationJs = "true";
+      document.body.appendChild(script);
+    }
+    if (!document.querySelector(".sidebar-open")) {
+      const open = document.createElement("button");
+      open.type = "button";
+      open.className = "sidebar-open";
+      open.setAttribute("aria-label", "Open navigation");
+      open.textContent = "☰";
+      document.body.appendChild(open);
+    }
+    if (!document.querySelector(".sidebar-backdrop")) {
+      const backdrop = document.createElement("button");
+      backdrop.type = "button";
+      backdrop.className = "sidebar-backdrop";
+      backdrop.hidden = true;
+      backdrop.setAttribute("aria-label", "Close navigation");
+      document.body.appendChild(backdrop);
+    }
+  };
+  if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", loadNavigation, { once: true });
+  else loadNavigation();
+})();
