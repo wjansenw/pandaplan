@@ -195,16 +195,6 @@ Frontend user-facing strings should use the shared `t()` translation function ra
 
 Application state should not be inferred from translated button labels or other rendered text. Use explicit state, element IDs, data attributes, or events instead. This is particularly important for edit-mode controls and bulk attendance.
 
-### Formatting
-
-Prettier can be used to format frontend JavaScript, for example:
-
-```bash
-npx prettier --write public/shared.js
-```
-
-Keeping the frontend formatted makes translation and UI changes easier to review and maintain.
-
 ## Configuration
 
 The following environment variables are supported:
