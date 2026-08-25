@@ -1,0 +1,19 @@
+.attendance-summary .attendance-going .roster-name {
+  background: var(--accent-bg);
+  color: var(--accent);
+}
+
+.attendance-summary .attendance-maybe .roster-name {
+  background: #fff3cd;
+  color: #856404;
+}
+
+.attendance-summary .attendance-not-going .roster-name {
+  background: var(--danger-bg);
+  color: var(--danger);
+}
+
+.attendance-summary .attendance-unknown .roster-name {
+  background: #eee;
+  color: #666;
+}
