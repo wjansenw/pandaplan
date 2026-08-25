@@ -4,15 +4,20 @@
   let attendanceEditMode = false;
 
   function matchingEvents() {
-    if (!pageState?.state?.events) return [];
-    if (typeof eventMatchesOverviewFilters === "function") {
-      return sortByDateTime(pageState.state.events.filter(eventMatchesOverviewFilters));
+    if (typeof getFilteredOverviewEvents === "function") {
+      return getFilteredOverviewEvents();
     }
-    return sortByDateTime(pageState.state.events.filter((event) =>
-      (!pageState.dateFrom || event.date >= pageState.dateFrom) &&
-      (!pageState.dateTo || event.date <= pageState.dateTo) &&
-      (!pageState.categoryIds.size || pageState.categoryIds.has(event.categoryId))
-    ));
+    if (!pageState?.state?.events) return [];
+    return sortByDateTime(
+      pageState.state.events.filter((event) =>
+        (!pageState.dateFrom || event.date >= pageState.dateFrom) &&
+        (!pageState.dateTo || event.date <= pageState.dateTo),
+      ),
+    );
+  }
+
+  function selectedCategoryIds() {
+    return new Set([...pageState.categoryIds].map((id) => String(id)));
   }
 
   function ensureBlock() {
@@ -56,7 +61,9 @@
       content.hidden = !expanded;
       toggle.setAttribute("aria-expanded", String(expanded));
       toggle.querySelector(".bulk-chevron").textContent = expanded ? "▾" : "▸";
-      toggle.querySelector(".bulk-expand-hint").lastChild.textContent = expanded ? ` ${t("clickToCollapse")}` : ` ${t("clickToExpand")}`;
+      toggle.querySelector(".bulk-expand-hint").lastChild.textContent = expanded
+        ? ` ${t("clickToCollapse")}`
+        : ` ${t("clickToExpand")}`;
     };
     toggle.addEventListener("click", toggleBlock);
     toggle.addEventListener("keydown", (e) => {
@@ -68,18 +75,23 @@
 
     const state = pageState.state;
     if (!state) return block;
-    (state.persons || []).filter((p) => Array.isArray(p.roles) && p.roles.includes("participant")).sort((a, b) => a.name.localeCompare(b.name)).forEach((p) => {
-      const option = document.createElement("option");
-      option.value = p.id;
-      option.textContent = p.name;
-      block.querySelector("#bulkPerson").appendChild(option);
-    });
+    (state.persons || [])
+      .filter((p) => Array.isArray(p.roles) && p.roles.includes("participant"))
+      .sort((a, b) => a.name.localeCompare(b.name))
+      .forEach((p) => {
+        const option = document.createElement("option");
+        option.value = p.id;
+        option.textContent = p.name;
+        block.querySelector("#bulkPerson").appendChild(option);
+      });
 
     block.querySelector("#bulkPerson").addEventListener("change", (e) => {
       participantId = e.target.value;
       update();
     });
-    block.querySelectorAll("[data-bulk]").forEach((button) => button.addEventListener("click", () => apply(button.dataset.bulk)));
+    block
+      .querySelectorAll("[data-bulk]")
+      .forEach((button) => button.addEventListener("click", () => apply(button.dataset.bulk)));
     return block;
   }
 
@@ -104,7 +116,9 @@
     if (!block) return;
     const count = matchingEvents().length;
     block.querySelector("#bulkCount").textContent = t("eventsSelected", { count });
-    block.querySelectorAll("[data-bulk]").forEach((button) => { button.disabled = !participantId || !count; });
+    block.querySelectorAll("[data-bulk]").forEach((button) => {
+      button.disabled = !participantId || !count;
+    });
   }
 
   async function apply(status) {
@@ -112,18 +126,45 @@
     const events = matchingEvents();
     if (!state || !participantId || !events.length) return;
     const person = state.persons.find((p) => p.id === participantId);
-    const categoryIds = pageState.categoryIds;
-    const selectedCategories = (state.categories || []).filter((c) => categoryIds.has(c.id));
-    const categoryLabel = categoryIds.size ? selectedCategories.map((c) => c.name).join(", ") : t("allCategories");
+    const categoryIds = selectedCategoryIds();
+    const selectedCategories = (state.categories || []).filter((c) =>
+      categoryIds.has(String(c.id)),
+    );
+    const categoryLabel = categoryIds.size
+      ? selectedCategories.map((c) => c.name).join(", ")
+      : t("allCategories");
     const dateLabel = `${pageState.dateFrom || "…"} – ${pageState.dateTo || "…"}`;
-    const label = status === "yes" ? t("goingShort") : status === "maybe" ? t("maybe") : t("notGoingShort");
-    if (!confirm(t("confirmBulkAttendance", { status: label, person: person?.name || t("thisParticipant"), category: categoryLabel, count: events.length, dates: dateLabel }))) return;
+    const label =
+      status === "yes"
+        ? t("goingShort")
+        : status === "maybe"
+          ? t("maybe")
+          : t("notGoingShort");
+    if (
+      !confirm(
+        t("confirmBulkAttendance", {
+          status: label,
+          person: person?.name || t("thisParticipant"),
+          category: categoryLabel,
+          count: events.length,
+          dates: dateLabel,
+        }),
+      )
+    )
+      return;
 
     const eventIds = events.map((event) => event.id);
     try {
       const result = await api(`/api/teams/${encodeURIComponent(slug)}/attendance/bulk`, {
         method: "POST",
-        body: JSON.stringify({ personId: participantId, status, eventIds, startDate: pageState.dateFrom, endDate: pageState.dateTo, categoryId: categoryIds.size === 1 ? [...categoryIds][0] : "" }),
+        body: JSON.stringify({
+          personId: participantId,
+          status,
+          eventIds,
+          startDate: pageState.dateFrom,
+          endDate: pageState.dateTo,
+          categoryId: categoryIds.size === 1 ? [...categoryIds][0] : "",
+        }),
       });
       if (!state.attendance[participantId]) state.attendance[participantId] = {};
       eventIds.forEach((eventId) => {
@@ -140,13 +181,26 @@
     }
   }
 
-  function syncEditMode() { setTimeout(() => { attendanceEditMode = pageState.editMode === true; render(); }, 0); }
+  function syncEditMode() {
+    setTimeout(() => {
+      attendanceEditMode = pageState.editMode === true;
+      render();
+    }, 0);
+  }
+
   function watchEditButtons() {
     const attendanceButton = document.getElementById("editAttendance");
     const staffButton = document.getElementById("editStaff");
-    if (attendanceButton && !attendanceButton.dataset.bulkWatched) { attendanceButton.dataset.bulkWatched = "1"; attendanceButton.addEventListener("click", syncEditMode); }
-    if (staffButton && !staffButton.dataset.bulkWatched) { staffButton.dataset.bulkWatched = "1"; attendanceEditMode = false; }
+    if (attendanceButton && !attendanceButton.dataset.bulkWatched) {
+      attendanceButton.dataset.bulkWatched = "1";
+      attendanceButton.addEventListener("click", syncEditMode);
+    }
+    if (staffButton && !staffButton.dataset.bulkWatched) {
+      staffButton.dataset.bulkWatched = "1";
+      attendanceEditMode = false;
+    }
   }
+
   document.addEventListener("DOMContentLoaded", () => {
     const style = document.createElement("style");
     style.textContent = `.bulk-attendance{margin-top:16px}.bulk-attendance #bulkAttendanceContent{font-weight:400}.bulk-attendance .sub{font-weight:400}.bulk-fields{display:flex;gap:12px;flex-wrap:wrap;margin-top:14px}.bulk-fields label{display:flex;flex-direction:column;gap:5px;font-size:.9rem;font-weight:400;min-width:160px}.bulk-fields select,.bulk-fields input{padding:8px 10px;border:1px solid #ccc;border-radius:6px;font:inherit;background:white;font-weight:400}.bulk-actions{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-top:14px;font-weight:400}.bulk-actions button{margin-left:6px}.bulk-actions button:disabled{opacity:.5;cursor:not-allowed}`;
