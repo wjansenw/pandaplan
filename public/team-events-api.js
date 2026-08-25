@@ -1,44 +1,43 @@
 const eventsApi = {
   async load(slug) {
-    const base = "/api/teams/" + encodeURIComponent(slug);
+    const base = teamApiUrl("", slug);
     const [team, categories, events] = await Promise.all([
-      api(base),
-      api(base + "/categories"),
-      api(base + "/events"),
+      apiRequest(base),
+      apiRequest(base + "/categories"),
+      apiRequest(base + "/events"),
     ]);
     return { team, categories, events };
   },
   list(slug) {
-    return api("/api/teams/" + encodeURIComponent(slug) + "/events");
+    return apiRequest(teamApiUrl("events", slug));
   },
   create(slug, event) {
-    return api("/api/teams/" + encodeURIComponent(slug) + "/events", {
+    return apiRequest(teamApiUrl("events", slug), {
       method: "POST",
       body: JSON.stringify(event),
     });
   },
   update(slug, eventId, event) {
-    return api(
-      "/api/teams/" + encodeURIComponent(slug) + "/events/" + encodeURIComponent(eventId),
-      { method: "PUT", body: JSON.stringify(event) },
-    );
+    return apiRequest(teamApiUrl("events", slug) + "/" + encodeURIComponent(eventId), {
+      method: "PUT",
+      body: JSON.stringify(event),
+    });
   },
   remove(slug, eventId) {
-    return api(
-      "/api/teams/" + encodeURIComponent(slug) + "/events/" + encodeURIComponent(eventId),
-      { method: "DELETE" },
-    );
+    return apiRequest(teamApiUrl("events", slug) + "/" + encodeURIComponent(eventId), {
+      method: "DELETE",
+    });
   },
   createRecurring(slug, event) {
-    return api(
-      "/api/teams/" + encodeURIComponent(slug) + "/events/recurring",
-      { method: "POST", body: JSON.stringify(event) },
-    );
+    return apiRequest(teamApiUrl("events/recurring", slug), {
+      method: "POST",
+      body: JSON.stringify(event),
+    });
   },
   importIcs(slug, options) {
-    return api(
-      "/api/teams/" + encodeURIComponent(slug) + "/events/import-ics",
-      { method: "POST", body: JSON.stringify(options) },
-    );
+    return apiRequest(teamApiUrl("events/import-ics", slug), {
+      method: "POST",
+      body: JSON.stringify(options),
+    });
   },
 };
