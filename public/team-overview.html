@@ -18,59 +18,28 @@
     </div>
     <div class="wrap">
       <div class="page-head">
-        <div>
-          <h1 id="title" data-i18n="teamOverview">Team overview</h1>
-          <p class="sub" id="subtitle" data-i18n="teamOverviewSubtitle">Attendance and staff assignments for this Team.</p>
-        </div>
-        <div class="page-actions">
-          <button id="editAttendance" type="button" class="btn secondary" data-i18n="editAttendance">Edit attendance</button>
-          <button id="editStaff" type="button" class="btn secondary" data-i18n="editStaff">Edit staff</button>
-        </div>
+        <div><h1 id="title" data-i18n="teamOverview">Team overview</h1><p class="sub" id="subtitle" data-i18n="teamOverviewSubtitle">Attendance and staff assignments for this Team.</p></div>
+        <div class="page-actions"><button id="editAttendance" type="button" class="btn secondary" data-i18n="editAttendance">Edit attendance</button><button id="editStaff" type="button" class="btn secondary" data-i18n="editStaff">Edit staff</button></div>
       </div>
       <div class="card calendar-section">
-        <h2 id="calendarToggle" class="calendar-header" role="button" tabindex="0" aria-expanded="false">
-          <span data-i18n="calendar">Calendar</span>
-          <span class="calendar-expand-hint"><span class="calendar-chevron" aria-hidden="true">▸</span><span data-i18n="clickToExpand">Click to expand</span></span>
-        </h2>
+        <h2 id="calendarToggle" class="calendar-header" role="button" tabindex="0" aria-expanded="false"><span data-i18n="calendar">Calendar</span><span class="calendar-expand-hint"><span class="calendar-chevron" aria-hidden="true">▸</span><span data-i18n="clickToExpand">Click to expand</span></span></h2>
         <div id="calendarContent" hidden>
           <p data-i18n="subscribeTeamEvents">Subscribe to this Team's events in your calendar app.</p>
-          <div class="subscribe-row">
-            <input id="calendarUrl" type="text" readonly onclick="this.select()" /><button id="copyCalendar" type="button" class="btn secondary" data-i18n="copy">Copy</button>
-          </div>
+          <div class="subscribe-row"><input id="calendarUrl" type="text" readonly onclick="this.select()" /><button id="copyCalendar" type="button" class="btn secondary" data-i18n="copy">Copy</button></div>
           <div class="subscribe-hint" data-i18n="syncHint">Paste this link into your calendar app's "subscribe by URL" option to keep it in sync automatically.</div>
           <hr />
-          <p><strong data-i18n="subscribePersonEvents">Subscribe to a person's events</strong></p>
-          <p data-i18n="personCalendarHint">Select a person to get a calendar containing events where that person is going or is assigned as staff.</p>
-          <div class="subscribe-row">
-            <select id="personCalendar"><option value="" data-i18n="selectPersonOption">Select a person…</option></select>
-            <input id="personCalendarUrl" type="text" readonly onclick="this.select()" placeholder="Select a person first" data-i18n-placeholder="selectPersonFirst" />
-            <button id="copyPersonCalendar" type="button" class="btn secondary" disabled data-i18n="copy">Copy</button>
-          </div>
+          <p><strong data-i18n="subscribePersonEvents">Subscribe to a person's events</strong></p><p data-i18n="personCalendarHint">Select a person to get a calendar containing events where that person is going or is assigned as staff.</p>
+          <div class="subscribe-row"><select id="personCalendar"><option value="" data-i18n="selectPersonOption">Select a person…</option></select><input id="personCalendarUrl" type="text" readonly onclick="this.select()" placeholder="Select a person first" data-i18n-placeholder="selectPersonFirst" /><button id="copyPersonCalendar" type="button" class="btn secondary" disabled data-i18n="copy">Copy</button></div>
           <div class="subscribe-hint" data-i18n="syncHint">Paste this link into your calendar app's "subscribe by URL" option to keep it in sync automatically.</div>
         </div>
       </div>
       <div class="card overview-filters">
-        <div class="filter-block">
-          <strong data-i18n="dates">Dates</strong>
-          <div class="chip-row" id="dates"></div>
-        </div>
-        <div class="filter-block">
-          <strong data-i18n="category">Category</strong>
-          <div class="chip-row" id="categoriesFilter"></div>
-        </div>
+        <div class="filter-block"><strong data-i18n="fromDate">From</strong><input id="dateFrom" type="date" /></div>
+        <div class="filter-block"><strong data-i18n="toDate">To</strong><input id="dateTo" type="date" /></div>
+        <div class="filter-block"><strong data-i18n="category">Category</strong><div class="chip-row" id="categoriesFilter"></div></div>
       </div>
       <div id="events"></div>
     </div>
-    <script src="/shared.js"></script>
-    <script src="/shared-api.js"></script>
-    <script src="/shared-team.js"></script>
-    <script src="/team-overview-api.js"></script>
-    <script src="/team-overview-staff.js"></script>
-    <script src="/bulk-attendance.js"></script>
-    <script src="/team-overview-render.js"></script>
-    <script src="/team-overview.js"></script>
-    <style>
-      .page-head{display:flex;justify-content:space-between;align-items:center;gap:16px}.page-actions{display:flex;gap:8px;flex-wrap:wrap}.calendar-section{margin-top:16px}.calendar-header{display:flex;align-items:center;justify-content:space-between;gap:8px;margin:0;cursor:pointer;user-select:none}.calendar-header:focus-visible{outline:2px solid currentColor;outline-offset:3px}.calendar-expand-hint{display:inline-flex;align-items:center;gap:8px;font-size:.85rem;font-weight:400;color:var(--ink-soft)}.calendar-chevron{font-size:1.5em;line-height:1;opacity:.8;font-weight:600}.attendance-summary{display:flex;flex-wrap:wrap;gap:6px;margin-top:12px}.attendance-group{padding:5px 9px;border-radius:6px;font-size:.9rem;line-height:1.35}.attendance-group .roster-names{display:inline;margin-left:6px}.attendance-group .roster-name{display:inline}.attendance-going{background:#e7efe3;color:#4f7942}.attendance-going .roster-name{color:#4f7942}.attendance-maybe{background:#fff3cd;color:#856404}.attendance-maybe .roster-name{color:#856404}.attendance-not-going{background:#f5e6e2;color:#b5503f}.attendance-not-going .roster-name{color:#b5503f}.attendance-unknown{background:#eee;color:#666}.attendance-unknown .roster-name{color:#666}.attendance-group strong{font-weight:600}.staff-summary{margin-top:12px;padding:8px 0;border-top:1px solid #eee}.staff-summary .roster-names{display:inline;margin-left:8px}.staff-name{font-size:13px;font-weight:600;color:var(--ink-soft);background:var(--paper-dim);padding:5px 12px;border-radius:999px;margin-right:6px}.attendance-edit{display:flex;flex-wrap:wrap;gap:10px;margin-top:12px}.attendance-person-wrap{position:relative;display:inline-flex;align-items:center;flex-wrap:wrap;gap:3px}.attendance-person{border:0;border-radius:999px;padding:7px 12px;cursor:pointer;font:inherit;display:inline-flex;align-items:center;gap:7px}.attendance-person small{font-size:.75em;opacity:.8}.attendance-person.attendance-unknown{background:#eee;color:#666}.attendance-person.attendance-yes{background:#e7efe3;color:#4f7942}.attendance-person.attendance-maybe{background:#fff3cd;color:#856404}.attendance-person.attendance-no{background:#f5e6e2;color:#b5503f}.attendance-person:hover{filter:brightness(.96)}.note-button{border:0;background:transparent;cursor:pointer;padding:4px 5px;font-size:14px;opacity:.55}.note-button.has-note{opacity:1}.note-editor{width:100%;display:flex;gap:5px;align-items:center;margin-top:4px}.note-editor[hidden]{display:none}.note-editor input{min-width:180px;flex:1;padding:6px 8px;border:1px solid #ccc;border-radius:5px;font:inherit}.note-editor .btn{padding:5px 9px;font-size:.8rem}.staff-edit{margin-top:12px;padding-top:10px;border-top:1px solid #eee}.staff-role-group{margin-bottom:12px}.staff-role-title{font-weight:600;margin-bottom:6px}.staff-person-list{display:flex;flex-wrap:wrap;gap:6px}.staff-person{border:0;border-radius:999px;padding:7px 12px;cursor:pointer;font:inherit}.staff-person.staff-selected{background:#e7efe3;color:#4f7942}.staff-person.staff-unselected{background:#eee;color:#666}.staff-person:hover{filter:brightness(.96)}.staff-empty{font-size:.85rem;color:var(--ink-soft)}
-    </style>
+    <script src="/shared.js"></script><script src="/shared-api.js"></script><script src="/shared-team.js"></script><script src="/team-overview-api.js"></script><script src="/team-overview-staff.js"></script><script src="/bulk-attendance.js"></script><script src="/team-overview-render.js"></script><script src="/team-overview.js"></script>
   </body>
 </html>
