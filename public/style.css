@@ -102,6 +102,20 @@ h3 { margin: 0 0 12px; color: var(--ink-soft); font-size: 12px; font-weight: 700
 .roster-empty { margin-top: 10px; color: var(--ink-soft); font-size: 13px; font-style: italic; }
 .roster-note { font-weight: 500; opacity: 0.85; }
 
+/* Overview attendance editing: restore the status-colour chips used by the original UI. */
+.attendance-edit { display: flex; flex-wrap: wrap; gap: 7px; margin-top: 12px; }
+.attendance-person-wrap { display: inline-flex; align-items: center; gap: 4px; }
+.attendance-person { border: 0; border-radius: 999px; padding: 7px 12px; cursor: pointer; font: inherit; display: inline-flex; align-items: center; gap: 7px; }
+.attendance-person small { font-size: .75em; opacity: .8; }
+.attendance-person.attendance-unknown { background: #eee; color: #666; }
+.attendance-person.attendance-yes { background: var(--accent-bg); color: var(--accent); }
+.attendance-person.attendance-maybe { background: #fff3cd; color: #856404; }
+.attendance-person.attendance-no { background: var(--danger-bg); color: var(--danger); }
+.attendance-person:hover { filter: brightness(.96); }
+.note-button { border: 0; background: transparent; padding: 5px; cursor: pointer; border-radius: 999px; }
+.note-button:hover { background: var(--paper-dim); }
+.note-button.has-note { color: var(--accent); }
+
 .overview-filters { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 20px 24px; align-items: start; }
 .overview-filters .filter-block { display: flex; flex-direction: column; gap: 7px; min-width: 0; }
 .overview-filters .filter-block > strong { color: var(--ink-soft); font-size: 12px; font-weight: 700; letter-spacing: 0.04em; }
