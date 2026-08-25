@@ -5,6 +5,9 @@
 
   function matchingEvents() {
     if (!pageState?.state?.events) return [];
+    if (typeof eventMatchesOverviewFilters === "function") {
+      return sortByDateTime(pageState.state.events.filter(eventMatchesOverviewFilters));
+    }
     return sortByDateTime(pageState.state.events.filter((event) =>
       (!pageState.dateFrom || event.date >= pageState.dateFrom) &&
       (!pageState.dateTo || event.date <= pageState.dateTo) &&
