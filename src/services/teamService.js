@@ -80,10 +80,21 @@ function addExistingMember(slug, personId) {
 function removeMember(slug, personId) {
   const team = getBySlug(slug);
   if (!teamsRepository.isMember(team.id, personId)) throw new AppError(404, 'team membership not found');
+
   const db = require('../db/connection').getDb();
-  const remainingTeams = db.prepare('SELECT COUNT(*) AS n FROM team_memberships WHERE person_id = ?').get(personId).n;
-  if (remainingTeams <= 1) throw new AppError(400, 'person must belong to at least one team');
-  teamsRepository.removeMember(team.id, personId);
+  const txn = db.transaction(() => {
+    db.prepare('DELETE FROM team_memberships WHERE team_id = ? AND person_id = ?').run(team.id, personId);
+
+    const remainingTeams = db
+      .prepare('SELECT COUNT(*) AS n FROM team_memberships WHERE person_id = ?')
+      .get(personId).n;
+
+    if (remainingTeams === 0) {
+      db.prepare('DELETE FROM persons WHERE id = ?').run(personId);
+    }
+  });
+
+  txn();
   return teamsRepository.findMembers(team.id);
 }
 
