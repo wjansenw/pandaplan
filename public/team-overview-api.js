@@ -1,15 +1,10 @@
 async function getTeamState(slug) {
-  return api("/api/teams/" + encodeURIComponent(slug) + "/state");
+  return apiRequest(teamApiUrl("state", slug));
 }
 
 async function updateAttendance(slug, personId, eventId, status, note) {
-  return api(
-    "/api/teams/" +
-      encodeURIComponent(slug) +
-      "/attendance/" +
-      encodeURIComponent(personId) +
-      "/" +
-      encodeURIComponent(eventId),
+  return apiRequest(
+    teamApiUrl("attendance", slug) + "/" + encodeURIComponent(personId) + "/" + encodeURIComponent(eventId),
     {
       method: "PUT",
       body: JSON.stringify({ status, note }),
