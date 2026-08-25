@@ -107,8 +107,6 @@
     update();
   }
 
-  // The Overview owns the shared filter state. Re-render the bulk block whenever
-  // those filters change so its count always reflects the current selection.
   window.refreshBulkAttendance = render;
 
   function refreshTeamOverview() {
