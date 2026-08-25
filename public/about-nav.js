@@ -1,0 +1,47 @@
+// Add the About entry consistently to the application's navigation.
+const ABOUT_MESSAGES = {
+  en: {
+    about: "About",
+    aboutSubtitle: "Information about PandaPlan and the project behind it.",
+    aboutProject: "PandaPlan",
+    aboutProjectText: "PandaPlan is a self-hosted event attendance and team management application.",
+    version: "Version",
+    projectLinks: "Project links",
+    github: "GitHub",
+    readme: "README",
+    license: "License",
+    licenseText: "PandaPlan is distributed under the license specified in the project repository.",
+    licenseRepository: "View license information in the GitHub repository",
+  },
+  "nl-BE": {
+    about: "Over",
+    aboutSubtitle: "Informatie over PandaPlan en het project erachter.",
+    aboutProject: "PandaPlan",
+    aboutProjectText: "PandaPlan is een self-hosted toepassing voor aanwezigheid en teambeheer.",
+    version: "Versie",
+    projectLinks: "Projectlinks",
+    github: "GitHub",
+    readme: "README",
+    license: "Licentie",
+    licenseText: "PandaPlan wordt verspreid onder de licentie die in de projectrepository is vermeld.",
+    licenseRepository: "Bekijk de licentie-informatie in de GitHub-repository",
+  },
+};
+
+Object.entries(ABOUT_MESSAGES).forEach(([language, messages]) => {
+  if (typeof MESSAGES !== "undefined" && MESSAGES[language]) {
+    Object.assign(MESSAGES[language], messages);
+  }
+});
+
+function addAboutNav() {
+  const links = document.querySelector(".nav .links");
+  if (!links || links.querySelector('[href="/about.html"]')) return;
+  const link = document.createElement("a");
+  link.href = "/about.html";
+  link.dataset.i18n = "about";
+  link.textContent = t("about");
+  links.appendChild(link);
+}
+
+addAboutNav();
