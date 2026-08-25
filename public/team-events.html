@@ -85,65 +85,21 @@
           </div>
         </div>
         <div class="field">
-          <label data-i18n="weekdays">Days</label>
-          <div id="recWeekdays" class="weekday-list"></div>
+          <label data-i18n="weekdays">Weekdays</label>
+          <div id="recWeekdays" class="chip-row"></div>
         </div>
-        <div class="field-row">
-          <div class="field">
-            <label data-i18n="startTime">Start time</label>
-            <input id="recStart" type="time" />
-          </div>
-          <div class="field">
-            <label data-i18n="endTime">End time</label>
-            <input id="recEnd" type="time" />
-          </div>
-        </div>
-        <div class="field">
-          <label data-i18n="location">Location</label>
-          <input id="recLocation" data-i18n-placeholder="locationPlaceholder" />
-        </div>
-        <div class="field">
-          <label data-i18n="description">Description</label>
-          <textarea id="recDescription" data-i18n-placeholder="descriptionPlaceholder"></textarea>
-        </div>
-        <div class="sub" id="recPreview"></div>
-        <button class="btn" id="createRecurring" data-i18n="createRecurring">Create events</button>
+        <button class="btn" id="createRecurring" data-i18n="createRecurring">Create recurring events</button>
         <div class="saved-note" id="recNote"></div>
       </section>
 
       <section class="card">
         <div class="card-head">
-          <h2 data-i18n="importFromIcs">Import from ICS feed</h2>
+          <h2 data-i18n="events">Events</h2>
         </div>
-        <p class="sub" data-i18n="icsImportHelp">Enter a calendar feed URL. Events already matching all four fields are skipped.</p>
-        <div class="field">
-          <label data-i18n="icsFeedUrl">ICS feed URL</label>
-          <input id="icsUrl" type="url" data-i18n-placeholder="icsFeedUrlPlaceholder" />
-        </div>
-        <div class="field">
-          <label data-i18n="locationContains">Location contains</label>
-          <input id="icsLocationContains" type="text" data-i18n-placeholder="locationContainsPlaceholder" />
-        </div>
-        <div class="field">
-          <label data-i18n="categoryWhenLocationMatches">Category when location matches</label>
-          <select id="icsLocationCategory"></select>
-        </div>
-        <div class="field">
-          <label data-i18n="categoryOtherwise">Category otherwise</label>
-          <select id="icsFallbackCategory"></select>
-        </div>
-        <button class="btn" id="importIcs" data-i18n="importEvents">Import events</button>
-        <div class="saved-note" id="importNote"></div>
+        <div id="list"></div>
       </section>
-
-      <div id="events"></div>
     </main>
 
-    <script src="/shared.js"></script>
-    <script src="/shared-api.js"></script>
-    <script src="/shared-team.js"></script>
-    <script src="/team-events-api.js"></script>
-    <script src="/team-events-render.js"></script>
-    <script src="/team-events.js"></script>
+    <script src="/shared.js"></script><script src="/about-nav.js"></script><script src="/shared-api.js"></script><script src="/shared-team.js"></script><script src="/team-events-api.js"></script><script src="/team-events-render.js"></script><script src="/team-events.js"></script>
   </body>
 </html>
