@@ -1,4 +1,4 @@
-// Add the About entry consistently to the application's navigation.
+// Shared About translations and hierarchical navigation bootstrap.
 const ABOUT_MESSAGES = {
   en: {
     about: "About",
@@ -34,14 +34,11 @@ Object.entries(ABOUT_MESSAGES).forEach(([language, messages]) => {
   }
 });
 
-function addAboutNav() {
-  const links = document.querySelector(".nav .links");
-  if (!links || links.querySelector('[href="/about.html"]')) return;
-  const link = document.createElement("a");
-  link.href = "/about.html";
-  link.dataset.i18n = "about";
-  link.textContent = t("about");
-  links.appendChild(link);
-}
+const navigationCss = document.createElement("link");
+navigationCss.rel = "stylesheet";
+navigationCss.href = "/navigation.css";
+document.head.appendChild(navigationCss);
 
-addAboutNav();
+const navigationScript = document.createElement("script");
+navigationScript.src = "/navigation.js";
+document.body.appendChild(navigationScript);
