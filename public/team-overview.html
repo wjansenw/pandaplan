@@ -20,7 +20,7 @@
       <div class="page-head">
         <div>
           <h1 id="title" data-i18n="teamOverview">Team overview</h1>
-          <p class="sub" data-i18n="teamOverviewSubtitle">Attendance and staff assignments for this Team.</p>
+          <p class="sub" id="subtitle" data-i18n="teamOverviewSubtitle">Attendance and staff assignments for this Team.</p>
         </div>
         <div class="page-actions">
           <button id="editAttendance" type="button" class="btn secondary" data-i18n="editAttendance">Edit attendance</button>
@@ -53,6 +53,9 @@
       <div id="events"></div>
     </div>
     <script src="/shared.js"></script>
+    <script src="/shared-api.js"></script>
+    <script src="/shared-team.js"></script>
+    <script src="/shared-render.js"></script>
     <script src="/team-overview-api.js"></script>
     <script src="/team-overview-staff.js"></script>
     <script src="/bulk-attendance.js"></script>
