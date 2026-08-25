@@ -8,6 +8,22 @@
   const modeUrl = (url) =>
     adminMode ? url + (url.includes("?") ? "&" : "?") + "mode=admin" : url;
 
+  function pageId(page) {
+    if (page === currentPage) return null;
+    const aliases = {
+      overview: "overviewLink",
+      people: "peopleLink",
+      events: "eventsLink",
+      categories: "categoriesLink",
+    };
+    return currentPage === "overview" ? {
+      overview: "overview",
+      people: "people",
+      events: "eventsLink",
+      categories: "categories",
+    }[page] : aliases[page];
+  }
+
   function link(href, label, id, current = false, adminOnly = false) {
     const a = document.createElement("a");
     a.href = modeUrl(href);
@@ -24,7 +40,6 @@
   function render(teams) {
     const nav = document.querySelector(".nav");
     if (!nav) return;
-
     nav.innerHTML = "";
 
     const brand = document.createElement("a");
@@ -40,8 +55,9 @@
 
     const teamsSection = document.createElement("div");
     teamsSection.className = "nav-section";
-    const teamsLink = link("/teams.html", t("teams"), "teamsLink", !currentTeamSlug && path === "/teams.html");
-    teamsSection.appendChild(teamsLink);
+    teamsSection.appendChild(
+      link("/teams.html", t("teams"), null, !currentTeamSlug && path === "/teams.html"),
+    );
 
     const teamList = document.createElement("div");
     teamList.className = "nav-team-list";
@@ -57,42 +73,30 @@
         null,
         team.slug === currentTeamSlug && currentPage === "overview",
       );
-      teamLink.className = "nav-team-link" + (team.slug === currentTeamSlug && !currentPage ? " current" : "");
+      teamLink.classList.add("nav-team-link");
       item.appendChild(teamLink);
 
       const children = document.createElement("div");
       children.className = "nav-team-children";
       if (team.slug === currentTeamSlug) children.classList.add("open");
 
-      const overview = link(
-        `/team/${encodeURIComponent(team.slug)}/overview`,
-        t("overview"),
-        "overview",
-        team.slug === currentTeamSlug && currentPage === "overview",
-      );
-      children.appendChild(overview);
-
-      children.appendChild(link(
-        `/team/${encodeURIComponent(team.slug)}/people`,
-        t("people"),
-        "people",
-        team.slug === currentTeamSlug && currentPage === "people",
-        true,
-      ));
-      children.appendChild(link(
-        `/team/${encodeURIComponent(team.slug)}/events`,
-        t("events"),
-        "eventsLink",
-        team.slug === currentTeamSlug && currentPage === "events",
-        true,
-      ));
-      children.appendChild(link(
-        `/team/${encodeURIComponent(team.slug)}/categories`,
-        t("categories"),
-        "categories",
-        team.slug === currentTeamSlug && currentPage === "categories",
-        true,
-      ));
+      const pages = [
+        ["overview", t("overview"), false],
+        ["people", t("peopleNav") || t("people"), true],
+        ["events", t("events"), true],
+        ["categories", t("categories"), true],
+      ];
+      pages.forEach(([page, label, adminOnly]) => {
+        children.appendChild(
+          link(
+            `/team/${encodeURIComponent(team.slug)}/${page}`,
+            label,
+            team.slug === currentTeamSlug ? pageId(page) : null,
+            team.slug === currentTeamSlug && currentPage === page,
+            adminOnly,
+          ),
+        );
+      });
 
       item.appendChild(children);
       teamList.appendChild(item);
@@ -100,17 +104,13 @@
 
     teamsSection.appendChild(teamList);
     menu.appendChild(teamsSection);
-
-    const about = link("/about.html", t("about"), "aboutLink", path === "/about.html");
-    menu.appendChild(about);
-
+    menu.appendChild(link("/about.html", t("about"), null, path === "/about.html"));
     nav.appendChild(menu);
   }
 
   async function init() {
     try {
-      const teams = await api("/api/teams");
-      render(teams);
+      render(await api("/api/teams"));
     } catch (error) {
       console.error("Could not load navigation teams:", error);
       render([]);
