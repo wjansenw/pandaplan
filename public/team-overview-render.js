@@ -1,18 +1,27 @@
 function eventMatchesOverviewFilters(event) {
-  const categoryIds = pageState.categoryIds;
-  const categoryId = event.categoryId == null || event.categoryId === "" ? null : String(event.categoryId);
+  const selectedCategoryIds = new Set(
+    [...pageState.categoryIds].map((id) => String(id)),
+  );
+  const categoryId =
+    event.categoryId == null || event.categoryId === ""
+      ? null
+      : String(event.categoryId);
 
   return (
     (!pageState.dateFrom || event.date >= pageState.dateFrom) &&
     (!pageState.dateTo || event.date <= pageState.dateTo) &&
-    (!categoryIds.size || categoryIds.has(categoryId))
+    (!selectedCategoryIds.size || selectedCategoryIds.has(categoryId))
+  );
+}
+
+function getFilteredOverviewEvents() {
+  return sortByDateTime(
+    (pageState.state?.events || []).filter(eventMatchesOverviewFilters),
   );
 }
 
 function renderTeamOverview() {
-  const list = sortByDateTime(
-    pageState.state.events.filter(eventMatchesOverviewFilters),
-  );
+  const list = getFilteredOverviewEvents();
 
   const box = document.getElementById("events");
   box.innerHTML = "";
