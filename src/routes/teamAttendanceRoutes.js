@@ -12,25 +12,58 @@ router.get('/', (req, res) => {
   res.json(result);
 });
 
-router.post('/bulk', (req, res) => {
+// Remove all attendance records for all events belonging to this team.
+router.delete('/', (req, res) => {
+  const team = teamService.getBySlug(req.params.slug);
+  const result = getDb().prepare('DELETE FROM attendance WHERE event_id IN (SELECT id FROM events WHERE team_id = ?)').run(team.id);
+  res.json({ ok: true, removed: result.changes });
+});
+
+function bulkUpdate(req, res) {
   const team = teamService.getBySlug(req.params.slug);
   const personId = typeof req.body.personId === 'string' ? req.body.personId : '';
   const status = typeof req.body.status === 'string' ? req.body.status : '';
   const eventIds = Array.isArray(req.body.eventIds) ? [...new Set(req.body.eventIds.filter(id => typeof id === 'string'))] : [];
+  const startDate = typeof req.body.startDate === 'string' ? req.body.startDate : '';
+  const endDate = typeof req.body.endDate === 'string' ? req.body.endDate : '';
+  const categoryId = typeof req.body.categoryId === 'string' ? req.body.categoryId : '';
+
   if (!personId) return res.status(400).json({ error: 'personId is required' });
   if (!['yes', 'maybe', 'no'].includes(status)) return res.status(400).json({ error: 'invalid attendance status' });
-  if (!eventIds.length) return res.status(400).json({ error: 'at least one event is required' });
+  if (!eventIds.length && !startDate && !endDate) return res.status(400).json({ error: 'events or a date range is required' });
+  if ((startDate && !/^\d{4}-\d{2}-\d{2}$/.test(startDate)) || (endDate && !/^\d{4}-\d{2}-\d{2}$/.test(endDate))) {
+    return res.status(400).json({ error: 'invalid date range' });
+  }
+  if (startDate && endDate && startDate > endDate) return res.status(400).json({ error: 'startDate must not be after endDate' });
+
   const db = getDb();
-  const validPerson = db.prepare('SELECT 1 FROM team_memberships WHERE team_id = ? AND person_id = ?').get(team.id, personId);
-  if (!validPerson) return res.status(404).json({ error: 'person is not a member of this team' });
-  const placeholders = eventIds.map(() => '?').join(',');
-  const validEvents = db.prepare(`SELECT id FROM events WHERE team_id = ? AND id IN (${placeholders})`).all(team.id, ...eventIds).map(row => row.id);
-  if (validEvents.length !== eventIds.length) return res.status(400).json({ error: 'one or more events do not belong to this team' });
+  if (!db.prepare('SELECT 1 FROM team_memberships WHERE team_id = ? AND person_id = ?').get(team.id, personId)) {
+    return res.status(404).json({ error: 'person is not a member of this team' });
+  }
+
+  let validEvents;
+  if (eventIds.length) {
+    const placeholders = eventIds.map(() => '?').join(',');
+    validEvents = db.prepare(`SELECT id FROM events WHERE team_id = ? AND id IN (${placeholders})`).all(team.id, ...eventIds).map(row => row.id);
+    if (validEvents.length !== eventIds.length) return res.status(400).json({ error: 'one or more events do not belong to this team' });
+  } else {
+    const where = ['team_id = ?'];
+    const params = [team.id];
+    if (startDate) { where.push('date >= ?'); params.push(startDate); }
+    if (endDate) { where.push('date <= ?'); params.push(endDate); }
+    if (categoryId) { where.push('category_id = ?'); params.push(categoryId); }
+    validEvents = db.prepare(`SELECT id FROM events WHERE ${where.join(' AND ')} ORDER BY date, start_time`).all(...params).map(row => row.id);
+  }
+  if (!validEvents.length) return res.json({ updated: 0 });
+
   const update = db.prepare(`INSERT INTO attendance (person_id, event_id, status, note) VALUES (?, ?, ?, '')
     ON CONFLICT(person_id, event_id) DO UPDATE SET status = excluded.status`);
   db.transaction(() => validEvents.forEach(eventId => update.run(personId, eventId, status)))();
   res.json({ updated: validEvents.length });
-});
+}
+
+router.post('/bulk', bulkUpdate);
+router.put('/bulk', bulkUpdate);
 
 router.put('/:personId/:eventId', (req, res) => {
   const team = teamService.getBySlug(req.params.slug);

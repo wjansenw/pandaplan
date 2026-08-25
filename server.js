@@ -16,7 +16,11 @@ const teamPages = {
   categories: 'team-categories.html',
 };
 
-app.get('/team/:slug', (req, res) => res.redirect(`/team/${encodeURIComponent(req.params.slug)}/overview`));
+app.get('/team/:slug', (req, res) => {
+  const query = new URLSearchParams(req.query).toString();
+  const suffix = query ? `?${query}` : '';
+  res.redirect(`/team/${encodeURIComponent(req.params.slug)}/overview${suffix}`);
+});
 Object.entries(teamPages).forEach(([page, file]) => {
   app.get(`/team/:slug/${page}`, (req, res) => res.sendFile(path.join(__dirname, 'public', file)));
 });
