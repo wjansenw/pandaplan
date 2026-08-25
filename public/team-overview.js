@@ -88,6 +88,12 @@ function render() {
   );
   renderTeamOverview();
   updateEditButtons();
+  // Bulk attendance is a separate renderer, but it depends on the same
+  // date/category filter state. Refresh it whenever the Overview renders so
+  // its count changes immediately when a filter changes.
+  if (typeof window.refreshBulkAttendance === "function") {
+    window.refreshBulkAttendance();
+  }
 }
 function handleOverviewClick(event) {
   const target = event.target.closest("button, .staff-person");
