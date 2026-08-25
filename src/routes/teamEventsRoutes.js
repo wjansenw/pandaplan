@@ -20,6 +20,19 @@ function validateCategory(teamId, categoryId) {
 }
 
 router.get('/', (req, res) => res.json(rows(teamService.getBySlug(req.params.slug).id)));
+
+// Remove all attendance/staff data and events belonging to this team.
+router.delete('/', (req, res) => {
+  const team = teamService.getBySlug(req.params.slug);
+  const db = getDb();
+  db.transaction(() => {
+    db.prepare('DELETE FROM attendance WHERE event_id IN (SELECT id FROM events WHERE team_id = ?)').run(team.id);
+    db.prepare('DELETE FROM staff_assignments WHERE event_id IN (SELECT id FROM events WHERE team_id = ?)').run(team.id);
+    db.prepare('DELETE FROM events WHERE team_id = ?').run(team.id);
+  })();
+  res.json({ ok: true, events: 0 });
+});
+
 router.post('/', (req, res) => {
   const team = teamService.getBySlug(req.params.slug);
   const categoryId = validateCategory(team.id, req.body.categoryId);
