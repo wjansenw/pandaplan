@@ -1,18 +1,15 @@
 // Bulk attendance controls for the team overview.
 (function () {
   let participantId = "";
-  let categoryId = "";
-  let startDate = "";
-  let endDate = "";
   let attendanceEditMode = false;
 
   function matchingEvents() {
     if (!pageState?.state?.events) return [];
-    return pageState.state.events.filter(
-      (e) =>
-        (!categoryId || e.categoryId === categoryId) &&
-        (!startDate || e.date >= startDate) &&
-        (!endDate || e.date <= endDate),
+    return sortByDateTime(
+      filterEvents(pageState.state.events, {
+        categoryIds: pageState.categoryIds,
+        dateMode: pageState.dateMode,
+      }),
     );
   }
 
@@ -33,15 +30,6 @@
           <label>${t("participant")}
             <select id="bulkPerson"><option value="">${t("selectParticipant")}</option></select>
           </label>
-          <label>${t("category")}
-            <select id="bulkCategory"><option value="">${t("allCategories")}</option></select>
-          </label>
-          <label>${t("fromDate")}
-            <input id="bulkFrom" type="date">
-          </label>
-          <label>${t("toDate")}
-            <input id="bulkTo" type="date">
-          </label>
         </div>
         <div class="bulk-actions">
           <span id="bulkCount">${t("eventsSelected", { count: 0 })}</span>
@@ -53,10 +41,10 @@
         </div>
       </div>`;
 
-    const calendar = document.querySelector(".calendar-section");
+    const filters = document.querySelector(".overview-filters");
     const container = document.querySelector(".wrap");
-    if (calendar) calendar.insertAdjacentElement("afterend", block);
-    else if (container) container.prepend(block);
+    if (filters) filters.insertAdjacentElement("afterend", block);
+    else if (container) container.appendChild(block);
     else document.body.appendChild(block);
 
     const toggle = block.querySelector("#bulkAttendanceToggle");
@@ -79,39 +67,18 @@
 
     const state = pageState.state;
     if (!state) return block;
-    const ps = (state.persons || [])
+    (state.persons || [])
       .filter((p) => Array.isArray(p.roles) && p.roles.includes("participant"))
-      .sort((a, b) => a.name.localeCompare(b.name));
-    ps.forEach((p) => {
-      const option = document.createElement("option");
-      option.value = p.id;
-      option.textContent = p.name;
-      block.querySelector("#bulkPerson").appendChild(option);
-    });
-    (state.categories || [])
-      .slice()
       .sort((a, b) => a.name.localeCompare(b.name))
-      .forEach((c) => {
+      .forEach((p) => {
         const option = document.createElement("option");
-        option.value = c.id;
-        option.textContent = c.name;
-        block.querySelector("#bulkCategory").appendChild(option);
+        option.value = p.id;
+        option.textContent = p.name;
+        block.querySelector("#bulkPerson").appendChild(option);
       });
 
     block.querySelector("#bulkPerson").addEventListener("change", (e) => {
       participantId = e.target.value;
-      update();
-    });
-    block.querySelector("#bulkCategory").addEventListener("change", (e) => {
-      categoryId = e.target.value;
-      update();
-    });
-    block.querySelector("#bulkFrom").addEventListener("change", (e) => {
-      startDate = e.target.value;
-      update();
-    });
-    block.querySelector("#bulkTo").addEventListener("change", (e) => {
-      endDate = e.target.value;
       update();
     });
     block.querySelectorAll("[data-bulk]").forEach((button) =>
@@ -126,19 +93,13 @@
       if (existing) existing.remove();
       return;
     }
-    if (!pageState.state?.persons || !pageState.state?.categories) return;
+    if (!pageState.state?.persons) return;
     const block = ensureBlock();
     block.querySelector("#bulkPerson").value = participantId;
-    block.querySelector("#bulkCategory").value = categoryId;
-    block.querySelector("#bulkFrom").value = startDate;
-    block.querySelector("#bulkTo").value = endDate;
     update();
   }
 
   function refreshTeamOverview() {
-    // bulk-attendance.js has its own render() function, so calling render()
-    // here would only redraw the bulk-attendance block. The page renderer is
-    // the global render function created by team-overview.js.
     if (typeof window.render === "function" && window.render !== render) {
       window.render();
     }
@@ -152,10 +113,7 @@
       count,
     });
     block.querySelectorAll("[data-bulk]").forEach((button) => {
-      button.disabled =
-        !participantId ||
-        !count ||
-        (startDate && endDate && startDate > endDate);
+      button.disabled = !participantId || !count;
     });
   }
 
@@ -163,21 +121,25 @@
     const state = pageState.state;
     const events = matchingEvents();
     if (!state || !participantId || !events.length) return;
-    if (startDate && endDate && startDate > endDate) {
-      alert(t("invalidDateRange"));
-      return;
-    }
 
     const person = state.persons.find((p) => p.id === participantId);
-    const category = categoryId && state.categories.find((c) => c.id === categoryId);
+    const categoryIds = pageState.categoryIds;
+    const selectedCategories = (state.categories || []).filter((c) => categoryIds.has(c.id));
+    const categoryLabel = categoryIds.size
+      ? selectedCategories.map((c) => c.name).join(", ")
+      : t("allCategories");
+    const dateLabel =
+      pageState.dateMode === "upcoming"
+        ? t("upcoming")
+        : pageState.dateMode === "past"
+          ? t("past")
+          : t("allDates");
     const label =
       status === "yes"
         ? t("goingShort")
         : status === "maybe"
           ? t("maybe")
           : t("notGoingShort");
-    const dateLabel = `${startDate || t("anyDate")} → ${endDate || t("anyDate")}`;
-    const categoryLabel = category ? category.name : t("allCategories");
 
     if (
       !confirm(
@@ -193,10 +155,7 @@
       return;
     }
 
-    // Snapshot the selected event IDs before the async request. This makes
-    // the local update exactly match what was sent to the API.
     const eventIds = events.map((event) => event.id);
-
     try {
       const result = await api(
         `/api/teams/${encodeURIComponent(slug)}/attendance/bulk`,
@@ -206,9 +165,9 @@
             personId: participantId,
             status,
             eventIds,
-            startDate,
-            endDate,
-            categoryId,
+            startDate: "",
+            endDate: "",
+            categoryId: categoryIds.size === 1 ? [...categoryIds][0] : "",
           }),
         },
       );
@@ -222,9 +181,6 @@
         };
       });
 
-      // Re-render the actual team overview as well as the bulk controls.
-      // Previously this called this module's local render(), leaving the
-      // event cards unchanged even though pageState had been updated.
       refreshTeamOverview();
       update();
 
