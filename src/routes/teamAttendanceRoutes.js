@@ -12,6 +12,13 @@ router.get('/', (req, res) => {
   res.json(result);
 });
 
+// Remove all attendance records for all events belonging to this team.
+router.delete('/', (req, res) => {
+  const team = teamService.getBySlug(req.params.slug);
+  const result = getDb().prepare('DELETE FROM attendance WHERE event_id IN (SELECT id FROM events WHERE team_id = ?)').run(team.id);
+  res.json({ ok: true, removed: result.changes });
+});
+
 function bulkUpdate(req, res) {
   const team = teamService.getBySlug(req.params.slug);
   const personId = typeof req.body.personId === 'string' ? req.body.personId : '';
