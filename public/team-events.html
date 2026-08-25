@@ -10,55 +10,140 @@
     <div class="nav">
       <a class="brand" id="brand">🐼 pandaplan</a>
       <div class="links">
-        <a id="overviewLink" data-i18n="overview">Overview</a><a class="current" data-i18n="events">Events</a><a id="peopleLink" data-i18n="persons" data-admin-only>People</a><a id="categoriesLink" data-i18n="categories" data-admin-only>Categories</a>
+        <a id="overviewLink" data-i18n="overview">Overview</a>
+        <a class="current" data-i18n="events">Events</a>
+        <a id="peopleLink" data-i18n="persons" data-admin-only>People</a>
+        <a id="categoriesLink" data-i18n="categories" data-admin-only>Categories</a>
       </div>
     </div>
-    <div class="wrap">
+
+    <main class="wrap">
       <h1 id="title"></h1>
       <p class="sub" id="subtitle"></p>
-      <div class="card">
-        <div class="card-head"><h2 data-i18n="newEvent">New event</h2></div>
-        <div class="field"><label data-i18n="subject">Subject</label><input id="subject" /></div>
-        <div class="field"><label data-i18n="category">Category</label><select id="category"></select></div>
-        <div class="field-row"><div class="field"><label data-i18n="date">Date</label><input id="date" type="date" /></div></div>
-        <div class="field-row"><div class="field"><label data-i18n="startTime">Start time</label><input id="start" type="time" /></div><div class="field"><label data-i18n="endTime">End time</label><input id="end" type="time" /></div></div>
-        <div class="field"><label data-i18n="location">Location</label><input id="location" data-i18n-placeholder="locationPlaceholder" /></div>
-        <div class="field"><label data-i18n="description">Description</label><textarea id="description" data-i18n-placeholder="descriptionPlaceholder"></textarea></div>
-        <button class="btn" id="save" data-i18n="saveEvent">Save event</button><div class="saved-note" id="note"></div>
-      </div>
-      <div class="card">
-        <div class="card-head"><h2 data-i18n="recurringEvents">Recurring events</h2></div>
+
+      <section class="card">
+        <div class="card-head">
+          <h2 data-i18n="newEvent">New event</h2>
+        </div>
+        <div class="field">
+          <label data-i18n="subject">Subject</label>
+          <input id="subject" />
+        </div>
+        <div class="field">
+          <label data-i18n="category">Category</label>
+          <select id="category"></select>
+        </div>
+        <div class="field-row">
+          <div class="field">
+            <label data-i18n="date">Date</label>
+            <input id="date" type="date" />
+          </div>
+        </div>
+        <div class="field-row">
+          <div class="field">
+            <label data-i18n="startTime">Start time</label>
+            <input id="start" type="time" />
+          </div>
+          <div class="field">
+            <label data-i18n="endTime">End time</label>
+            <input id="end" type="time" />
+          </div>
+        </div>
+        <div class="field">
+          <label data-i18n="location">Location</label>
+          <input id="location" data-i18n-placeholder="locationPlaceholder" />
+        </div>
+        <div class="field">
+          <label data-i18n="description">Description</label>
+          <textarea id="description" data-i18n-placeholder="descriptionPlaceholder"></textarea>
+        </div>
+        <button class="btn" id="save" data-i18n="saveEvent">Save event</button>
+        <div class="saved-note" id="note"></div>
+      </section>
+
+      <section class="card">
+        <div class="card-head">
+          <h2 data-i18n="recurringEvents">Recurring events</h2>
+        </div>
         <p class="sub" data-i18n="recurringHelp">Create multiple normal events on selected weekdays within a date range.</p>
-        <div class="field"><label data-i18n="subject">Subject</label><input id="recSubject" /></div>
-        <div class="field"><label data-i18n="category">Category</label><select id="recCategory"></select></div>
-        <div class="field-row"><div class="field"><label data-i18n="startDate">Start date</label><input id="recStartDate" type="date" /></div><div class="field"><label data-i18n="endDate">End date</label><input id="recEndDate" type="date" /></div></div>
-        <div class="field"><label data-i18n="weekdays">Days</label><div id="recWeekdays" class="weekday-list"></div></div>
-        <div class="field-row"><div class="field"><label data-i18n="startTime">Start time</label><input id="recStart" type="time" /></div><div class="field"><label data-i18n="endTime">End time</label><input id="recEnd" type="time" /></div></div>
-        <div class="field"><label data-i18n="location">Location</label><input id="recLocation" data-i18n-placeholder="locationPlaceholder" /></div>
-        <div class="field"><label data-i18n="description">Description</label><textarea id="recDescription" data-i18n-placeholder="descriptionPlaceholder"></textarea></div>
-        <div class="sub" id="recPreview"></div><button class="btn" id="createRecurring" data-i18n="createRecurring">Create events</button><div class="saved-note" id="recNote"></div>
-      </div>
-      <div class="card">
-        <div class="card-head"><h2 data-i18n="importFromIcs">Import from ICS feed</h2></div>
+        <div class="field">
+          <label data-i18n="subject">Subject</label>
+          <input id="recSubject" />
+        </div>
+        <div class="field">
+          <label data-i18n="category">Category</label>
+          <select id="recCategory"></select>
+        </div>
+        <div class="field-row">
+          <div class="field">
+            <label data-i18n="startDate">Start date</label>
+            <input id="recStartDate" type="date" />
+          </div>
+          <div class="field">
+            <label data-i18n="endDate">End date</label>
+            <input id="recEndDate" type="date" />
+          </div>
+        </div>
+        <div class="field">
+          <label data-i18n="weekdays">Days</label>
+          <div id="recWeekdays" class="weekday-list"></div>
+        </div>
+        <div class="field-row">
+          <div class="field">
+            <label data-i18n="startTime">Start time</label>
+            <input id="recStart" type="time" />
+          </div>
+          <div class="field">
+            <label data-i18n="endTime">End time</label>
+            <input id="recEnd" type="time" />
+          </div>
+        </div>
+        <div class="field">
+          <label data-i18n="location">Location</label>
+          <input id="recLocation" data-i18n-placeholder="locationPlaceholder" />
+        </div>
+        <div class="field">
+          <label data-i18n="description">Description</label>
+          <textarea id="recDescription" data-i18n-placeholder="descriptionPlaceholder"></textarea>
+        </div>
+        <div class="sub" id="recPreview"></div>
+        <button class="btn" id="createRecurring" data-i18n="createRecurring">Create events</button>
+        <div class="saved-note" id="recNote"></div>
+      </section>
+
+      <section class="card">
+        <div class="card-head">
+          <h2 data-i18n="importFromIcs">Import from ICS feed</h2>
+        </div>
         <p class="sub" data-i18n="icsImportHelp">Enter a calendar feed URL. Events already matching all four fields are skipped.</p>
-        <div class="field"><label data-i18n="icsFeedUrl">ICS feed URL</label><input id="icsUrl" type="url" data-i18n-placeholder="icsFeedUrlPlaceholder" /></div>
-        <div class="field"><label data-i18n="locationContains">Location contains</label><input id="icsLocationContains" type="text" data-i18n-placeholder="locationContainsPlaceholder" /></div>
-        <div class="field"><label data-i18n="categoryWhenLocationMatches">Category when location matches</label><select id="icsLocationCategory"></select></div>
-        <div class="field"><label data-i18n="categoryOtherwise">Category otherwise</label><select id="icsFallbackCategory"></select></div>
-        <button class="btn" id="importIcs" data-i18n="importEvents">Import events</button><div class="saved-note" id="importNote"></div>
-      </div>
+        <div class="field">
+          <label data-i18n="icsFeedUrl">ICS feed URL</label>
+          <input id="icsUrl" type="url" data-i18n-placeholder="icsFeedUrlPlaceholder" />
+        </div>
+        <div class="field">
+          <label data-i18n="locationContains">Location contains</label>
+          <input id="icsLocationContains" type="text" data-i18n-placeholder="locationContainsPlaceholder" />
+        </div>
+        <div class="field">
+          <label data-i18n="categoryWhenLocationMatches">Category when location matches</label>
+          <select id="icsLocationCategory"></select>
+        </div>
+        <div class="field">
+          <label data-i18n="categoryOtherwise">Category otherwise</label>
+          <select id="icsFallbackCategory"></select>
+        </div>
+        <button class="btn" id="importIcs" data-i18n="importEvents">Import events</button>
+        <div class="saved-note" id="importNote"></div>
+      </section>
+
       <div id="events"></div>
-    </div>
+    </main>
+
     <script src="/shared.js"></script>
     <script src="/shared-api.js"></script>
     <script src="/shared-team.js"></script>
     <script src="/team-events-api.js"></script>
     <script src="/team-events-render.js"></script>
     <script src="/team-events.js"></script>
-    <style>
-      .weekday-list { display:flex; flex-wrap:wrap; gap:8px 14px; }
-      .weekday-list label { white-space:nowrap; }
-      .weekday-list input { margin-right:4px; }
-    </style>
   </body>
 </html>
