@@ -69,9 +69,7 @@ function updatePersonCalendar() {
 async function load() {
   nav();
   applyTranslations();
-  pageState.state = await api(
-    "/api/teams/" + encodeURIComponent(slug) + "/state",
-  );
+  pageState.state = await getTeamState(slug);
   document.getElementById("title").textContent =
     pageState.state.team.name + " · " + t("overview");
   const calendarToggle = document.getElementById("calendarToggle");
@@ -335,20 +333,12 @@ async function toggleAttendance(personId, eventId) {
   const next =
     current === "yes" ? "maybe" : current === "maybe" ? "no" : "yes";
   try {
-    await api(
-      "/api/teams/" +
-        encodeURIComponent(slug) +
-        "/attendance/" +
-        encodeURIComponent(personId) +
-        "/" +
-        encodeURIComponent(eventId),
-      {
-        method: "PUT",
-        body: JSON.stringify({
-          status: next,
-          note: pageState.state.attendance[personId]?.[eventId]?.note || "",
-        }),
-      },
+    await updateAttendance(
+      slug,
+      personId,
+      eventId,
+      next,
+      pageState.state.attendance[personId]?.[eventId]?.note || "",
     );
     if (!pageState.state.attendance[personId])
       pageState.state.attendance[personId] = {};
@@ -386,18 +376,7 @@ async function saveNote(button) {
     note: "",
   };
   try {
-    await api(
-      "/api/teams/" +
-        encodeURIComponent(slug) +
-        "/attendance/" +
-        encodeURIComponent(personId) +
-        "/" +
-        encodeURIComponent(eventId),
-      {
-        method: "PUT",
-        body: JSON.stringify({ status: current.status, note }),
-      },
-    );
+    await updateAttendance(slug, personId, eventId, current.status, note);
     if (!pageState.state.attendance[personId])
       pageState.state.attendance[personId] = {};
     pageState.state.attendance[personId][eventId] = {
