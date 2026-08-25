@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>pandaplan · About</title>
+    <link rel="stylesheet" href="/style.css" />
+  </head>
+  <body>
+    <div class="nav">
+      <a class="brand" href="/teams.html">🐼 pandaplan</a>
+      <div class="links">
+        <a class="current" href="/about.html" data-i18n="about">About</a>
+      </div>
+    </div>
+
+    <main class="wrap">
+      <h1 data-i18n="about">About</h1>
+      <p class="sub" data-i18n="aboutSubtitle">Information about PandaPlan and the project behind it.</p>
+
+      <section class="card">
+        <h2 data-i18n="aboutProject">PandaPlan</h2>
+        <p data-i18n="aboutProjectText">PandaPlan is a self-hosted event attendance and team management application.</p>
+        <p><strong data-i18n="version">Version</strong>: <span>1.0.0</span></p>
+      </section>
+
+      <section class="card">
+        <h2 data-i18n="projectLinks">Project links</h2>
+        <div class="btn-row">
+          <a class="btn" href="https://github.com/wjansenw/pandaplan" target="_blank" rel="noopener noreferrer" data-i18n="github">GitHub</a>
+          <a class="btn secondary" href="https://github.com/wjansenw/pandaplan#readme" target="_blank" rel="noopener noreferrer" data-i18n="readme">README</a>
+        </div>
+      </section>
+
+      <section class="card">
+        <h2 data-i18n="license">License</h2>
+        <p data-i18n="licenseText">PandaPlan is distributed under the license specified in the project repository.</p>
+        <a href="https://github.com/wjansenw/pandaplan" target="_blank" rel="noopener noreferrer" data-i18n="licenseRepository">View license information in the GitHub repository</a>
+      </section>
+    </main>
+
+    <script src="/shared.js"></script>
+    <script src="/about-nav.js"></script>
+    <script>
+      document.documentElement.lang = currentLanguage === "nl-BE" ? "nl" : "en";
+      document.querySelectorAll("[data-i18n]").forEach((el) => {
+        el.textContent = t(el.dataset.i18n);
+      });
+    </script>
+  </body>
+</html>
