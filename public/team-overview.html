@@ -10,10 +10,10 @@
     <div class="nav">
       <a class="brand" id="brand">🐼 pandaplan</a>
       <div class="links">
-        <a class="current" id="overview" data-i18n="overview">Overview</a
-        ><a id="eventsLink" data-admin-only data-i18n="events">Events</a
-        ><a id="people" data-admin-only data-i18n="peopleNav">People</a
-        ><a id="categories" data-admin-only data-i18n="categories">Categories</a>
+        <a class="current" id="overview" data-i18n="overview">Overview</a>
+        <a id="eventsLink" data-admin-only data-i18n="events">Events</a>
+        <a id="people" data-admin-only data-i18n="peopleNav">People</a>
+        <a id="categories" data-admin-only data-i18n="categories">Categories</a>
       </div>
     </div>
     <div class="wrap">
@@ -49,7 +49,16 @@
           <div class="subscribe-hint" data-i18n="syncHint">Paste this link into your calendar app's "subscribe by URL" option to keep it in sync automatically.</div>
         </div>
       </div>
-      <div class="card"><div class="chip-row" id="dates"></div></div>
+      <div class="card overview-filters">
+        <div class="filter-block">
+          <strong data-i18n="dates">Dates</strong>
+          <div class="chip-row" id="dates"></div>
+        </div>
+        <div class="filter-block">
+          <strong data-i18n="category">Category</strong>
+          <div class="chip-row" id="categoriesFilter"></div>
+        </div>
+      </div>
       <div id="events"></div>
     </div>
     <script src="/shared.js"></script>
