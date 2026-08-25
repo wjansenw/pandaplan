@@ -38,10 +38,7 @@
     <script src="/shared.js"></script>
     <script>
       const slug = decodeURIComponent(location.pathname.split("/")[2] || "");
-      const roleOpts = [
-        { id: "participant", label: t("participant") },
-        ...STAFF_ROLES,
-      ];
+      const roleOpts = ALL_ROLES;
       let selected = new Set(["participant"]);
       const adminMode =
         new URLSearchParams(location.search).get("mode") === "admin";

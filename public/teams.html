@@ -46,14 +46,6 @@
     <script>
       const adminMode =
         new URLSearchParams(window.location.search).get("mode") === "admin";
-      const ROLE_LABELS = {
-        participant: "participant",
-        coach: "coach",
-        "assistant-coach": "assistantCoach",
-        trainer: "trainer",
-        scorekeeper: "scorekeeper",
-        referee: "referee",
-      };
 
       function modeUrl(url) {
         if (!adminMode) return url;
@@ -186,14 +178,14 @@
               (m) => `
           <div class="person-admin-item">
             <strong>${escapeHtml(m.name)}</strong>
-            <div>${m.roles.map((r) => escapeHtml(t(ROLE_LABELS[r] || r))).join(", ")}</div>
-            <button class="del" data-id="${escapeHtml(m.id)}">${escapeHtml(t("removePerson"))}</button>
+            <div>${m.roles.map((r) => escapeHtml(roleLabel(r))).join(", ")}</div>
+            <button class="del" data-id="${escapeHtml(m.id)}">${escapeHtml(t("remove"))}</button>
           </div>`,
             )
             .join("");
           list.querySelectorAll(".del").forEach((button) => {
             button.onclick = async () => {
-              if (!confirm(t("removePersonConfirm"))) return;
+              if (!confirm(t("confirmRemovePersonFromTeam"))) return;
               try {
                 await api(
                   "/api/teams/" +
