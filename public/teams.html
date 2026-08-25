@@ -40,6 +40,11 @@
       referee: 'referee'
     };
 
+    function modeUrl(url) {
+      if (!adminMode) return url;
+      return url + (url.includes('?') ? '&' : '?') + 'mode=admin';
+    }
+
     function applyTranslations() {
       document.querySelectorAll('[data-i18n]').forEach((el) => {
         el.textContent = t(el.dataset.i18n);
@@ -54,7 +59,7 @@
         card.innerHTML = `
           <div class="card-head">
             <div><h2>${escapeHtml(team.name)}</h2></div>
-            <a class="btn secondary" href="/team/${encodeURIComponent(team.slug)}">${escapeHtml(t('openTeam'))}</a>
+            <a class="btn secondary" href="${modeUrl('/team/' + encodeURIComponent(team.slug))}">${escapeHtml(t('openTeam'))}</a>
           </div>`;
         return card;
       }
@@ -65,7 +70,7 @@
             <h2>${escapeHtml(team.name)}</h2>
             <div class="sub">/team/${escapeHtml(team.slug)}/ · ${escapeHtml(t('memberCount', { count: team.memberCount }))}</div>
           </div>
-          <a class="btn secondary" href="/team/${encodeURIComponent(team.slug)}">${escapeHtml(t('openTeam'))}</a>
+          <a class="btn secondary" href="${modeUrl('/team/' + encodeURIComponent(team.slug))}">${escapeHtml(t('openTeam'))}</a>
         </div>
         <div class="field"><label>${escapeHtml(t('name'))}</label><input class="edit-name" value="${escapeHtml(team.name)}" maxlength="200"></div>
         <div class="field"><label>${escapeHtml(t('slug'))}</label><input class="edit-slug" value="${escapeHtml(team.slug)}" maxlength="100"></div>
