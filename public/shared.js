@@ -284,12 +284,10 @@ function detectLanguage() {
   const prefs = navigator.languages && navigator.languages.length ? navigator.languages : [navigator.language || ""];
   for (const pref of prefs) {
     if (!pref) continue;
-    const exact = available.find((a) => a.toLowerCase() === pref.toLowerCase());
+    const lower = pref.toLowerCase();
+    const exact = available.find((a) => a.toLowerCase() === lower);
     if (exact) return exact;
-  }
-  for (const pref of prefs) {
-    if (!pref) continue;
-    const base = pref.toLowerCase().split("-")[0];
+    const base = lower.split("-")[0];
     const partial = available.find((a) => a.toLowerCase().split("-")[0] === base);
     if (partial) return partial;
   }
