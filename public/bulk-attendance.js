@@ -6,12 +6,7 @@
   let endDate = "";
   let attendanceEditMode = false;
 
-  function getPageState() {
-    return window.teamOverview?.getState?.() || null;
-  }
-
   function matchingEvents() {
-    const pageState = getPageState();
     if (!pageState?.state?.events) return [];
     return pageState.state.events.filter(
       (e) =>
@@ -57,13 +52,11 @@
           </div>
         </div>
       </div>`;
-
     const calendar = document.querySelector(".calendar-section");
     const container = document.querySelector(".wrap");
     if (calendar) calendar.insertAdjacentElement("afterend", block);
     else if (container) container.prepend(block);
     else document.body.appendChild(block);
-
     const toggle = block.querySelector("#bulkAttendanceToggle");
     const content = block.querySelector("#bulkAttendanceContent");
     const toggleBlock = () => {
@@ -81,11 +74,8 @@
         toggleBlock();
       }
     });
-
-    const pageState = getPageState();
-    const state = pageState?.state;
+    const state = pageState.state;
     if (!state) return block;
-
     const ps = (state.persons || [])
       .filter(
         (p) => Array.isArray(p.roles) && p.roles.includes("participant"),
@@ -106,7 +96,6 @@
         option.textContent = c.name;
         block.querySelector("#bulkCategory").appendChild(option);
       });
-
     block.querySelector("#bulkPerson").addEventListener("change", (e) => {
       participantId = e.target.value;
       update();
@@ -128,7 +117,6 @@
       .forEach((button) =>
         button.addEventListener("click", () => apply(button.dataset.bulk)),
       );
-
     return block;
   }
 
@@ -138,8 +126,7 @@
       if (existing) existing.remove();
       return;
     }
-    const pageState = getPageState();
-    if (!pageState?.state?.persons || !pageState.state.categories) return;
+    if (!pageState.state?.persons || !pageState.state?.categories) return;
     const block = ensureBlock();
     block.querySelector("#bulkPerson").value = participantId;
     block.querySelector("#bulkCategory").value = categoryId;
@@ -164,8 +151,7 @@
   }
 
   async function apply(status) {
-    const pageState = getPageState();
-    const state = pageState?.state;
+    const state = pageState.state;
     const events = matchingEvents();
     if (!state || !participantId || !events.length) return;
     if (startDate && endDate && startDate > endDate) {
@@ -196,7 +182,7 @@
       return;
     try {
       const result = await api(
-        `/api/teams/${encodeURIComponent(pageState.slug)}/attendance/bulk`,
+        `/api/teams/${encodeURIComponent(slug)}/attendance/bulk`,
         {
           method: "POST",
           body: JSON.stringify({
@@ -217,7 +203,7 @@
           note: old.note || "",
         };
       });
-      window.teamOverview?.render?.();
+      render();
       setTimeout(() => {
         const count = document.getElementById("bulkCount");
         if (count)
@@ -235,14 +221,31 @@
     }
   }
 
-  window.addEventListener("team-overview-mode-changed", (event) => {
-    attendanceEditMode = event.detail?.attendanceEditMode === true;
-    render();
-  });
+  function syncEditMode() {
+    setTimeout(() => {
+      attendanceEditMode = pageState.editMode === true;
+      render();
+    }, 0);
+  }
+
+  function watchEditButtons() {
+    const attendanceButton = document.getElementById("editAttendance");
+    const staffButton = document.getElementById("editStaff");
+    if (attendanceButton && !attendanceButton.dataset.bulkWatched) {
+      attendanceButton.dataset.bulkWatched = "1";
+      attendanceButton.addEventListener("click", syncEditMode);
+    }
+    if (staffButton && !staffButton.dataset.bulkWatched) {
+      staffButton.dataset.bulkWatched = "1";
+      attendanceEditMode = false;
+    }
+  }
 
   document.addEventListener("DOMContentLoaded", () => {
     const style = document.createElement("style");
     style.textContent = `.bulk-attendance{margin-top:16px}.bulk-attendance-header{display:flex;align-items:center;justify-content:space-between;gap:8px;margin:0;cursor:pointer;user-select:none;font-weight:600}.bulk-attendance-header:focus-visible{outline:2px solid currentColor;outline-offset:3px}.bulk-expand-hint{display:inline-flex;align-items:center;gap:8px;font-size:.85rem;font-weight:400;color:var(--ink-soft)}.bulk-chevron{font-size:1.5em;line-height:1;opacity:.8;font-weight:600}.bulk-attendance #bulkAttendanceContent{font-weight:400}.bulk-attendance .sub{font-weight:400}.bulk-fields{display:flex;gap:12px;flex-wrap:wrap;margin-top:14px}.bulk-fields label{display:flex;flex-direction:column;gap:5px;font-size:.9rem;font-weight:400;min-width:160px}.bulk-fields select,.bulk-fields input{padding:8px 10px;border:1px solid #ccc;border-radius:6px;font:inherit;background:white;font-weight:400}.bulk-actions{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-top:14px;font-weight:400}.bulk-actions button{margin-left:6px}.bulk-actions button:disabled{opacity:.5;cursor:not-allowed}`;
     document.head.appendChild(style);
+    watchEditButtons();
+    setTimeout(render, 0);
   });
 })();
