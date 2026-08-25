@@ -1,12 +1,15 @@
 const slug = decodeURIComponent(location.pathname.split("/")[2] || "");
-let state;
-let dateMode = "upcoming";
-let editMode = false;
-let staffEditMode = false;
-const adminMode =
-  new URLSearchParams(location.search).get("mode") === "admin";
+
+const pageState = {
+  state: null,
+  dateMode: "upcoming",
+  editMode: false,
+  staffEditMode: false,
+  adminMode: new URLSearchParams(location.search).get("mode") === "admin",
+};
+
 function modeUrl(url) {
-  return adminMode
+  return pageState.adminMode
     ? url + (url.includes("?") ? "&" : "?") + "mode=admin"
     : url;
 }
@@ -22,7 +25,7 @@ function nav() {
   document.getElementById("categories").href = modeUrl(b + "/categories");
   document
     .querySelectorAll("[data-admin-only]")
-    .forEach((el) => (el.hidden = !adminMode));
+    .forEach((el) => (el.hidden = !pageState.adminMode));
 }
 function applyTranslations() {
   document.documentElement.lang =
@@ -66,9 +69,11 @@ function updatePersonCalendar() {
 async function load() {
   nav();
   applyTranslations();
-  state = await api("/api/teams/" + encodeURIComponent(slug) + "/state");
+  pageState.state = await api(
+    "/api/teams/" + encodeURIComponent(slug) + "/state",
+  );
   document.getElementById("title").textContent =
-    state.team.name + " · " + t("overview");
+    pageState.state.team.name + " · " + t("overview");
   const calendarToggle = document.getElementById("calendarToggle");
   const calendarContent = document.getElementById("calendarContent");
   const calendarUrl = document.getElementById("calendarUrl");
@@ -91,7 +96,7 @@ async function load() {
     }
     setTimeout(() => (copyCalendar.textContent = t("copy")), 1500);
   };
-  [...state.persons]
+  [...pageState.state.persons]
     .sort((a, b) => a.name.localeCompare(b.name))
     .forEach((p) => {
       const option = document.createElement("option");
@@ -123,23 +128,23 @@ async function load() {
   const editAttendance = document.getElementById("editAttendance");
   const editStaff = document.getElementById("editStaff");
   editAttendance.onclick = () => {
-    editMode = !editMode;
-    if (editMode) staffEditMode = false;
-    editAttendance.textContent = editMode
+    pageState.editMode = !pageState.editMode;
+    if (pageState.editMode) pageState.staffEditMode = false;
+    editAttendance.textContent = pageState.editMode
       ? t("doneAttendance")
       : t("editAttendance");
-    editStaff.textContent = staffEditMode
+    editStaff.textContent = pageState.staffEditMode
       ? t("doneStaff")
       : t("editStaff");
     render();
   };
   editStaff.onclick = () => {
-    staffEditMode = !staffEditMode;
-    if (staffEditMode) editMode = false;
-    editStaff.textContent = staffEditMode
+    pageState.staffEditMode = !pageState.staffEditMode;
+    if (pageState.staffEditMode) pageState.editMode = false;
+    editStaff.textContent = pageState.staffEditMode
       ? t("doneStaff")
       : t("editStaff");
-    editAttendance.textContent = editMode
+    editAttendance.textContent = pageState.editMode
       ? t("doneAttendance")
       : t("editAttendance");
     render();
@@ -149,14 +154,17 @@ async function load() {
 function render() {
   renderDateFilterChips(
     document.getElementById("dates"),
-    dateMode,
+    pageState.dateMode,
     (m) => {
-      dateMode = m;
+      pageState.dateMode = m;
       render();
     },
   );
   const list = sortByDateTime(
-    filterEvents(state.events, { categoryIds: new Set(), dateMode }),
+    filterEvents(pageState.state.events, {
+      categoryIds: new Set(),
+      dateMode: pageState.dateMode,
+    }),
   );
   const box = document.getElementById("events");
   box.innerHTML = "";
@@ -170,11 +178,11 @@ function render() {
   list.forEach((ev) => {
     const card = document.createElement("div");
     card.className = "card roster-card";
-    const participants = state.persons.filter((p) =>
+    const participants = pageState.state.persons.filter((p) =>
       p.roles.includes("participant"),
     );
     const a = participants.map((p) => {
-      const e = state.attendance[p.id]?.[ev.id];
+      const e = pageState.state.attendance[p.id]?.[ev.id];
       return {
         ...p,
         status: e?.status || "unknown",
@@ -185,11 +193,11 @@ function render() {
       maybe = a.filter((x) => x.status === "maybe"),
       no = a.filter((x) => x.status === "no"),
       unknown = a.filter((x) => x.status === "unknown");
-    const sa = state.staffAssignments[ev.id] || {};
+    const sa = pageState.state.staffAssignments[ev.id] || {};
     const staff = Object.entries(sa)
       .flatMap(([r, ids]) =>
         ids.map((id) => {
-          const p = state.persons.find((x) => x.id === id);
+          const p = pageState.state.persons.find((x) => x.id === id);
           const role = STAFF_ROLES.find((x) => x.id === r);
           return p ? { name: p.name, role: role ? role.label : r } : null;
         }),
@@ -199,7 +207,7 @@ function render() {
       '<div class="card-head"><div><div class="event-title-line"><span class="event-date">' +
       formatDate(ev.date) +
       "</span>" +
-      categoryBadge(state.categories, ev.categoryId) +
+      categoryBadge(pageState.state.categories, ev.categoryId) +
       '</div><div class="event-meta">' +
       [
         formatTimeRange(ev.startTime, ev.endTime),
@@ -219,7 +227,7 @@ function render() {
           escapeHtml(ev.description) +
           "</div>"
         : "") +
-      (editMode
+      (pageState.editMode
         ? '<div class="attendance-edit">' +
           a
             .map(
@@ -266,7 +274,7 @@ function render() {
             ? roster(t("unknownShort"), unknown, "attendance-unknown")
             : "") +
           "</div>") +
-      (staffEditMode
+      (pageState.staffEditMode
         ? renderStaffEditor(ev)
         : staff.length
           ? '<div class="staff-summary"><strong>' +
@@ -286,7 +294,7 @@ function render() {
           : "");
     box.appendChild(card);
   });
-  if (editMode) {
+  if (pageState.editMode) {
     box
       .querySelectorAll(".attendance-person")
       .forEach(
@@ -308,7 +316,7 @@ function render() {
       .querySelectorAll(".note-cancel")
       .forEach((btn) => (btn.onclick = () => closeNoteEditor(btn)));
   }
-  if (staffEditMode)
+  if (pageState.staffEditMode)
     box
       .querySelectorAll(".staff-person")
       .forEach(
@@ -323,7 +331,7 @@ function render() {
 }
 async function toggleAttendance(personId, eventId) {
   const current =
-    state.attendance[personId]?.[eventId]?.status || "unknown";
+    pageState.state.attendance[personId]?.[eventId]?.status || "unknown";
   const next =
     current === "yes" ? "maybe" : current === "maybe" ? "no" : "yes";
   try {
@@ -338,14 +346,15 @@ async function toggleAttendance(personId, eventId) {
         method: "PUT",
         body: JSON.stringify({
           status: next,
-          note: state.attendance[personId]?.[eventId]?.note || "",
+          note: pageState.state.attendance[personId]?.[eventId]?.note || "",
         }),
       },
     );
-    if (!state.attendance[personId]) state.attendance[personId] = {};
-    state.attendance[personId][eventId] = {
+    if (!pageState.state.attendance[personId])
+      pageState.state.attendance[personId] = {};
+    pageState.state.attendance[personId][eventId] = {
       status: next,
-      note: state.attendance[personId]?.[eventId]?.note || "",
+      note: pageState.state.attendance[personId]?.[eventId]?.note || "",
     };
     render();
   } catch (error) {
@@ -372,7 +381,7 @@ async function saveNote(button) {
   const personId = editor.dataset.editorPerson,
     eventId = editor.dataset.editorEvent;
   const note = editor.querySelector("input").value;
-  const current = state.attendance[personId]?.[eventId] || {
+  const current = pageState.state.attendance[personId]?.[eventId] || {
     status: "unknown",
     note: "",
   };
@@ -389,8 +398,9 @@ async function saveNote(button) {
         body: JSON.stringify({ status: current.status, note }),
       },
     );
-    if (!state.attendance[personId]) state.attendance[personId] = {};
-    state.attendance[personId][eventId] = {
+    if (!pageState.state.attendance[personId])
+      pageState.state.attendance[personId] = {};
+    pageState.state.attendance[personId][eventId] = {
       status: current.status,
       note,
     };
