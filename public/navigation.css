@@ -13,6 +13,8 @@ body { padding-left: var(--sidebar-width); }
   display: flex;
   flex-direction: column;
   align-items: stretch;
+  justify-content: flex-start;
+  flex-shrink: 0;
   padding: 18px 14px;
   background: var(--paper);
   border-right: 1px solid var(--line);
@@ -20,7 +22,7 @@ body { padding-left: var(--sidebar-width); }
 }
 .sidebar-header { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 22px; }
 .sidebar .brand { min-width: 0; color: var(--ink); text-decoration: none; font-family: "Poppins", sans-serif; font-size: 19px; font-weight: 700; white-space: nowrap; }
-.sidebar-menu { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+.sidebar-menu { display: flex; flex-direction: column; gap: 4px; min-width: 0; width: 100%; }
 .sidebar-link { display: block; color: var(--ink-soft); text-decoration: none; font-size: 13px; font-weight: 600; }
 .sidebar-link:hover { color: var(--ink); }
 .sidebar-link.current { background: var(--accent-bg); color: var(--accent); }
@@ -37,6 +39,7 @@ body { padding-left: var(--sidebar-width); }
 .sidebar-close:hover { color: var(--ink); }
 .sidebar-open { display: none; }
 .sidebar-backdrop { display: none; }
+.sidebar-backdrop[hidden] { display: none !important; }
 
 @media (max-width: 760px) {
   :root { --sidebar-width: 260px; }
@@ -52,7 +55,6 @@ body { padding-left: var(--sidebar-width); }
     position: fixed;
     inset: 0;
     z-index: 90;
-    display: block;
     border: 0;
     padding: 0;
     background: rgba(0, 0, 0, 0.28);
