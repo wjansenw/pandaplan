@@ -43,9 +43,9 @@
       backdrop.type = "button";
       backdrop.className = "sidebar-backdrop";
       backdrop.setAttribute("aria-label", t("close"));
-      backdrop.hidden = true;
       document.body.appendChild(backdrop);
     }
+    backdrop.hidden = true;
     return { openButton, backdrop };
   }
 
@@ -164,6 +164,9 @@
     close.onclick = closeMobile;
     openButton.onclick = openMobile;
     backdrop.onclick = closeMobile;
+    document.addEventListener("keydown", (event) => {
+      if (event.key === "Escape") closeMobile();
+    });
   }
 
   async function init() {
