@@ -28,6 +28,8 @@ body.has-sidebar { padding-left: var(--sidebar-width); }
 .sidebar .brand { min-width: 0; color: var(--ink); text-decoration: none; font-family: "Poppins", sans-serif; font-size: 19px; font-weight: 700; white-space: nowrap; }
 .sidebar-menu { display: flex; flex-direction: column; gap: 4px; min-width: 0; width: 100%; }
 .sidebar-link { display: block; color: var(--ink-soft); text-decoration: none; font-size: 13px; font-weight: 600; }
+/* .sidebar-link's display rule otherwise overrides the browser's hidden rule. */
+.sidebar-link[hidden] { display: none !important; }
 .sidebar-link:hover { color: var(--ink); }
 .sidebar-link.current { background: var(--accent-bg); color: var(--accent); }
 .sidebar-section-link { padding: 9px 11px; border-radius: var(--radius); }
@@ -48,9 +50,6 @@ body.has-sidebar { padding-left: var(--sidebar-width); }
 @media (max-width: 760px) {
   :root { --sidebar-width: 260px; }
 
-  /* Override the desktop reservation with equal/higher specificity. Without
-     this, body.has-sidebar keeps 250px of left padding and makes every page
-     artificially narrow even though the drawer is closed. */
   body.has-sidebar { padding-left: 0; }
 
   .nav.sidebar {
