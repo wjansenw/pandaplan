@@ -1,0 +1,48 @@
+/* Team Overview staff assignment controls. Restored from the original staff-edit UI. */
+.staff-edit {
+  margin-top: 12px;
+  padding-top: 10px;
+  border-top: 1px solid #eee;
+}
+
+.staff-role-group {
+  margin-bottom: 12px;
+}
+
+.staff-role-title {
+  margin-bottom: 6px;
+  font-weight: 600;
+}
+
+.staff-person-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.staff-person {
+  padding: 7px 12px;
+  border: 0;
+  border-radius: 999px;
+  cursor: pointer;
+  font: inherit;
+}
+
+.staff-person.staff-selected {
+  background: #e7efe3;
+  color: #4f7942;
+}
+
+.staff-person.staff-unselected {
+  background: #eeeeee;
+  color: #666;
+}
+
+.staff-person:hover {
+  filter: brightness(0.96);
+}
+
+.staff-empty {
+  color: var(--ink-soft);
+  font-size: 0.85rem;
+}

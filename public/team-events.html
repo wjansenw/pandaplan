@@ -1,61 +1,152 @@
 <!doctype html>
 <html lang="en">
-<head>
-<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>pandaplan</title><link rel="stylesheet" href="/style.css">
-</head>
-<body>
-<div class="nav"><a class="brand" id="brand">🐼 pandaplan</a><div class="links"><a id="overviewLink" data-i18n="overview">Overview</a><a class="current" data-i18n="events">Events</a><a id="peopleLink" data-i18n="persons" data-admin-only>People</a><a id="categoriesLink" data-i18n="categories" data-admin-only>Categories</a></div></div>
-<div class="wrap">
-<h1 id="title"></h1><p class="sub" id="subtitle"></p>
-<div class="card"><div class="card-head"><h2 data-i18n="newEvent">New event</h2></div>
-<div class="field"><label data-i18n="subject">Subject</label><input id="subject"></div>
-<div class="field"><label data-i18n="category">Category</label><select id="category"></select></div>
-<div class="field-row"><div class="field"><label data-i18n="date">Date</label><input id="date" type="date"></div></div>
-<div class="field-row"><div class="field"><label data-i18n="startTime">Start time</label><input id="start" type="time"></div><div class="field"><label data-i18n="endTime">End time</label><input id="end" type="time"></div></div>
-<div class="field"><label data-i18n="location">Location</label><input id="location" data-i18n-placeholder="locationPlaceholder"></div><div class="field"><label data-i18n="description">Description</label><textarea id="description" data-i18n-placeholder="descriptionPlaceholder"></textarea></div>
-<button class="btn" id="save" data-i18n="saveEvent">Save event</button><div class="saved-note" id="note"></div></div>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>pandaplan</title>
+    <link rel="stylesheet" href="/style.css" />
+    <link rel="stylesheet" href="/navigation.css" data-pandanav-css />
+  </head>
+  <body>
+    <div class="nav">
+      <a class="brand" id="brand">🐼 pandaplan</a>
+      <div class="links">
+        <a id="overviewLink" data-i18n="overview">Overview</a>
+        <a class="current" data-i18n="events">Events</a>
+        <a id="peopleLink" data-i18n="persons" data-admin-only>People</a>
+        <a id="categoriesLink" data-i18n="categories" data-admin-only>Categories</a>
+      </div>
+    </div>
 
-<div class="card"><div class="card-head"><h2 data-i18n="recurringEvents">Recurring events</h2></div>
-<p class="sub" data-i18n="recurringHelp">Create multiple normal events on selected weekdays within a date range.</p>
-<div class="field"><label data-i18n="subject">Subject</label><input id="recSubject"></div>
-<div class="field"><label data-i18n="category">Category</label><select id="recCategory"></select></div>
-<div class="field-row"><div class="field"><label data-i18n="startDate">Start date</label><input id="recStartDate" type="date"></div><div class="field"><label data-i18n="endDate">End date</label><input id="recEndDate" type="date"></div></div>
-<div class="field"><label data-i18n="weekdays">Days</label><div id="recWeekdays" class="weekday-list"></div></div>
-<div class="field-row"><div class="field"><label data-i18n="startTime">Start time</label><input id="recStart" type="time"></div><div class="field"><label data-i18n="endTime">End time</label><input id="recEnd" type="time"></div></div>
-<div class="field"><label data-i18n="location">Location</label><input id="recLocation" data-i18n-placeholder="locationPlaceholder"></div>
-<div class="field"><label data-i18n="description">Description</label><textarea id="recDescription" data-i18n-placeholder="descriptionPlaceholder"></textarea></div>
-<div class="sub" id="recPreview"></div>
-<button class="btn" id="createRecurring" data-i18n="createRecurring">Create events</button><div class="saved-note" id="recNote"></div></div>
+    <main class="wrap">
+      <h1 id="title"></h1>
+      <p class="sub" id="subtitle"></p>
 
-<div class="card"><div class="card-head"><h2 data-i18n="importFromIcs">Import from ICS feed</h2></div><p class="sub" data-i18n="icsImportHelp">Enter a calendar feed URL. Events already matching all four fields are skipped.</p>
-<div class="field"><label data-i18n="icsFeedUrl">ICS feed URL</label><input id="icsUrl" type="url" data-i18n-placeholder="icsFeedUrlPlaceholder"></div>
-<div class="field"><label data-i18n="locationContains">Location contains</label><input id="icsLocationContains" type="text" data-i18n-placeholder="locationContainsPlaceholder"></div>
-<div class="field"><label data-i18n="categoryWhenLocationMatches">Category when location matches</label><select id="icsLocationCategory"></select></div>
-<div class="field"><label data-i18n="categoryOtherwise">Category otherwise</label><select id="icsFallbackCategory"></select></div>
-<button class="btn" id="importIcs" data-i18n="importEvents">Import events</button><div class="saved-note" id="importNote"></div></div>
-<div id="events"></div></div>
-<script src="/shared.js"></script>
-<script>
-const PAGE_MESSAGES={
-  en:{subject:'Subject',events:'Events',persons:'People',categories:'Categories',newEvent:'New event',recurringEvents:'Recurring events',recurringHelp:'Create multiple normal events on selected weekdays within a date range.',startDate:'Start date',endDate:'End date',weekdays:'Days',createRecurring:'Create events',recurringPreview:'{count} events will be created.',recurringCreated:'{count} events created.',selectWeekday:'Select at least one day.',dateRangeRequired:'Start and end dates are required.',invalidDateRange:'Start date must be before or equal to end date.',importFromIcs:'Import from ICS feed',icsImportHelp:'Enter a calendar feed URL. Events already matching all four fields are skipped.',icsFeedUrl:'ICS feed URL',icsFeedUrlPlaceholder:'https://example.com/calendar.ics',locationContains:'Location contains',locationContainsPlaceholder:'e.g. Sporthal',categoryWhenLocationMatches:'Category when location matches',categoryOtherwise:'Category otherwise',importEvents:'Import events',locationPlaceholder:'e.g. Sports hall, Main street 12',descriptionPlaceholder:'Optional details',teamNotFound:'Team not found',untitledEvent:'Untitled event',noEvents:'No events yet',subjectAndDateRequired:'Subject and date are required.',deleteEventConfirm:'Delete this event?',dateRequired:'Date is required.',subjectRequired:'Subject is required.',icsUrlRequired:'ICS feed URL is required.',importing:'Importing…',icsImportResult:'Found {found} events: {created} created, {skipped} already existed.'},
-  'nl-BE':{subject:'Onderwerp',events:'Events',persons:'Personen',categories:'Categorieën',newEvent:'Nieuw event',recurringEvents:'Terugkerende events',recurringHelp:'Maak meerdere gewone events aan op geselecteerde weekdagen binnen een periode.',startDate:'Startdatum',endDate:'Einddatum',weekdays:'Dagen',createRecurring:'Events aanmaken',recurringPreview:'{count} events worden aangemaakt.',recurringCreated:'{count} events aangemaakt.',selectWeekday:'Selecteer minstens één dag.',dateRangeRequired:'Start- en einddatum zijn verplicht.',invalidDateRange:'Startdatum moet vóór of gelijk aan de einddatum zijn.',importFromIcs:'Importeren vanuit ICS-feed',icsImportHelp:'Geef een URL naar een kalenderfeed. Events die al overeenkomen met alle vier de velden worden overgeslagen.',icsFeedUrl:'ICS-feed URL',icsFeedUrlPlaceholder:'https://voorbeeld.be/kalender.ics',locationContains:'Locatie bevat',locationContainsPlaceholder:'bv. Sporthal',categoryWhenLocationMatches:'Categorie wanneer locatie overeenkomt',categoryOtherwise:'Categorie anders',importEvents:'Events importeren',locationPlaceholder:'bv. Sporthal, Hoofdstraat 12',descriptionPlaceholder:'Optionele details',teamNotFound:'Team niet gevonden',untitledEvent:'Event zonder naam',noEvents:'Nog geen events',subjectAndDateRequired:'Onderwerp en datum zijn verplicht.',deleteEventConfirm:'Dit event verwijderen?',dateRequired:'Datum is verplicht.',subjectRequired:'Onderwerp is verplicht.',icsUrlRequired:'ICS-feed URL is verplicht.',importing:'Bezig met importeren…',icsImportResult:'{found} events gevonden: {created} toegevoegd, {skipped} bestonden al.'}
-};
-function et(key,vars){let s=(PAGE_MESSAGES[currentLanguage]||PAGE_MESSAGES['nl-BE'])[key]||t(key);if(vars)Object.keys(vars).forEach(k=>s=s.replace(new RegExp('\\{'+k+'\\}','g'),vars[k]));return s}
-const slug=decodeURIComponent(location.pathname.split('/')[2]||'');let team,categories=[],events=[];const adminMode=new URLSearchParams(location.search).get('mode')==='admin';const modeUrl=url=>adminMode?url+(url.includes('?')?'&':'?')+'mode=admin':url;const apiBase=()=>'/api/teams/'+encodeURIComponent(slug);const $=id=>document.getElementById(id);
-function applyTranslations(){document.documentElement.lang=currentLanguage==='nl-BE'?'nl':'en';document.querySelectorAll('[data-i18n]').forEach(el=>el.textContent=et(el.dataset.i18n));document.querySelectorAll('[data-i18n-placeholder]').forEach(el=>el.placeholder=et(el.dataset.i18nPlaceholder))}
-function categoryOptions(){return '<option value="">'+escapeHtml(t('noCategory'))+'</option>'+categories.map(c=>'<option value="'+escapeHtml(c.id)+'">'+escapeHtml(c.name)+'</option>').join('')}
-function weekdayOptions(){const names=currentLanguage==='nl-BE'?['Zondag','Maandag','Dinsdag','Woensdag','Donderdag','Vrijdag','Zaterdag']:['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];return names.map((name,i)=>'<label><input type="checkbox" value="'+i+'"> '+escapeHtml(name)+'</label>').join('')}
-function updateRecurringPreview(){const start=$('recStartDate').value,end=$('recEndDate').value,days=[...document.querySelectorAll('#recWeekdays input:checked')].map(x=>Number(x.value));if(!start||!end||start>end||!days.length){$('recPreview').textContent='';return}let count=0;for(let d=new Date(start+'T00:00:00Z');d<=new Date(end+'T00:00:00Z');d.setUTCDate(d.getUTCDate()+1))if(days.includes(d.getUTCDay()))count++;$('recPreview').textContent=et('recurringPreview',{count});}
-async function load(){try{team=await api('/api/teams/'+encodeURIComponent(slug));categories=await api(apiBase()+'/categories');events=await api(apiBase()+'/events');applyTranslations();document.title='pandaplan · '+team.name+' · '+et('events');$('title').textContent=team.name+' · '+et('events');$('subtitle').textContent=team.description||'';const base='/team/'+encodeURIComponent(team.slug);$('brand').href=modeUrl(base+'/overview');$('overviewLink').href=modeUrl(base+'/overview');$('peopleLink').href=modeUrl(base+'/people');$('categoriesLink').href=modeUrl(base+'/categories');document.querySelectorAll('[data-admin-only]').forEach(el=>el.hidden=!adminMode);const options=categoryOptions();$('category').innerHTML=options;$('recCategory').innerHTML=options;$('icsLocationCategory').innerHTML=options;$('icsFallbackCategory').innerHTML=options;$('recWeekdays').innerHTML=weekdayOptions();render()}catch(e){document.body.innerHTML='<div class="wrap"><div class="card"><h1>'+escapeHtml(et('teamNotFound'))+'</h1><p>'+escapeHtml(e.message)+'</p></div></div>'}}
-function eventForm(e){return '<div class="edit-form"><div class="field"><label>'+et('subject')+'</label><input class="edit-subject" value="'+escapeHtml(e.subject||'')+'"></div><div class="field"><label>'+t('category')+'</label><select class="edit-category">'+categoryOptions()+'</select></div><div class="field-row"><div class="field"><label>'+t('date')+'</label><input class="edit-date" type="date" value="'+escapeHtml(e.date||'')+'"></div><div class="field"><label>'+t('startTime')+'</label><input class="edit-start" type="time" value="'+escapeHtml(e.startTime||'')+'"></div><div class="field"><label>'+t('endTime')+'</label><input class="edit-end" type="time" value="'+escapeHtml(e.endTime||'')+'"></div></div><div class="field"><label>'+t('location')+'</label><input class="edit-location" value="'+escapeHtml(e.location||'')+'"></div><div class="field"><label>'+t('description')+'</label><textarea class="edit-description">'+escapeHtml(e.description||'')+'</textarea></div><button class="btn save-edit">'+t('save')+'</button> <button class="btn secondary cancel-edit">'+t('cancel')+'</button><span class="saved-note edit-note"></span></div>'}
-function render(){const box=$('events');box.innerHTML='';if(!events.length){box.innerHTML='<div class="card"><div class="empty">'+escapeHtml(et('noEvents'))+'.</div></div>';return}events.forEach(e=>{const c=categories.find(x=>x.id===e.categoryId);const card=document.createElement('div');card.className='card';card.innerHTML='<div class="card-head"><div><h2>'+escapeHtml(e.subject||et('untitledEvent'))+'</h2><div class="sub">'+escapeHtml(e.date)+(e.startTime?' · '+escapeHtml(e.startTime):'')+(e.endTime?' – '+escapeHtml(e.endTime):'')+(c?' · '+escapeHtml(c.name):'')+(e.location?' · '+escapeHtml(e.location):'')+'</div></div><div><button class="edit">'+t('edit')+'</button> <button class="del">'+t('delete')+'</button></div></div>'+(e.description?'<p>'+escapeHtml(e.description)+'</p>':'')+eventForm(e);const form=card.querySelector('.edit-form');form.hidden=true;form.querySelector('.edit-category').value=e.categoryId||'';card.querySelector('.edit').onclick=()=>{form.hidden=false;card.querySelector('.edit').hidden=true};card.querySelector('.cancel-edit').onclick=()=>{form.hidden=true;card.querySelector('.edit').hidden=false};card.querySelector('.save-edit').onclick=async()=>{try{const subject=form.querySelector('.edit-subject').value.trim();const date=form.querySelector('.edit-date').value;if(!subject||!date){form.querySelector('.edit-note').textContent=et('subjectAndDateRequired');return}await api(apiBase()+'/events/'+encodeURIComponent(e.id),{method:'PUT',body:JSON.stringify({subject,categoryId:form.querySelector('.edit-category').value||null,date,startTime:form.querySelector('.edit-start').value,endTime:form.querySelector('.edit-end').value,location:form.querySelector('.edit-location').value,description:form.querySelector('.edit-description').value})});events=await api(apiBase()+'/events');render()}catch(err){form.querySelector('.edit-note').textContent=err.message}};card.querySelector('.del').onclick=async()=>{if(!confirm(et('deleteEventConfirm')))return;await api(apiBase()+'/events/'+encodeURIComponent(e.id),{method:'DELETE'});events=await api(apiBase()+'/events');render()};box.appendChild(card)})}
-$('save').onclick=async()=>{try{const date=$('date').value;if(!date){$('note').textContent=et('dateRequired');return}const subject=$('subject').value.trim();if(!subject){$('note').textContent=et('subjectRequired');return}await api(apiBase()+'/events',{method:'POST',body:JSON.stringify({subject,categoryId:$('category').value||null,date,startTime:$('start').value,endTime:$('end').value,location:$('location').value,description:$('description').value})});$('subject').value='';$('date').value='';$('start').value='';$('end').value='';$('location').value='';$('description').value='';$('note').textContent=t('added');events=await api(apiBase()+'/events');render()}catch(e){$('note').textContent=e.message}};
-['recStartDate','recEndDate'].forEach(id=>$(id).addEventListener('change',updateRecurringPreview));$('recWeekdays').addEventListener('change',updateRecurringPreview);
-$('createRecurring').onclick=async()=>{const subject=$('recSubject').value.trim(),startDate=$('recStartDate').value,endDate=$('recEndDate').value,weekdays=[...document.querySelectorAll('#recWeekdays input:checked')].map(x=>Number(x.value));if(!subject){$('recNote').textContent=et('subjectRequired');return}if(!startDate||!endDate){$('recNote').textContent=et('dateRangeRequired');return}if(startDate>endDate){$('recNote').textContent=et('invalidDateRange');return}if(!weekdays.length){$('recNote').textContent=et('selectWeekday');return}const button=$('createRecurring');button.disabled=true;try{const result=await api(apiBase()+'/events/recurring',{method:'POST',body:JSON.stringify({subject,categoryId:$('recCategory').value||null,startDate,endDate,weekdays,startTime:$('recStart').value,endTime:$('recEnd').value,location:$('recLocation').value,description:$('recDescription').value})});$('recNote').textContent=et('recurringCreated',{count:result.created});events=result.events;render()}catch(e){$('recNote').textContent=e.message}finally{button.disabled=false}};
-$('importIcs').onclick=async()=>{const url=$('icsUrl').value.trim();if(!url){$('importNote').textContent=et('icsUrlRequired');return}const button=$('importIcs');button.disabled=true;$('importNote').textContent=et('importing');try{const result=await api(apiBase()+'/events/import-ics',{method:'POST',body:JSON.stringify({url,locationContains:$('icsLocationContains').value,locationCategoryId:$('icsLocationCategory').value||null,fallbackCategoryId:$('icsFallbackCategory').value||null})});events=result.events;$('importNote').textContent=et('icsImportResult',{found:result.found,created:result.created,skipped:result.skipped});render()}catch(e){$('importNote').textContent=e.message}finally{button.disabled=false}};load();
-</script>
-<style>
-.weekday-list{display:flex;flex-wrap:wrap;gap:8px 14px}.weekday-list label{white-space:nowrap}.weekday-list input{margin-right:4px}
-</style>
-</body></html>
+      <section class="card">
+        <div class="card-head">
+          <h2 data-i18n="newEvent">New event</h2>
+        </div>
+        <div class="field">
+          <label data-i18n="subject">Subject</label>
+          <input id="subject" />
+        </div>
+        <div class="field">
+          <label data-i18n="category">Category</label>
+          <select id="category"></select>
+        </div>
+        <div class="field-row">
+          <div class="field">
+            <label data-i18n="date">Date</label>
+            <input id="date" type="date" />
+          </div>
+        </div>
+        <div class="field-row">
+          <div class="field">
+            <label data-i18n="startTime">Start time</label>
+            <input id="start" type="time" />
+          </div>
+          <div class="field">
+            <label data-i18n="endTime">End time</label>
+            <input id="end" type="time" />
+          </div>
+        </div>
+        <div class="field">
+          <label data-i18n="location">Location</label>
+          <input id="location" data-i18n-placeholder="locationPlaceholder" />
+        </div>
+        <div class="field">
+          <label data-i18n="description">Description</label>
+          <textarea id="description" data-i18n-placeholder="descriptionPlaceholder"></textarea>
+        </div>
+        <button class="btn" id="save" data-i18n="saveEvent">Save event</button>
+        <div class="saved-note" id="note"></div>
+      </section>
+
+      <section class="card">
+        <div class="card-head">
+          <h2 data-i18n="recurringEvents">Recurring events</h2>
+        </div>
+        <p class="sub" data-i18n="recurringHelp">Create multiple normal events on selected weekdays within a date range.</p>
+        <div class="field">
+          <label data-i18n="subject">Subject</label>
+          <input id="recSubject" />
+        </div>
+        <div class="field">
+          <label data-i18n="category">Category</label>
+          <select id="recCategory"></select>
+        </div>
+        <div class="field-row">
+          <div class="field">
+            <label data-i18n="startDate">Start date</label>
+            <input id="recStartDate" type="date" />
+          </div>
+          <div class="field">
+            <label data-i18n="endDate">End date</label>
+            <input id="recEndDate" type="date" />
+          </div>
+        </div>
+        <div class="field">
+          <label data-i18n="weekdays">Days</label>
+          <div id="recWeekdays" class="weekday-list"></div>
+        </div>
+        <div class="field-row">
+          <div class="field">
+            <label data-i18n="startTime">Start time</label>
+            <input id="recStart" type="time" />
+          </div>
+          <div class="field">
+            <label data-i18n="endTime">End time</label>
+            <input id="recEnd" type="time" />
+          </div>
+        </div>
+        <div class="field">
+          <label data-i18n="location">Location</label>
+          <input id="recLocation" data-i18n-placeholder="locationPlaceholder" />
+        </div>
+        <div class="field">
+          <label data-i18n="description">Description</label>
+          <textarea id="recDescription" data-i18n-placeholder="descriptionPlaceholder"></textarea>
+        </div>
+        <div class="sub" id="recPreview"></div>
+        <button class="btn" id="createRecurring" data-i18n="createRecurring">Create events</button>
+        <div class="saved-note" id="recNote"></div>
+      </section>
+
+      <section class="card">
+        <div class="card-head">
+          <h2 data-i18n="importFromIcs">Import from ICS feed</h2>
+        </div>
+        <p class="sub" data-i18n="icsImportHelp">Enter a calendar feed URL. Events already matching all four fields are skipped.</p>
+        <div class="field">
+          <label data-i18n="icsFeedUrl">ICS feed URL</label>
+          <input id="icsUrl" type="url" data-i18n-placeholder="icsFeedUrlPlaceholder" />
+        </div>
+        <div class="field">
+          <label data-i18n="locationContains">Location contains</label>
+          <input id="icsLocationContains" type="text" data-i18n-placeholder="locationContainsPlaceholder" />
+        </div>
+        <div class="field">
+          <label data-i18n="categoryWhenLocationMatches">Category when location matches</label>
+          <select id="icsLocationCategory"></select>
+        </div>
+        <div class="field">
+          <label data-i18n="categoryOtherwise">Category otherwise</label>
+          <select id="icsFallbackCategory"></select>
+        </div>
+        <button class="btn" id="importIcs" data-i18n="importEvents">Import events</button>
+        <div class="saved-note" id="importNote"></div>
+      </section>
+
+      <div id="events"></div>
+    </main>
+
+    <script src="/shared.js"></script>
+    <script src="/about-nav.js"></script>
+    <script src="/navigation.js"></script>
+    <script src="/shared-api.js"></script>
+    <script src="/shared-team.js"></script>
+    <script src="/team-events-api.js"></script>
+    <script src="/team-events-render.js"></script>
+    <script src="/team-events.js"></script>
+  </body>
+</html>

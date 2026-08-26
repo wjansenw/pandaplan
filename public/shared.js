@@ -13,6 +13,8 @@ const MESSAGES = {
     edit: "Edit",
     delete: "Delete",
     close: "Close",
+    openMenu: "Open menu",
+    mainNavigation: "Main navigation",
     retry: "Could not save — retry",
     noCategory: "No category",
     uncategorized: "Uncategorized",
@@ -137,6 +139,31 @@ const MESSAGES = {
     nameAndRoleRequired: "Name and at least one role are required.",
     categoriesSubtitle: "Categories and required staff roles for this Team.",
     couldNotSaveCategory: "Could not save category.",
+    teams: "Teams",
+    teamsSubtitle: "Manage Teams and cross-Team membership. Team-specific roles are managed inside each Team.",
+    createTeam: "Create Team",
+    slug: "Slug",
+    create: "Create",
+    openTeam: "Open",
+    memberCount: "{count} members",
+    saveTeam: "Save Team",
+    deleteTeam: "Delete Team",
+    addExistingPerson: "Add existing person",
+    selectPerson: "Select person…",
+    removeAllAttendance: "Remove all attendance",
+    removeAllEvents: "Remove all events",
+    deleteTeamConfirm: "Delete this Team and all its events? People who belong to no other Team will also be deleted.",
+    removeAllAttendanceConfirm: "Remove all attendance records for this Team? This cannot be undone.",
+    removeAllEventsConfirm: "Remove all events for this Team? This cannot be undone.",
+    attendanceRemoved: "Attendance removed.",
+    eventsRemoved: "Events removed.",
+    noTeams: "No Teams yet.",
+    created: "Created",
+    teamSaveFailed: "Could not save Team. Please try again.",
+    teamDeleteFailed: "Could not delete Team. Please try again.",
+    teamDataActionFailed: "Could not complete this action. Please try again.",
+    teamCreateFailed: "Could not create Team. Please try again.",
+    about: "About",
   },
   "nl-BE": {
     overview: "Overzicht",
@@ -151,6 +178,8 @@ const MESSAGES = {
     edit: "Bewerken",
     delete: "Verwijderen",
     close: "Sluiten",
+    openMenu: "Menu openen",
+    mainNavigation: "Hoofdnavigatie",
     retry: "Opslaan mislukt — probeer opnieuw",
     noCategory: "Geen categorie",
     uncategorized: "Zonder categorie",
@@ -275,6 +304,31 @@ const MESSAGES = {
     nameAndRoleRequired: "Naam en minstens één rol zijn verplicht.",
     categoriesSubtitle: "Categorieën en vereiste staffrollen voor dit team.",
     couldNotSaveCategory: "Kon categorie niet opslaan.",
+    teams: "Teams",
+    teamsSubtitle: "Beheer teams en teamoverstijgend lidmaatschap. Teamspecifieke rollen worden binnen elk team beheerd.",
+    createTeam: "Team aanmaken",
+    slug: "Slug",
+    create: "Aanmaken",
+    openTeam: "Openen",
+    memberCount: "{count} leden",
+    saveTeam: "Team opslaan",
+    deleteTeam: "Team verwijderen",
+    addExistingPerson: "Bestaande persoon toevoegen",
+    selectPerson: "Selecteer persoon…",
+    removeAllAttendance: "Alle aanwezigheid verwijderen",
+    removeAllEvents: "Alle events verwijderen",
+    deleteTeamConfirm: "Dit team en al zijn events verwijderen? Personen die tot geen enkel ander team behoren worden ook verwijderd.",
+    removeAllAttendanceConfirm: "Alle aanwezigheidsgegevens voor dit team verwijderen? Dit kan niet ongedaan worden gemaakt.",
+    removeAllEventsConfirm: "Alle events voor dit team verwijderen? Dit kan niet ongedaan worden gemaakt.",
+    attendanceRemoved: "Aanwezigheid verwijderd.",
+    eventsRemoved: "Events verwijderd.",
+    noTeams: "Nog geen teams.",
+    created: "Aangemaakt",
+    teamSaveFailed: "Kon team niet opslaan. Probeer het opnieuw.",
+    teamDeleteFailed: "Kon team niet verwijderen. Probeer het opnieuw.",
+    teamDataActionFailed: "Kon deze actie niet voltooien. Probeer het opnieuw.",
+    teamCreateFailed: "Kon team niet aanmaken. Probeer het opnieuw.",
+    about: "Over",
   },
 };
 
@@ -284,12 +338,10 @@ function detectLanguage() {
   const prefs = navigator.languages && navigator.languages.length ? navigator.languages : [navigator.language || ""];
   for (const pref of prefs) {
     if (!pref) continue;
-    const exact = available.find((a) => a.toLowerCase() === pref.toLowerCase());
+    const lower = pref.toLowerCase();
+    const exact = available.find((a) => a.toLowerCase() === lower);
     if (exact) return exact;
-  }
-  for (const pref of prefs) {
-    if (!pref) continue;
-    const base = pref.toLowerCase().split("-")[0];
+    const base = lower.split("-")[0];
     const partial = available.find((a) => a.toLowerCase().split("-")[0] === base);
     if (partial) return partial;
   }
@@ -354,6 +406,8 @@ const STAFF_ROLES = [
   { id: "scorekeeper", label: t("scorekeeper") },
   { id: "referee", label: t("referee") },
 ];
+const ALL_ROLES = [{ id: PARTICIPANT_ROLE, label: t("participant") }, ...STAFF_ROLES];
+function roleLabel(id) { const r = ALL_ROLES.find((x) => x.id === id); return r ? r.label : id; }
 function personHasRole(person, roleId) { return Array.isArray(person.roles) && person.roles.includes(roleId); }
 function staffRoleLabels(ids) { return STAFF_ROLES.filter((r) => (ids || []).includes(r.id)).map((r) => r.label); }
 function renderMultiSelectChips(container, options, selectedSet, onToggle) {
@@ -381,3 +435,40 @@ function renderDateFilterChips(container, currentMode, onChange) {
   options.forEach((opt) => { const chip = document.createElement("button"); chip.type = "button"; chip.className = "chip" + (opt.mode === currentMode ? " active" : ""); chip.textContent = opt.label; chip.addEventListener("click", () => onChange(opt.mode)); container.appendChild(chip); });
 }
 function formatMapsLink(location) { if (!location) return ""; const encoded = encodeURIComponent(location); return `https://www.google.com/maps/search/${encoded}`; }
+
+// Load the shared hierarchical navigation on every page.
+(() => {
+  const loadNavigation = () => {
+    if (!document.querySelector('link[data-navigation-css]')) {
+      const css = document.createElement("link");
+      css.rel = "stylesheet";
+      css.href = "/navigation.css";
+      css.dataset.navigationCss = "true";
+      document.head.appendChild(css);
+    }
+    if (!document.querySelector(".sidebar-open")) {
+      const open = document.createElement("button");
+      open.type = "button";
+      open.className = "sidebar-open";
+      open.setAttribute("aria-label", "Open navigation");
+      open.textContent = "☰";
+      document.body.appendChild(open);
+    }
+    if (!document.querySelector(".sidebar-backdrop")) {
+      const backdrop = document.createElement("button");
+      backdrop.type = "button";
+      backdrop.className = "sidebar-backdrop";
+      backdrop.hidden = true;
+      backdrop.setAttribute("aria-label", "Close navigation");
+      document.body.appendChild(backdrop);
+    }
+    if (!document.querySelector('script[data-navigation-js]')) {
+      const script = document.createElement("script");
+      script.src = "/navigation.js";
+      script.dataset.navigationJs = "true";
+      document.body.appendChild(script);
+    }
+  };
+  if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", loadNavigation, { once: true });
+  else loadNavigation();
+})();

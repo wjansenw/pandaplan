@@ -1,27 +1,90 @@
 <!doctype html>
 <html lang="en">
-<head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
-<title>pandaplan · i18n debug</title>
-<link rel="stylesheet" href="/style.css">
-<style>body{padding:20px}.debug{max-width:800px;margin:auto}.row{padding:8px 0;border-bottom:1px solid #ddd}.key{font-weight:600}.value{font-family:monospace;word-break:break-word}</style>
-</head>
-<body>
-<div class="debug">
-<h1>Translation debug</h1>
-<div id="output">Loading…</div>
-</div>
-<script src="/shared.js"></script>
-<script>
-const tests=['Calendar','Team overview','Edit attendance','Done attendance','Edit staff','Done staff','Click to expand','Click to collapse','Copy','Copied!','Select a person…','Going','Maybe','Not going','Unknown','Staff','No events match this filter.','From','Until','Save','Cancel'];
-const rows=[];
-rows.push(['navigator.language',navigator.language]);
-rows.push(['navigator.languages',navigator.languages.join(', ')]);
-rows.push(['typeof t',typeof t]);
-if(typeof t==='function') tests.forEach(key=>rows.push([key,t(key)]));
-const output=document.getElementById('output');
-output.innerHTML=rows.map(([key,value])=>'<div class="row"><div class="key">'+escapeHtml(String(key))+'</div><div class="value">'+escapeHtml(String(value))+'</div></div>').join('');
-</script>
-</body>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>pandaplan · i18n debug</title>
+    <link rel="stylesheet" href="/style.css" />
+    <style>
+      body {
+        padding: 20px;
+      }
+      .debug {
+        max-width: 800px;
+        margin: auto;
+      }
+      .row {
+        padding: 8px 0;
+        border-bottom: 1px solid #ddd;
+      }
+      .key {
+        font-weight: 600;
+      }
+      .value {
+        font-family: monospace;
+        word-break: break-word;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="debug">
+      <h1>Translation debug</h1>
+      <div id="output">Loading…</div>
+    </div>
+    <script src="/shared.js"></script>
+    <script>
+      const tests = [
+        "calendar",
+        "teamOverview",
+        "editAttendance",
+        "doneAttendance",
+        "editStaff",
+        "doneStaff",
+        "clickToExpand",
+        "clickToCollapse",
+        "copy",
+        "copied",
+        "selectPersonOption",
+        "goingShort",
+        "maybe",
+        "notGoingShort",
+        "unknownShort",
+        "staff",
+        "noEventsForFilter",
+        "from",
+        "until",
+        "save",
+        "cancel",
+      ];
+      const rows = [];
+      rows.push(["navigator.language", navigator.language]);
+      rows.push(["navigator.languages", navigator.languages.join(", ")]);
+      rows.push(["typeof t", typeof t]);
+      rows.push([
+        "currentLanguage",
+        typeof currentLanguage !== "undefined" ? currentLanguage : "(undefined)",
+      ]);
+      if (typeof t === "function")
+        tests.forEach((key) => {
+          const missing =
+            !(MESSAGES.en && key in MESSAGES.en) ||
+            !(MESSAGES["nl-BE"] && key in MESSAGES["nl-BE"]);
+          rows.push([
+            key,
+            t(key) + (missing ? "  ⚠ missing dictionary entry" : ""),
+          ]);
+        });
+      const output = document.getElementById("output");
+      output.innerHTML = rows
+        .map(
+          ([key, value]) =>
+            '<div class="row"><div class="key">' +
+            escapeHtml(String(key)) +
+            '</div><div class="value">' +
+            escapeHtml(String(value)) +
+            "</div></div>",
+        )
+        .join("");
+    </script>
+  </body>
 </html>

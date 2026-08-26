@@ -169,6 +169,9 @@ When changing the database schema, add a new migration under `src/db/migrations/
 
 ### Frontend translations
 
+Frontend user-facing strings should use the shared `t()` translation function rather than hard-coded text. Add new translation keys to the shared message dictionaries for all supported languages.
+
+Application state should not be inferred from translated button labels or other rendered text. Use explicit state, element IDs, data attributes, or events instead. This is particularly important for edit-mode controls and bulk attendance.
 Frontend user-facing strings should use the shared `t()` translation function rather than hard-coded text. Add new translation keys to the shared message dictionaries for all supported 
 
 ## Configuration

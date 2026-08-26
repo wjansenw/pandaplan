@@ -1,0 +1,51 @@
+.calendar-header,
+.bulk-attendance-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  width: 100%;
+  margin: 0;
+  padding: 0;
+  cursor: pointer;
+  user-select: none;
+}
+
+.calendar-header:focus-visible,
+.bulk-attendance-header:focus-visible {
+  outline: 2px solid currentColor;
+  outline-offset: 3px;
+}
+
+.calendar-expand-hint,
+.bulk-expand-hint {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  flex: none;
+  color: var(--ink-soft);
+  font-size: 0.85rem;
+  font-weight: 400;
+  white-space: nowrap;
+}
+
+.calendar-chevron,
+.bulk-chevron {
+  font-size: 1.5em;
+  line-height: 1;
+  opacity: 0.8;
+  font-weight: 600;
+}
+
+@media (max-width: 640px) {
+  .calendar-header,
+  .bulk-attendance-header {
+    align-items: flex-start;
+  }
+
+  .calendar-expand-hint,
+  .bulk-expand-hint {
+    white-space: normal;
+    text-align: right;
+  }
+}
