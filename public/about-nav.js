@@ -28,3 +28,11 @@ const ABOUT_MESSAGES = {
 Object.entries(ABOUT_MESSAGES).forEach(([language, messages]) => {
   if (MESSAGES[language]) Object.assign(MESSAGES[language], messages);
 });
+
+// All pages that already load this compatibility shim also get the shared navigation.
+if (!document.querySelector('script[data-pandanav]')) {
+  const script = document.createElement("script");
+  script.src = "/navigation.js";
+  script.dataset.pandanav = "true";
+  document.body.appendChild(script);
+}
