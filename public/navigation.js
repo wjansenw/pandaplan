@@ -72,6 +72,7 @@
 
     nav.id = "main-navigation";
     nav.className = "nav sidebar";
+    document.body.classList.add("has-sidebar");
     nav.innerHTML = "";
 
     const header = document.createElement("div");

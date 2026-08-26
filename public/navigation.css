@@ -1,6 +1,12 @@
 :root { --sidebar-width: 250px; }
 
-body { padding-left: var(--sidebar-width); }
+/* Until navigation.js has fetched the team list and built the real sidebar,
+   keep the (still old-markup) .nav hidden instead of letting it flash as an
+   unstyled top bar, and don't reserve sidebar space on <body> yet — both
+   flip on together, atomically, once render() adds these classes. */
+.nav { visibility: hidden; }
+.nav.sidebar { visibility: visible; }
+body.has-sidebar { padding-left: var(--sidebar-width); }
 
 .nav.sidebar {
   position: fixed;
