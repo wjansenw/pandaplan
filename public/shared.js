@@ -207,7 +207,7 @@ const MESSAGES = {
     coach: "Coach",
     assistantCoach: "Assistent-coach",
     trainer: "Trainer",
-    scorekeeper: "Scoreteller",
+    scorekeeper: "Markeerder",
     referee: "Scheidsrechter",
     goingShort: "Aanwezig",
     maybe: "Misschien",
