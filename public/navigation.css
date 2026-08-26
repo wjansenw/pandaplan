@@ -1,9 +1,7 @@
 :root { --sidebar-width: 250px; }
 
-/* Until navigation.js has fetched the team list and built the real sidebar,
-   keep the (still old-markup) .nav hidden instead of letting it flash as an
-   unstyled top bar, and don't reserve sidebar space on <body> yet — both
-   flip on together, atomically, once render() adds these classes. */
+/* Keep the old navigation hidden until navigation.js has converted it into
+   the shared sidebar. The layout space is enabled at the same time. */
 .nav { visibility: hidden; }
 .nav.sidebar { visibility: visible; }
 body.has-sidebar { padding-left: var(--sidebar-width); }
@@ -49,7 +47,12 @@ body.has-sidebar { padding-left: var(--sidebar-width); }
 
 @media (max-width: 760px) {
   :root { --sidebar-width: 260px; }
-  body { padding-left: 0; }
+
+  /* Override the desktop reservation with equal/higher specificity. Without
+     this, body.has-sidebar keeps 250px of left padding and makes every page
+     artificially narrow even though the drawer is closed. */
+  body.has-sidebar { padding-left: 0; }
+
   .nav.sidebar {
     transform: translateX(-100%);
     transition: transform 180ms ease;
