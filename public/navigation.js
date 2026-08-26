@@ -95,12 +95,7 @@
     menu.className = "sidebar-menu";
     menu.setAttribute("aria-label", t("mainNavigation"));
 
-    const teamsLink = link(
-      "/teams.html",
-      t("teams"),
-      null,
-      !currentTeamSlug && path === "/teams.html",
-    );
+    const teamsLink = link("/teams.html", t("teams"), null, !currentTeamSlug && path === "/teams.html");
     teamsLink.classList.add("sidebar-section-link");
     menu.appendChild(teamsLink);
 
@@ -118,7 +113,6 @@
 
         const row = document.createElement("div");
         row.className = "sidebar-team-row";
-
         const toggle = document.createElement("button");
         toggle.type = "button";
         toggle.className = "sidebar-team-toggle";
@@ -127,32 +121,16 @@
         toggle.textContent = isCurrent ? "▾" : "▸";
         row.appendChild(toggle);
 
-        const teamLink = link(
-          `/team/${encodeURIComponent(team.slug)}/overview`,
-          team.name,
-          null,
-          isCurrent && currentPage === "overview",
-        );
+        const teamLink = link(`/team/${encodeURIComponent(team.slug)}/overview`, team.name, null, isCurrent && currentPage === "overview");
         teamLink.classList.add("sidebar-team-link");
         row.appendChild(teamLink);
         item.appendChild(row);
 
         const children = document.createElement("div");
         children.className = "sidebar-team-children";
-        [
-          ["overview", t("overview"), false],
-          ["people", t("peopleNav") || t("people"), true],
-          ["events", t("events"), true],
-          ["categories", t("categories"), true],
-        ].forEach(([page, label, adminOnly]) => {
-          const child = link(
-            `/team/${encodeURIComponent(team.slug)}/${page}`,
-            label,
-            isCurrent ? pageId(page) : null,
-            isCurrent && currentPage === page,
-            adminOnly,
-          );
-          child.addEventListener("click", () => closeMobile());
+        [["overview", t("overview"), false], ["people", t("peopleNav") || t("people"), true], ["events", t("events"), true], ["categories", t("categories"), true]].forEach(([page, label, adminOnly]) => {
+          const child = link(`/team/${encodeURIComponent(team.slug)}/${page}`, label, isCurrent ? pageId(page) : null, isCurrent && currentPage === page, adminOnly);
+          child.addEventListener("click", closeMobile);
           children.appendChild(child);
         });
         item.appendChild(children);
@@ -162,13 +140,14 @@
           toggle.textContent = open ? "▾" : "▸";
           toggle.setAttribute("aria-expanded", String(open));
         });
+        teamLink.addEventListener("click", closeMobile);
         teamList.appendChild(item);
       });
 
     menu.appendChild(teamList);
     const about = link("/about.html", t("about"), null, path === "/about.html");
     about.classList.add("sidebar-section-link");
-    about.addEventListener("click", () => closeMobile());
+    about.addEventListener("click", closeMobile);
     menu.appendChild(about);
     nav.appendChild(menu);
 
@@ -177,33 +156,27 @@
       backdrop.hidden = true;
       openButton.setAttribute("aria-expanded", "false");
     }
-
     function openMobile() {
       nav.classList.add("mobile-open");
       backdrop.hidden = false;
       openButton.setAttribute("aria-expanded", "true");
     }
-
     close.onclick = closeMobile;
     openButton.onclick = openMobile;
     backdrop.onclick = closeMobile;
-
-    document.addEventListener("keydown", (event) => {
-      if (event.key === "Escape") closeMobile();
-    });
   }
 
-  function init() {
-    if (typeof api !== "function") {
-      setTimeout(init, 0);
-      return;
+  async function init() {
+    ensureNavigationAssets();
+    try {
+      const teams = typeof api === "function"
+        ? await api("/api/teams")
+        : await (await fetch("/api/teams")).json();
+      render(teams);
+    } catch (error) {
+      console.error("Could not load navigation teams:", error);
+      render([]);
     }
-    api("/api/teams")
-      .then(render)
-      .catch((error) => {
-        console.error("Could not load navigation teams:", error);
-        render([]);
-      });
   }
 
   init();
