@@ -75,8 +75,6 @@ async function toggleStaffAssignment(personId, eventId, role) {
           encodeURIComponent(role),
         { method: "DELETE" },
       );
-      if (assignments[role])
-        assignments[role] = assignments[role].filter((id) => id !== personId);
     } else {
       await api(
         "/api/teams/" +
@@ -87,20 +85,9 @@ async function toggleStaffAssignment(personId, eventId, role) {
           encodeURIComponent(personId),
         { method: "PUT", body: JSON.stringify({ role }) },
       );
-      if (!pageState.state.staffAssignments[eventId])
-        pageState.state.staffAssignments[eventId] = {};
-      Object.keys(pageState.state.staffAssignments[eventId]).forEach(
-        (existingRole) => {
-          pageState.state.staffAssignments[eventId][existingRole] = (
-            pageState.state.staffAssignments[eventId][existingRole] || []
-          ).filter((id) => id !== personId);
-        },
-      );
-      pageState.state.staffAssignments[eventId][role] = [
-        ...(pageState.state.staffAssignments[eventId][role] || []),
-        personId,
-      ];
     }
+
+    pageState.state = await getTeamState(slug);
     render();
   } catch (error) {
     console.error("Could not update staff assignment:", error);
