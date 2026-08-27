@@ -1,125 +1,276 @@
-# pandaplan
+# PandaPlan
 
-A lightweight, self-hosted event planning and attendance roster application.
-
-pandaplan is designed for groups that need a simple way to manage people, event categories, events, attendance, and staff assignments without relying on a hosted third-party service.
+PandaPlan is a self-hosted event attendance and team management application. It is designed for clubs, teams and other groups that need a simple way to manage people, events, attendance and staff assignments.
 
 ## Features
 
-- **People management** – maintain participants and staff in one place.
-- **Multiple roles** – a person can be a participant and/or hold staff roles such as coach, assistant coach, trainer, scorekeeper, or referee.
-- **Event categories** – organise events and define the staff roles required for each category.
-- **Event management** – create individual events or generate recurring event series by date range, weekdays, times, location, subject, and category.
-- **ICS import** – import calendar events and automatically assign categories based on event location, with a fallback category when no location rule matches.
-- **Attendance tracking** – record yes/no/maybe attendance and optional notes.
-- **Bulk attendance** – in Edit attendance mode, select a participant, filter events by category and date range, and set attendance for all matching events at once.
-- **Staff assignments** – assign people with appropriate roles to individual events.
-- **Team overview** – view events, attendance, and staff assignments from a single team overview page, with dedicated edit modes for attendance and staff.
-- **Calendar subscription** – copy calendar feed URLs for a team or individual person and subscribe to them from a calendar application.
-- **Translations** – frontend text is translated through the shared `t()` translation system, with Dutch (`nl-BE`) and English support and locale fallback handling.
-- **SQLite persistence** – application data is stored in a transactional SQLite database with foreign-key constraints and schema migrations.
-- **Docker support** – ready to run as a Docker container using Docker Compose.
-- **Self-hosted** – no external database or SaaS service is required.
+- Manage multiple teams
+- Manage people within teams
+- Distinguish participants and staff
+- Create and manage events
+- Track attendance per event
+- Add attendance notes
+- Assign staff to events and staff roles
+- Prevent a person from having multiple staff roles for the same event
+- Team and person calendar feeds in iCalendar (`.ics`) format
+- Clickable event locations
+- Bulk attendance management
+- Dutch and English translations
+- Responsive interface with a desktop sidebar and mobile navigation drawer
+- Optional admin mode for management functions
 
-## Technology
+## Architecture
 
-- Node.js
-- Express 4
-- better-sqlite3
-- HTML/CSS/JavaScript frontend
-- SQLite
-- Docker / Docker Compose
+PandaPlan uses a deliberately simple architecture:
 
-## Quick start with Docker
+- **Backend:** Node.js with Express
+- **Database:** SQLite using `better-sqlite3`
+- **Frontend:** Plain HTML, CSS and JavaScript
+- **API:** REST-style HTTP endpoints
+- **Deployment:** Docker / Docker Compose
 
-Clone the repository and start the application:
+There is no frontend framework or frontend build system. The browser loads the HTML, JavaScript and CSS directly from the `public/` directory.
 
-```bash
-git clone https://github.com/wjansenw/pandaplan.git
-cd pandaplan
-docker compose up -d --build
-```
+### Backend
 
-The application listens on port **3000** by default:
+The application starts from `server.js`.
+
+Backend responsibilities are separated into:
+
+- API route modules
+- Database access
+- SQLite schema migrations
+- Shared application/state services
+- Calendar feed generation
+
+SQLite is the authoritative data store.
+
+
+
+## Frontend
+
+The frontend is implemented using standard browser APIs without a JavaScript framework.
+
+The main frontend code lives in:
 
 ```text
-http://localhost:3000
+public/
 ```
 
-The supplied Compose configuration maps port `3000` on the host to port `3000` in the container and persists application data in `./data`. It also connects the container to an existing external Docker network named `swag_network`, which is useful when running pandaplan behind an existing reverse proxy.
+Shared functionality is separated from page-specific code where practical.
 
-If you do not use that network, remove the `networks` section from `docker-compose.yml` and the corresponding service network entry.
+Examples of shared functionality include:
 
-## Running without Docker
+- API access
+- translations
+- team state loading
+- navigation
+- common rendering helpers
+- event/date formatting
+- calendar URL handling
 
-Install Node.js, then install the dependencies and start the server:
+Team-specific pages are responsible for their own rendering and interaction logic.
 
-```bash
-npm install
-npm start
+### Navigation
+
+PandaPlan uses a hierarchical sidebar navigation.
+
+At the top level, users can navigate to:
+
+```text
+Teams
+├── Team
+│   └── Overview
+└── ...
+About
 ```
 
-The server uses port `3000` by default. The port and data directory can be changed with environment variables:
+When running in admin mode, additional team management pages are available:
 
-```bash
-PORT=3000 DATA_DIR=./data npm start
+```text
+Teams
+├── Team
+│   ├── Overview
+│   ├── People
+│   └── Events
+└── ...
+About
 ```
 
-`server.js` is the application entry point. On startup it opens the SQLite database, applies any pending migrations, and imports legacy JSON data when appropriate.
+The sidebar is fixed on desktop and becomes a slide-out navigation drawer on smaller screens.
 
-## Data storage
+Admin mode is enabled through the `mode=admin` URL parameter.
 
-Application data is stored in the configured data directory, which defaults to `./data`:
+## Translations
 
-The SQLite database is created automatically on first startup. The schema contains separate tables for people, roles, categories, events, attendance, and staff assignments, with foreign-key constraints enforcing relationships between them.
+User-facing frontend text should use the shared translation system rather than hard-coded language-specific strings.
 
-### Backups
+Translations are provided for:
 
-**Back up the `data/` directory regularly** if the application contains important event or attendance information. The SQLite database is the authoritative application data store.
+- English
+- Dutch (Belgian)
 
-## Reverse proxy
+The translation system also updates the document language and supports translated placeholders.
 
-pandaplan can be placed behind a reverse proxy such as SWAG, nginx, or another Docker-aware proxy. The default container port is `3000`.
+When adding user-facing text:
 
-For a reverse-proxy deployment, expose pandaplan only to the proxy network and publish it through your preferred hostname and HTTPS configuration.
+1. Add a translation key.
+2. Add the English translation.
+3. Add the Dutch translation.
+4. Reference the key through the shared translation function.
 
-The default Docker Compose configuration expects an existing external Docker network named `swag_network`.
+Avoid putting user-facing text directly into JavaScript when it should be translated.
 
-## Development
+## Attendance
 
-For local development, install dependencies with:
+Attendance is tracked per participant and event.
 
-```bash
-npm install
+The supported attendance states are:
+
+- Going
+- Maybe
+- Not going
+- Unknown
+
+Participants can also have an optional attendance note for an event.
+
+Bulk attendance editing allows an administrator to select a participant and apply an attendance state across the applicable events.
+
+The event/date/category filters are shared with the relevant overview and bulk-edit functionality so that the same event selection is used consistently.
+
+## Staff assignments
+
+Staff can be assigned to events using defined staff roles.
+
+A person can have **at most one staff role for a given event**. This rule is enforced at the database/API level rather than relying only on frontend state.
+
+Staff assignments can be edited from the team overview.
+
+## Calendar feeds
+
+PandaPlan exposes iCalendar feeds for teams and people.
+
+Team calendar:
+
+```text
+/calendar/team/<team>.ics
 ```
 
-Then start the server:
+Person calendar:
 
-```bash
-npm start
+```text
+/calendar/person/<person>.ics
 ```
 
-There is currently no separate frontend build step. The frontend is plain HTML/CSS/JavaScript and shared frontend code is kept in the `public/` directory.
+The frontend displays these URLs so they can be copied into a calendar application.
 
-When changing the database schema, add a new migration under `src/db/migrations/`. Start the application normally to apply pending migrations automatically.
+Calendar URLs are not intended to be presented as file-download buttons.
 
-### Frontend translations
+## Event locations
 
-Frontend user-facing strings should use the shared `t()` translation function rather than hard-coded text. Add new translation keys to the shared message dictionaries for all supported languages.
+Events can have a location.
 
-Application state should not be inferred from translated button labels or other rendered text. Use explicit state, element IDs, data attributes, or events instead. This is particularly important for edit-mode controls and bulk attendance.
-Frontend user-facing strings should use the shared `t()` translation function rather than hard-coded text. Add new translation keys to the shared message dictionaries for all supported 
+Where a location is provided, it is presented as a clickable link that opens the location using a map service.
+
+## API
+
+The frontend communicates with the backend through HTTP API endpoints.
+
+The API is the authoritative interface for modifying:
+
+- teams
+- people
+- events
+- attendance
+- staff assignments
+- categories
+
+Frontend code should not bypass the API by directly manipulating persistent data.
+
+## Running with Docker
+
+PandaPlan can be run using Docker Compose.
+
+A typical setup exposes the application through the configured HTTP port and stores persistent application data in the configured data directory.
+
+The database should be kept on persistent storage so that it survives container recreation.
 
 ## Configuration
 
-The following environment variables are supported:
+The application supports configuration through environment variables.
 
-| Variable | Default | Description |
-|---|---|---|
-| `PORT` | `3000` | HTTP server port |
-| `DATA_DIR` | `./data` | Directory containing the SQLite database and application data |
+Important settings include:
 
-## Status
+- `PORT` — HTTP port used by the application
+- `DATA_DIR` — location for persistent application data and the SQLite database
 
-pandaplan is a small personal/self-hosted project and may evolve as new event-management requirements are added. The application focuses on straightforward event planning, attendance management, and staff assignment rather than being a full-featured event-management platform.
+The default application port can be overridden through `PORT`.
 
+## Development
+
+Install dependencies:
+
+```bash
+npm install
+```
+
+Start the application:
+
+```bash
+npm start
+```
+
+The application runs directly from the source tree; there is no frontend build step.
+
+For frontend formatting, Prettier can be used to format HTML, JavaScript and CSS files.
+
+## Project structure
+
+The important parts of the repository are structured approximately as follows:
+
+```text
+.
+├── server.js
+├── package.json
+├── public/
+│   ├── *.html
+│   ├── *.js
+│   ├── *.css
+│   └── ...
+└── src/
+    ├── db/
+    │   └── migrations/
+    ├── routes/
+    ├── services/
+    └── ...
+```
+
+The exact file structure may evolve as the application is refactored.
+
+## Data and persistence
+
+PandaPlan uses SQLite as its persistent data store.
+
+The database is created and migrated automatically when the application starts.
+
+Database files should be stored on persistent storage when running PandaPlan in Docker.
+
+
+## License
+
+PandaPlan is distributed under the license specified in the repository's `LICENSE` file.
+
+See [`LICENSE`](LICENSE) for the complete license text.
+
+## Contributing
+
+When making changes:
+
+- Keep API and frontend responsibilities separated.
+- Prefer shared infrastructure when functionality is genuinely common.
+- Avoid unnecessary abstractions and over-engineering.
+- Keep page-specific rendering and interaction logic together where that makes the code easier to understand.
+- Use the existing translation system for user-facing text.
+- Use database migrations for persistent schema changes.
+- Preserve responsive behavior on both desktop and mobile.
+- Keep functional changes separate from pure formatting changes where practical.

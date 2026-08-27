@@ -14,7 +14,9 @@
         <a id="overviewLink" data-i18n="overview">Overview</a>
         <a class="current" data-i18n="events">Events</a>
         <a id="peopleLink" data-i18n="persons" data-admin-only>People</a>
-        <a id="categoriesLink" data-i18n="categories" data-admin-only>Categories</a>
+        <a id="categoriesLink" data-i18n="categories" data-admin-only
+          >Categories</a
+        >
       </div>
     </div>
 
@@ -56,7 +58,10 @@
         </div>
         <div class="field">
           <label data-i18n="description">Description</label>
-          <textarea id="description" data-i18n-placeholder="descriptionPlaceholder"></textarea>
+          <textarea
+            id="description"
+            data-i18n-placeholder="descriptionPlaceholder"
+          ></textarea>
         </div>
         <button class="btn" id="save" data-i18n="saveEvent">Save event</button>
         <div class="saved-note" id="note"></div>
@@ -66,7 +71,10 @@
         <div class="card-head">
           <h2 data-i18n="recurringEvents">Recurring events</h2>
         </div>
-        <p class="sub" data-i18n="recurringHelp">Create multiple normal events on selected weekdays within a date range.</p>
+        <p class="sub" data-i18n="recurringHelp">
+          Create multiple normal events on selected weekdays within a date
+          range.
+        </p>
         <div class="field">
           <label data-i18n="subject">Subject</label>
           <input id="recSubject" />
@@ -105,10 +113,15 @@
         </div>
         <div class="field">
           <label data-i18n="description">Description</label>
-          <textarea id="recDescription" data-i18n-placeholder="descriptionPlaceholder"></textarea>
+          <textarea
+            id="recDescription"
+            data-i18n-placeholder="descriptionPlaceholder"
+          ></textarea>
         </div>
         <div class="sub" id="recPreview"></div>
-        <button class="btn" id="createRecurring" data-i18n="createRecurring">Create events</button>
+        <button class="btn" id="createRecurring" data-i18n="createRecurring">
+          Create events
+        </button>
         <div class="saved-note" id="recNote"></div>
       </section>
 
@@ -116,24 +129,39 @@
         <div class="card-head">
           <h2 data-i18n="importFromIcs">Import from ICS feed</h2>
         </div>
-        <p class="sub" data-i18n="icsImportHelp">Enter a calendar feed URL. Events already matching all four fields are skipped.</p>
+        <p class="sub" data-i18n="icsImportHelp">
+          Enter a calendar feed URL. Events already matching all four fields are
+          skipped.
+        </p>
         <div class="field">
           <label data-i18n="icsFeedUrl">ICS feed URL</label>
-          <input id="icsUrl" type="url" data-i18n-placeholder="icsFeedUrlPlaceholder" />
+          <input
+            id="icsUrl"
+            type="url"
+            data-i18n-placeholder="icsFeedUrlPlaceholder"
+          />
         </div>
         <div class="field">
           <label data-i18n="locationContains">Location contains</label>
-          <input id="icsLocationContains" type="text" data-i18n-placeholder="locationContainsPlaceholder" />
+          <input
+            id="icsLocationContains"
+            type="text"
+            data-i18n-placeholder="locationContainsPlaceholder"
+          />
         </div>
         <div class="field">
-          <label data-i18n="categoryWhenLocationMatches">Category when location matches</label>
+          <label data-i18n="categoryWhenLocationMatches"
+            >Category when location matches</label
+          >
           <select id="icsLocationCategory"></select>
         </div>
         <div class="field">
           <label data-i18n="categoryOtherwise">Category otherwise</label>
           <select id="icsFallbackCategory"></select>
         </div>
-        <button class="btn" id="importIcs" data-i18n="importEvents">Import events</button>
+        <button class="btn" id="importIcs" data-i18n="importEvents">
+          Import events
+        </button>
         <div class="saved-note" id="importNote"></div>
       </section>
 

@@ -18,15 +18,21 @@ const eventsApi = {
     });
   },
   update(slug, eventId, event) {
-    return apiRequest(teamApiUrl("events", slug) + "/" + encodeURIComponent(eventId), {
-      method: "PUT",
-      body: JSON.stringify(event),
-    });
+    return apiRequest(
+      teamApiUrl("events", slug) + "/" + encodeURIComponent(eventId),
+      {
+        method: "PUT",
+        body: JSON.stringify(event),
+      },
+    );
   },
   remove(slug, eventId) {
-    return apiRequest(teamApiUrl("events", slug) + "/" + encodeURIComponent(eventId), {
-      method: "DELETE",
-    });
+    return apiRequest(
+      teamApiUrl("events", slug) + "/" + encodeURIComponent(eventId),
+      {
+        method: "DELETE",
+      },
+    );
   },
   createRecurring(slug, event) {
     return apiRequest(teamApiUrl("events/recurring", slug), {

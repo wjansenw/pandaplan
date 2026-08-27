@@ -154,10 +154,7 @@ async function load() {
   const copyCalendar = document.getElementById("copyCalendar");
   const personCalendar = document.getElementById("personCalendar");
   const url =
-    location.origin +
-    "/calendar/team/" +
-    encodeURIComponent(slug) +
-    ".ics";
+    location.origin + "/calendar/team/" + encodeURIComponent(slug) + ".ics";
   calendarUrl.value = url;
   copyCalendar.onclick = async () => {
     try {
@@ -187,8 +184,11 @@ async function load() {
     calendarToggle.querySelector(".calendar-chevron").textContent = expanded
       ? "▾"
       : "▸";
-    calendarToggle.querySelector(".calendar-expand-hint").lastChild.textContent =
-      expanded ? " " + t("clickToCollapse") : " " + t("clickToExpand");
+    calendarToggle.querySelector(
+      ".calendar-expand-hint",
+    ).lastChild.textContent = expanded
+      ? " " + t("clickToCollapse")
+      : " " + t("clickToExpand");
   };
   calendarToggle.onclick = toggleCalendar;
   calendarToggle.onkeydown = (e) => {
@@ -204,8 +204,7 @@ async function load() {
 async function toggleAttendance(personId, eventId) {
   const current =
     pageState.state.attendance[personId]?.[eventId]?.status || "unknown";
-  const next =
-    current === "yes" ? "maybe" : current === "maybe" ? "no" : "yes";
+  const next = current === "yes" ? "maybe" : current === "maybe" ? "no" : "yes";
   try {
     await updateAttendance(
       slug,
