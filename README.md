@@ -18,7 +18,6 @@ pandaplan is designed for groups that need a simple way to manage people, event 
 - **Calendar subscription** – copy calendar feed URLs for a team or individual person and subscribe to them from a calendar application.
 - **Translations** – frontend text is translated through the shared `t()` translation system, with Dutch (`nl-BE`) and English support and locale fallback handling.
 - **SQLite persistence** – application data is stored in a transactional SQLite database with foreign-key constraints and schema migrations.
-- **Legacy data import** – an existing `data/db.json` is automatically imported into SQLite on first startup when applicable.
 - **Docker support** – ready to run as a Docker container using Docker Compose.
 - **Self-hosted** – no external database or SaaS service is required.
 
@@ -72,74 +71,11 @@ PORT=3000 DATA_DIR=./data npm start
 
 Application data is stored in the configured data directory, which defaults to `./data`:
 
-```text
-data/
-├── pandaplan.sqlite3   # SQLite database
-├── pandaplan.sqlite3-* # SQLite WAL/journal files while in use
-└── logs.jsonl          # application log data, when generated
-```
-
 The SQLite database is created automatically on first startup. The schema contains separate tables for people, roles, categories, events, attendance, and staff assignments, with foreign-key constraints enforcing relationships between them.
 
 ### Backups
 
 **Back up the `data/` directory regularly** if the application contains important event or attendance information. The SQLite database is the authoritative application data store.
-
-## Application structure
-
-```text
-pandaplan/
-├── public/                    # Web frontend
-├── data/                      # Persistent application data (created at runtime)
-├── src/
-│   ├── db/                    # SQLite connection, migrations and legacy import
-│   ├── repositories/          # Database access for application entities
-│   ├── routes/                # HTTP/API route definitions
-│   ├── services/              # Application and business logic
-│   ├── utils/                 # Shared utilities
-│   ├── config.js              # Runtime configuration and constants
-│   └── errors.js              # Application error types
-├── server.js                  # Express server and API entry point
-├── Dockerfile                 # Container image definition
-├── docker-compose.yml         # Docker Compose deployment
-├── package.json               # Node.js project configuration
-└── README.md
-```
-
-The application follows a layered structure:
-
-```text
-HTTP routes
-    ↓
-Services / business logic
-    ↓
-Repositories
-    ↓
-SQLite database
-```
-
-This keeps HTTP handling, application logic, and persistence concerns separated.
-
-## API
-
-The backend exposes a JSON API under `/api`:
-
-```text
-GET /api/state
-/api/persons
-/api/categories
-/api/events
-/api/attendance
-/api/staffAssignments
-```
-
-Calendar exports are available under:
-
-```text
-/calendar
-```
-
-The API handles management of people, categories, events, attendance, staff assignments, and calendar exports.
 
 ## Reverse proxy
 
