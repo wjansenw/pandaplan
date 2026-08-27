@@ -1,6 +1,7 @@
 const express = require('express');
 const session = require('express-session');
 const { Issuer, generators } = require('openid-client');
+const path = require('path');
 
 const router = express.Router();
 
@@ -8,12 +9,14 @@ const SESSION_SECRET = process.env.OIDC_SESSION_SECRET || process.env.SESSION_SE
 const ISSUER_URL = process.env.OIDC_ISSUER_URL;
 const CLIENT_ID = process.env.OIDC_CLIENT_ID;
 const CLIENT_SECRET = process.env.OIDC_CLIENT_SECRET;
-const REDIRECT_URI = process.env.OIDC_REDIRECT_URI || '/oidc/callback';
+const REDIRECT_URI = process.env.OIDC_REDIRECT_URI;
 
 let clientPromise;
 
 function configured() {
-  return Boolean(SESSION_SECRET && ISSUER_URL && CLIENT_ID && CLIENT_SECRET);
+  return Boolean(
+    SESSION_SECRET && ISSUER_URL && CLIENT_ID && CLIENT_SECRET && REDIRECT_URI,
+  );
 }
 
 function sessionMiddleware() {
@@ -50,7 +53,7 @@ async function getClient() {
 router.use(sessionMiddleware());
 
 router.get('/', (req, res) => {
-  res.sendFile(require('path').join(__dirname, '..', 'public', 'oidc.html'));
+  res.sendFile(path.join(__dirname, '..', 'public', 'oidc.html'));
 });
 
 router.get('/session', (req, res) => {
@@ -121,4 +124,3 @@ router.post('/logout', (req, res, next) => {
 });
 
 module.exports = router;
-module.exports.configured = configured;
