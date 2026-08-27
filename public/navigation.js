@@ -10,7 +10,6 @@
       ? url + (url.includes("?") ? "&" : "?") + "mode=admin"
       : url;
 
-  // Keep the IDs used by existing team pages while the navigation is shared.
   const pageId = (page) =>
     ({
       overview: "overviewLink",
@@ -185,13 +184,18 @@
       backdrop.hidden = true;
       openButton.setAttribute("aria-expanded", "false");
     }
+    function toggleMobile() {
+      if (nav.classList.contains("mobile-open")) closeMobile();
+      else openMobile();
+    }
     function openMobile() {
       nav.classList.add("mobile-open");
       backdrop.hidden = false;
       openButton.setAttribute("aria-expanded", "true");
     }
+
     close.onclick = closeMobile;
-    openButton.onclick = openMobile;
+    openButton.onclick = toggleMobile;
     backdrop.onclick = closeMobile;
     document.addEventListener("keydown", (event) => {
       if (event.key === "Escape") closeMobile();
