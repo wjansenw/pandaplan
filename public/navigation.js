@@ -9,10 +9,14 @@
     adminMode
       ? url + (url.includes("?") ? "&" : "?") + "mode=admin"
       : url;
+
   const pageId = (page) =>
-    ({ overview: "overview", people: "people", events: "eventsLink", categories: "categories" }[
-      page
-    ] || null);
+    ({
+      overview: "overviewLink",
+      people: "peopleLink",
+      events: "eventsLink",
+      categories: "categoriesLink",
+    })[page] || null;
 
   function ensureNavigationAssets() {
     if (!document.querySelector('link[data-pandanav-css]')) {
@@ -96,7 +100,12 @@
     menu.className = "sidebar-menu";
     menu.setAttribute("aria-label", t("mainNavigation"));
 
-    const teamsLink = link("/teams.html", t("teams"), null, !currentTeamSlug && path === "/teams.html");
+    const teamsLink = link(
+      "/teams.html",
+      t("teams"),
+      null,
+      !currentTeamSlug && path === "/teams.html",
+    );
     teamsLink.classList.add("sidebar-section-link");
     menu.appendChild(teamsLink);
 
@@ -122,16 +131,31 @@
         toggle.textContent = isCurrent ? "▾" : "▸";
         row.appendChild(toggle);
 
-        const teamLink = link(`/team/${encodeURIComponent(team.slug)}/overview`, team.name, null, isCurrent && currentPage === "overview");
+        const teamLink = link(
+          `/team/${encodeURIComponent(team.slug)}/overview`,
+          team.name,
+          null,
+          isCurrent && currentPage === "overview",
+        );
         teamLink.classList.add("sidebar-team-link");
         row.appendChild(teamLink);
         item.appendChild(row);
 
         const children = document.createElement("div");
         children.className = "sidebar-team-children";
-        [["overview", t("overview"), false], ["people", t("peopleNav") || t("people"), true], ["events", t("events"), true], ["categories", t("categories"), true]].forEach(([page, label, adminOnly]) => {
-          const child = link(`/team/${encodeURIComponent(team.slug)}/${page}`, label, isCurrent ? pageId(page) : null, isCurrent && currentPage === page, adminOnly);
-          child.addEventListener("click", closeMobile);
+        [
+          ["overview", t("overview"), false],
+          ["people", t("peopleNav") || t("people"), true],
+          ["events", t("events"), true],
+          ["categories", t("categories"), true],
+        ].forEach(([page, label, adminOnly]) => {
+          const child = link(
+            `/team/${encodeURIComponent(team.slug)}/${page}`,
+            label,
+            isCurrent ? pageId(page) : null,
+            isCurrent && currentPage === page,
+            adminOnly,
+          );
           children.appendChild(child);
         });
         item.appendChild(children);
@@ -142,6 +166,9 @@
           toggle.setAttribute("aria-expanded", String(open));
         });
         teamLink.addEventListener("click", closeMobile);
+        children.querySelectorAll("a").forEach((child) => {
+          child.addEventListener("click", closeMobile);
+        });
         teamList.appendChild(item);
       });
 
@@ -157,13 +184,18 @@
       backdrop.hidden = true;
       openButton.setAttribute("aria-expanded", "false");
     }
+    function toggleMobile() {
+      if (nav.classList.contains("mobile-open")) closeMobile();
+      else openMobile();
+    }
     function openMobile() {
       nav.classList.add("mobile-open");
       backdrop.hidden = false;
       openButton.setAttribute("aria-expanded", "true");
     }
+
     close.onclick = closeMobile;
-    openButton.onclick = openMobile;
+    openButton.onclick = toggleMobile;
     backdrop.onclick = closeMobile;
     document.addEventListener("keydown", (event) => {
       if (event.key === "Escape") closeMobile();
@@ -173,9 +205,10 @@
   async function init() {
     ensureNavigationAssets();
     try {
-      const teams = typeof api === "function"
-        ? await api("/api/teams")
-        : await (await fetch("/api/teams")).json();
+      const teams =
+        typeof api === "function"
+          ? await api("/api/teams")
+          : await (await fetch("/api/teams")).json();
       render(teams);
     } catch (error) {
       console.error("Could not load navigation teams:", error);
