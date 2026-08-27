@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>PandaPlan OIDC</title>
+  <style>
+    body { font-family: system-ui, sans-serif; max-width: 42rem; margin: 4rem auto; padding: 0 1rem; }
+    .card { border: 1px solid #ddd; border-radius: .75rem; padding: 1.5rem; }
+    a, button { font: inherit; }
+    .button { display: inline-block; padding: .65rem 1rem; border-radius: .5rem; border: 1px solid #999; text-decoration: none; cursor: pointer; background: #fff; color: inherit; }
+    .error { color: #a00; }
+    dt { font-weight: 600; margin-top: .75rem; }
+    dd { margin-left: 0; }
+  </style>
+</head>
+<body>
+  <main class="card">
+    <h1>PandaPlan OIDC test</h1>
+    <div id="content">Checking authentication…</div>
+  </main>
+  <script>
+    async function load() {
+      const content = document.getElementById('content');
+      try {
+        const response = await fetch('/oidc/session', { credentials: 'same-origin' });
+        const session = await response.json();
+        if (!session.authenticated) {
+          content.innerHTML = '<p>You are not authenticated.</p><p><a class="button" href="/oidc/login">Log in</a></p>';
+          return;
+        }
+        const user = session.user;
+        content.innerHTML =
+          '<p><strong>You are authenticated.</strong></p>' +
+          '<dl>' +
+          '<dt>Name</dt><dd>' + escapeHtml(user.name) + '</dd>' +
+          '<dt>Email</dt><dd>' + escapeHtml(user.email || 'Not provided') + '</dd>' +
+          '<dt>Subject</dt><dd>' + escapeHtml(user.sub) + '</dd>' +
+          '</dl>' +
+          '<form method="post" action="/oidc/logout"><button class="button" type="submit">Log out</button></form>';
+      } catch (error) {
+        content.innerHTML = '<p class="error">Could not check authentication.</p>';
+        console.error(error);
+      }
+    }
+
+    function escapeHtml(value) {
+      return String(value).replace(/[&<>\"']/g, (char) => ({
+        '&': '&amp;', '<': '&lt;', '>': '&gt;', '\"': '&quot;', "'": '&#39;'
+      })[char]);
+    }
+
+    load();
+  </script>
+</body>
+</html>
