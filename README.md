@@ -1,4 +1,4 @@
-ju# pandaplan
+# pandaplan
 
 A lightweight, self-hosted event planning and attendance roster application.
 
