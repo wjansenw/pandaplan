@@ -7,6 +7,10 @@ services:
       - "3000:3000"
     volumes:
       - ./data:/app/data
+    # Optional: EVENT_TIMEZONE defaults to Europe/Brussels and is only used
+    # for ICS feeds whose event times are in UTC. To override it, uncomment:
+    #   environment:
+    #     - EVENT_TIMEZONE=Europe/Brussels
     networks:
       - swag
     env_file: ".env"
