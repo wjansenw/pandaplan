@@ -1,13 +1,10 @@
-const {
-  SITE_ADMIN_ROLE,
-  ALL_TEAM_ROLES,
-} = require('../../auth/roles');
+const { ALL_TEAM_ROLES } = require('../../auth/roles');
 
 module.exports = {
   name: '006_add_authorization_accounts',
 
   up(db) {
-    const rolePlaceholders = ALL_TEAM_ROLES.map(() => '?').join(',');
+    const roleValues = ALL_TEAM_ROLES.map((role) => `'${role.replace(/'/g, "''")}'`).join(', ');
 
     db.exec(`
       CREATE TABLE accounts (
@@ -25,18 +22,12 @@ module.exports = {
       CREATE TABLE account_team_roles (
         account_id TEXT NOT NULL REFERENCES accounts(id) ON DELETE CASCADE,
         team_id TEXT NOT NULL REFERENCES teams(id) ON DELETE CASCADE,
-        role TEXT NOT NULL CHECK (role IN (${rolePlaceholders})),
+        role TEXT NOT NULL CHECK (role IN (${roleValues})),
         PRIMARY KEY (account_id, team_id)
       );
 
       CREATE INDEX idx_account_team_roles_team
         ON account_team_roles(team_id);
-    `, ...ALL_TEAM_ROLES);
-
-    // Keep the site-admin role vocabulary explicit even though site-admin
-    // is represented as an account flag rather than a team membership.
-    if (SITE_ADMIN_ROLE !== 'site_admin') {
-      throw new Error('unexpected site admin role identifier');
-    }
+    `);
   },
 };
