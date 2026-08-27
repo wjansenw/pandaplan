@@ -26,6 +26,7 @@ Object.entries(teamPages).forEach(([page, file]) => {
   app.get(`/team/:slug/${page}`, (req, res) => res.sendFile(path.join(__dirname, 'public', file)));
 });
 
+app.use('/oidc', require('./src/oidc'));
 app.use(express.static(path.join(__dirname, 'public')));
 
 app.get('/api/version', (req, res) => res.json({ version: packageJson.version }));
