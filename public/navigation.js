@@ -1,14 +1,13 @@
 (() => {
-  const adminMode = new URLSearchParams(location.search).get("mode") === "admin";
+  const adminMode =
+    new URLSearchParams(location.search).get("mode") === "admin";
   const path = location.pathname;
   const teamMatch = path.match(/^\/team\/([^/]+)/);
   const currentTeamSlug = teamMatch ? decodeURIComponent(teamMatch[1]) : null;
   const currentPage = teamMatch ? path.split("/")[3] || "overview" : null;
 
   const modeUrl = (url) =>
-    adminMode
-      ? url + (url.includes("?") ? "&" : "?") + "mode=admin"
-      : url;
+    adminMode ? url + (url.includes("?") ? "&" : "?") + "mode=admin" : url;
 
   const pageId = (page) =>
     ({
@@ -19,7 +18,7 @@
     })[page] || null;
 
   function ensureNavigationAssets() {
-    if (!document.querySelector('link[data-pandanav-css]')) {
+    if (!document.querySelector("link[data-pandanav-css]")) {
       const stylesheet = document.createElement("link");
       stylesheet.rel = "stylesheet";
       stylesheet.href = "/navigation.css";

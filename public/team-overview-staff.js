@@ -4,7 +4,9 @@ function staffRoleLabel(roleId) {
 }
 
 function eventRequiredStaffRoles(ev) {
-  const category = pageState.state.categories.find((c) => c.id === ev.categoryId);
+  const category = pageState.state.categories.find(
+    (c) => c.id === ev.categoryId,
+  );
   return category && Array.isArray(category.requiredStaffRoles)
     ? category.requiredStaffRoles
     : [];
@@ -25,7 +27,7 @@ function renderStaffEditor(ev) {
         return (
           '<div class="staff-role-group"><div class="staff-role-title">' +
           escapeHtml(staffRoleLabel(role)) +
-          '</div>' +
+          "</div>" +
           (eligible.length
             ? '<div class="staff-person-list">' +
               eligible
@@ -104,10 +106,8 @@ function groupStaffSummary() {
       container.querySelectorAll(".staff-name").forEach((item) => {
         const text = item.textContent.trim();
         const separator = text.indexOf(":");
-        const role =
-          separator >= 0 ? text.slice(0, separator).trim() : "";
-        const person =
-          separator >= 0 ? text.slice(separator + 1).trim() : text;
+        const role = separator >= 0 ? text.slice(0, separator).trim() : "";
+        const person = separator >= 0 ? text.slice(separator + 1).trim() : text;
         if (!groups.has(role)) groups.set(role, []);
         groups.get(role).push(person);
       });

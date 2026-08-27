@@ -7,13 +7,20 @@ function teamBaseUrl(slug = getTeamSlug()) {
   return "/team/" + encodeURIComponent(slug);
 }
 
-function teamModeUrl(url, adminMode = new URLSearchParams(location.search).get("mode") === "admin") {
+function teamModeUrl(
+  url,
+  adminMode = new URLSearchParams(location.search).get("mode") === "admin",
+) {
   if (!adminMode) return url;
   return url + (url.includes("?") ? "&" : "?") + "mode=admin";
 }
 
 function teamApiUrl(path, slug = getTeamSlug()) {
-  return "/api/teams/" + encodeURIComponent(slug) + (path ? "/" + path.replace(/^\//, "") : "");
+  return (
+    "/api/teams/" +
+    encodeURIComponent(slug) +
+    (path ? "/" + path.replace(/^\//, "") : "")
+  );
 }
 
 function isTeamAdminMode() {
@@ -26,7 +33,10 @@ function applyTeamAdminVisibility(adminMode = isTeamAdminMode()) {
   });
 }
 
-function setTeamNavigation(slug = getTeamSlug(), adminMode = isTeamAdminMode()) {
+function setTeamNavigation(
+  slug = getTeamSlug(),
+  adminMode = isTeamAdminMode(),
+) {
   const base = teamBaseUrl(slug);
   const links = {
     brand: base + "/overview",

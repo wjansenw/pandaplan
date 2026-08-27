@@ -1,5 +1,48 @@
-<!doctype html><html><head><meta charset="utf-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/><title>pandaplan · People</title><link rel="stylesheet" href="/style.css"/><link rel="stylesheet" href="/navigation.css" data-pandanav-css/></head><body>
-<div class="nav"><a class="brand" id="brand">🐼 pandaplan</a><div class="links"><a id="overview" data-i18n="overview">Overview</a><a class="current" id="people" data-admin-only data-i18n="peopleNav">People</a><a id="categories" data-admin-only data-i18n="categories">Categories</a><a id="events" data-admin-only data-i18n="events">Events</a></div></div>
-<div class="wrap"><h1 id="title" data-i18n="peopleNav">People</h1><p class="sub" data-i18n="peopleSubtitle">People in this Team and their Team-specific roles.</p><div class="card"><div id="list"></div><div class="field"><label data-i18n="name">Name</label><input id="name"/></div><div class="field"><label data-i18n="rolesLabel">Roles</label><div id="roles" class="chip-row"></div></div><button class="btn" id="add" data-i18n="addPerson">Add person</button><div id="note" class="saved-note"></div></div></div>
-<script src="/shared.js"></script><script src="/about-nav.js"></script><script src="/navigation.js"></script><script src="/shared-api.js"></script><script src="/shared-team.js"></script><script src="/team-people-api.js"></script><script src="/team-people-render.js"></script><script src="/team-people.js"></script>
-</body></html>
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>pandaplan · People</title>
+    <link rel="stylesheet" href="/style.css" />
+    <link rel="stylesheet" href="/navigation.css" data-pandanav-css />
+  </head>
+  <body>
+    <div class="nav">
+      <a class="brand" id="brand">🐼 pandaplan</a>
+      <div class="links">
+        <a id="overview" data-i18n="overview">Overview</a
+        ><a class="current" id="people" data-admin-only data-i18n="peopleNav"
+          >People</a
+        ><a id="categories" data-admin-only data-i18n="categories">Categories</a
+        ><a id="events" data-admin-only data-i18n="events">Events</a>
+      </div>
+    </div>
+    <div class="wrap">
+      <h1 id="title" data-i18n="peopleNav">People</h1>
+      <p class="sub" data-i18n="peopleSubtitle">
+        People in this Team and their Team-specific roles.
+      </p>
+      <div class="card">
+        <div id="list"></div>
+        <div class="field">
+          <label data-i18n="name">Name</label><input id="name" />
+        </div>
+        <div class="field">
+          <label data-i18n="rolesLabel">Roles</label>
+          <div id="roles" class="chip-row"></div>
+        </div>
+        <button class="btn" id="add" data-i18n="addPerson">Add person</button>
+        <div id="note" class="saved-note"></div>
+      </div>
+    </div>
+    <script src="/shared.js"></script>
+    <script src="/about-nav.js"></script>
+    <script src="/navigation.js"></script>
+    <script src="/shared-api.js"></script>
+    <script src="/shared-team.js"></script>
+    <script src="/team-people-api.js"></script>
+    <script src="/team-people-render.js"></script>
+    <script src="/team-people.js"></script>
+  </body>
+</html>

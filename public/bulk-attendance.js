@@ -9,9 +9,10 @@
     }
     if (!pageState?.state?.events) return [];
     return sortByDateTime(
-      pageState.state.events.filter((event) =>
-        (!pageState.dateFrom || event.date >= pageState.dateFrom) &&
-        (!pageState.dateTo || event.date <= pageState.dateTo),
+      pageState.state.events.filter(
+        (event) =>
+          (!pageState.dateFrom || event.date >= pageState.dateFrom) &&
+          (!pageState.dateTo || event.date <= pageState.dateTo),
       ),
     );
   }
@@ -91,7 +92,9 @@
     });
     block
       .querySelectorAll("[data-bulk]")
-      .forEach((button) => button.addEventListener("click", () => apply(button.dataset.bulk)));
+      .forEach((button) =>
+        button.addEventListener("click", () => apply(button.dataset.bulk)),
+      );
     return block;
   }
 
@@ -110,14 +113,17 @@
   window.refreshBulkAttendance = render;
 
   function refreshTeamOverview() {
-    if (typeof window.render === "function" && window.render !== render) window.render();
+    if (typeof window.render === "function" && window.render !== render)
+      window.render();
   }
 
   function update() {
     const block = document.getElementById("bulkAttendance");
     if (!block) return;
     const count = matchingEvents().length;
-    block.querySelector("#bulkCount").textContent = t("eventsSelected", { count });
+    block.querySelector("#bulkCount").textContent = t("eventsSelected", {
+      count,
+    });
     block.querySelectorAll("[data-bulk]").forEach((button) => {
       button.disabled = !participantId || !count;
     });
@@ -157,29 +163,41 @@
 
     const eventIds = events.map((event) => event.id);
     try {
-      const result = await api(`/api/teams/${encodeURIComponent(slug)}/attendance/bulk`, {
-        method: "POST",
-        body: JSON.stringify({
-          personId: participantId,
-          status,
-          eventIds,
-          startDate: pageState.dateFrom,
-          endDate: pageState.dateTo,
-          categoryId: categoryIds.size === 1 ? [...categoryIds][0] : "",
-        }),
-      });
-      if (!state.attendance[participantId]) state.attendance[participantId] = {};
+      const result = await api(
+        `/api/teams/${encodeURIComponent(slug)}/attendance/bulk`,
+        {
+          method: "POST",
+          body: JSON.stringify({
+            personId: participantId,
+            status,
+            eventIds,
+            startDate: pageState.dateFrom,
+            endDate: pageState.dateTo,
+            categoryId: categoryIds.size === 1 ? [...categoryIds][0] : "",
+          }),
+        },
+      );
+      if (!state.attendance[participantId])
+        state.attendance[participantId] = {};
       eventIds.forEach((eventId) => {
         const old = state.attendance[participantId][eventId] || {};
-        state.attendance[participantId][eventId] = { status, note: old.note || "" };
+        state.attendance[participantId][eventId] = {
+          status,
+          note: old.note || "",
+        };
       });
       refreshTeamOverview();
       update();
       const count = document.getElementById("bulkCount");
-      if (count) count.textContent = t("eventsUpdated", { count: result?.updated ?? eventIds.length });
+      if (count)
+        count.textContent = t("eventsUpdated", {
+          count: result?.updated ?? eventIds.length,
+        });
     } catch (error) {
       console.error("Could not save bulk attendance:", error);
-      alert(t("couldNotSaveAttendance", { error: error.message || t("tryAgain") }));
+      alert(
+        t("couldNotSaveAttendance", { error: error.message || t("tryAgain") }),
+      );
     }
   }
 

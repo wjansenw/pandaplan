@@ -62,7 +62,9 @@
       rows.push(["typeof t", typeof t]);
       rows.push([
         "currentLanguage",
-        typeof currentLanguage !== "undefined" ? currentLanguage : "(undefined)",
+        typeof currentLanguage !== "undefined"
+          ? currentLanguage
+          : "(undefined)",
       ]);
       if (typeof t === "function")
         tests.forEach((key) => {
