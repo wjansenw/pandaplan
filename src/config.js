@@ -7,6 +7,18 @@ const LEGACY_JSON_FILE = path.join(DATA_DIR, 'db.json');
 const LOGS_FILE = path.join(DATA_DIR, 'logs.jsonl');
 const PORT = process.env.PORT || 3000;
 
+// The timezone assumed for ICS-imported events whose start/end time is
+// expressed in UTC (an ICS value ending in "Z"). Must be a valid IANA
+// timezone name (e.g. "America/New_York", "Asia/Tokyo") — validated here,
+// at startup, so a typo fails loudly and immediately instead of crashing
+// deep inside a later ICS import request.
+const EVENT_TIMEZONE = process.env.EVENT_TIMEZONE || 'Europe/Brussels';
+try {
+  new Intl.DateTimeFormat('en-CA', { timeZone: EVENT_TIMEZONE });
+} catch (e) {
+  throw new Error(`Invalid EVENT_TIMEZONE "${EVENT_TIMEZONE}": must be a valid IANA timezone name (e.g. "Europe/Brussels", "America/New_York").`);
+}
+
 const CATEGORY_COLORS = ['#4F7942', '#B5503F', '#B8933F', '#4A6FA5', '#7B5EA7', '#A34F72', '#3A6B6E', '#8C6239'];
 
 const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
@@ -29,6 +41,7 @@ module.exports = {
   LEGACY_JSON_FILE,
   LOGS_FILE,
   PORT,
+  EVENT_TIMEZONE,
   CATEGORY_COLORS,
   DATE_RE,
   TIME_RE,

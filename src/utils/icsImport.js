@@ -1,5 +1,6 @@
 const http = require('http');
 const https = require('https');
+const config = require('../config');
 
 function unfold(text) {
   return text.replace(/\r?\n[ \t]/g, '').replace(/\r?\n/g, '\n');
@@ -9,15 +10,38 @@ function unescapeIcs(value) {
   return value.replace(/\\n/gi, '\n').replace(/\\,/g, ',').replace(/\\;/g, ';').replace(/\\\\/g, '\\');
 }
 
+// Converts a genuine UTC instant (an ICS DTSTART/DTEND ending in "Z") to the
+// wall-clock date and time a viewer in config.EVENT_TIMEZONE would see,
+// correctly accounting for that zone's daylight-saving switch, if any.
+// Recomputing both the date and time from the same converted instant
+// (rather than just shifting the time string) also handles the rare case
+// where the conversion crosses midnight.
+function utcToLocal(dateStr, timeStr) {
+  const instant = new Date(`${dateStr}T${timeStr}Z`);
+  const parts = new Intl.DateTimeFormat('en-CA', {
+    timeZone: config.EVENT_TIMEZONE,
+    hourCycle: 'h23',
+    year: 'numeric', month: '2-digit', day: '2-digit',
+    hour: '2-digit', minute: '2-digit', second: '2-digit',
+  }).formatToParts(instant).reduce((acc, p) => { acc[p.type] = p.value; return acc; }, {});
+  return {
+    date: `${parts.year}-${parts.month}-${parts.day}`,
+    time: `${parts.hour}:${parts.minute}:${parts.second}`,
+  };
+}
+
 function parseDateTime(value) {
   const clean = value.trim();
   if (/^\d{8}$/.test(clean)) return { date: `${clean.slice(0, 4)}-${clean.slice(4, 6)}-${clean.slice(6, 8)}`, time: '' };
-  const match = clean.match(/^(\d{4})(\d{2})(\d{2})T(\d{2})(\d{2})(\d{2})Z?$/);
+  const match = clean.match(/^(\d{4})(\d{2})(\d{2})T(\d{2})(\d{2})(\d{2})(Z)?$/);
   if (!match) return null;
-  return {
-    date: `${match[1]}-${match[2]}-${match[3]}`,
-    time: `${match[4]}:${match[5]}:${match[6]}`,
-  };
+  const date = `${match[1]}-${match[2]}-${match[3]}`;
+  const time = `${match[4]}:${match[5]}:${match[6]}`;
+  // A trailing "Z" means the ICS value is genuine UTC and must be converted.
+  // No "Z" means either a floating local time or one already qualified by a
+  // TZID parameter — both are already the intended local wall-clock time,
+  // so no conversion is applied in that case.
+  return match[7] ? utcToLocal(date, time) : { date, time };
 }
 
 function parseIcs(text) {
