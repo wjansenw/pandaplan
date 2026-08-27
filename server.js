@@ -3,6 +3,7 @@ const path = require('path');
 const config = require('./src/config');
 const AppError = require('./src/errors');
 const { getDb } = require('./src/db/connection');
+const packageJson = require('./package.json');
 
 getDb();
 
@@ -26,6 +27,8 @@ Object.entries(teamPages).forEach(([page, file]) => {
 });
 
 app.use(express.static(path.join(__dirname, 'public')));
+
+app.get('/api/version', (req, res) => res.json({ version: packageJson.version }));
 
 app.use('/api/state', require('./src/routes/stateRoutes'));
 app.use('/api/persons', require('./src/routes/personsRoutes'));
