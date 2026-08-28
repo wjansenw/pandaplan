@@ -10,7 +10,7 @@ The product should make routine team administration fast and safe while remainin
 
 ### 2.1 User and Person are independent
 
-**User and Person are deliberately separate entities. Neither is a subtype of the other, and neither is required to exist for the other to exist.**
+**User and Person are completely separate entities. There is no relationship between them in PandaPlan. Neither is a subtype of the other, and neither is required to exist for the other to exist.**
 
 A **User** represents someone who can authenticate to PandaPlan. Authentication, application access and authorization belong to the User.
 
@@ -19,20 +19,19 @@ A **Person** represents an individual in the club/team domain. Team membership, 
 These rules are fundamental:
 
 - A Person can exist without a User. For example, a child/player can be managed by a parent or team administrator without ever logging in.
-- A User can exist without a Person. For example, an administrator can have application access without being a player, coach or other participant.
-- A User and Person may optionally be explicitly associated.
-- Logging in must never implicitly create a Person.
-- Creating a Person must never implicitly create a User.
-- Email address, name or other profile data must never implicitly associate or merge a User and Person.
-- Deleting a User must not delete its associated Person.
-- Deleting a Person must not delete its associated User.
-- The User/Person association must be represented explicitly and separately from both entities.
+- A User can exist without being a Person. For example, an administrator can have application access without being a player, coach or other participant.
+- PandaPlan must never associate a User with a Person, either automatically or manually.
+- Logging in must never create or modify a Person.
+- Creating or editing a Person must never create or modify a User.
+- Email address, name or other profile data must never be used to connect the two concepts.
+- Deleting a User has no effect on Persons.
+- Deleting a Person has no effect on Users.
 
 ### 2.2 User
 
 A User represents an authenticated application identity. A User may have access to multiple teams and may have different authorization roles in different teams.
 
-A User does not represent team participation. A User may manage a team without being a Person in that team.
+A User does not represent team participation and is never a representation of a Person. A User may manage a team without being a Person in that team.
 
 OIDC authentication creates or updates a User; it does not create or modify a Person.
 
@@ -58,7 +57,7 @@ Locations should be clickable map links.
 
 Attendance belongs to a Person and Event, never directly to a User. Supported states are Going, Maybe, Not going and Unknown/no response, with an optional note.
 
-A User who is explicitly associated with a Person may be authorized to manage that Person's attendance. This is a relationship-based authorization rule, not a separate `attendance:self` permission, and does not make User and Person the same entity.
+A User has no inherent “own attendance” because Users and Persons are independent and are never linked. Attendance can only be managed through explicit authorization for the relevant Person/team, not through a User/Person relationship.
 
 ## 3. Authentication
 
@@ -68,7 +67,7 @@ A User must be identified using the identity provider and stable provider subjec
 
 Sessions must be server-side with finite lifetime and secure cookies: HttpOnly, Secure in production and SameSite=Lax or stricter where compatible. Production must use a persistent/shared session store rather than Express MemoryStore.
 
-Unauthenticated API requests return HTTP 401. Authenticated users without permission receive HTTP 403.
+Unauthenticated API requests return HTTP 401. Authenticated Users without permission receive HTTP 403.
 
 Logout must end the local session and should support identity-provider logout where available.
 
@@ -92,15 +91,15 @@ A Staff coordinator can view the relevant Team, People and Events and manage Sta
 
 ### Team member
 
-Team-member participation belongs to a Person and is not itself an application authorization role. A User associated with a Person may receive access to manage that Person's attendance according to the applicable authorization rules.
+Team-member participation belongs to a Person and is not itself an application authorization role. A User can have team access/authorization without being a Person in that team.
 
 ### Attendance authorization
 
-Attendance authorization must be based on the relationship between the authenticated User and the Person whose attendance is being changed, together with the User's applicable team permissions.
+Attendance authorization is based on the authenticated User's permissions for the Team containing the Person and Event.
 
-There is **no generic `attendance:self` permission** because “self” is not an inherent concept when User and Person are independent entities.
+There is **no `attendance:self` permission** because “self” has no meaning at the User level: PandaPlan does not link Users to Persons.
 
-A User explicitly associated with a Person may be allowed to modify that Person's attendance. An authorized Team manager may modify attendance for any Person in the relevant Team. A User must not be able to modify another Person's attendance merely because the User is associated with some Person.
+An authorized User may modify attendance for People in the Teams for which the User has the required attendance-management permission. A User cannot modify attendance for a Person merely because the User and Person have matching names, email addresses or other attributes.
 
 Authorization must use current server-side User/team role information so role changes and revocations do not remain effective indefinitely because of stale login-session data.
 
@@ -110,7 +109,7 @@ Every team-scoped operation must verify both the required User permission and th
 
 Authorized Team managers can add/remove People, edit Person information, manage Team membership and assign functional Person roles.
 
-People and Users are independently managed. A Person may optionally be associated with an existing User, and the association can later be changed or removed without deleting either entity.
+People and Users are independently managed and never linked. A Person can be managed entirely by an administrator without a User.
 
 A Person may belong to multiple Teams with independent functional roles.
 
@@ -120,7 +119,7 @@ The primary team URL should be `/team/<slug>`, with the team overview as the mai
 
 ## 6. Events and categories
 
-Authorized users can create and manage Team Events with date/time, Category, location and description.
+Authorized Users can create and manage Team Events with date/time, Category, location and description.
 
 Events are shown chronologically. Location information should be a clickable link to a suitable map service.
 
@@ -130,7 +129,9 @@ Team managers can create, edit and delete Categories, including their display co
 
 Attendance is always associated with a Person and Event.
 
-A User explicitly associated with a Person can manage that Person's attendance when permitted by the applicable team authorization rules. Team managers can manage attendance for People in their authorized Teams. A Person without a User can still have attendance records.
+Authorized Users manage attendance based on their team authorization. There is no special self-attendance relationship because a User is never linked to a Person.
+
+A Person without a User can have attendance records and can have those records managed by authorized Users.
 
 Attendance browsing is read-only by default. Changing attendance requires explicit edit mode/action so scrolling cannot accidentally modify data.
 
@@ -189,7 +190,6 @@ The data model must contain at least:
 - Users
 - User/team authorization roles
 - Persons
-- Optional explicit User/Person associations
 - Teams
 - Team memberships
 - Team-specific Person functional roles
@@ -199,9 +199,11 @@ The data model must contain at least:
 - Attendance
 - Staff assignments
 
-Users and Persons must be independently creatable, editable and deletable, subject to referential integrity.
+**There is no User/Person association, association table, foreign key or other relationship between these entities.**
 
-Important integrity constraints should be enforced in the database, including unique Team slugs, unique Person/Team membership, unique Person/Event attendance, valid attendance states, valid staff assignments and valid User/Person associations.
+Users and Persons are independently creatable, editable and deletable, subject to their own referential-integrity rules.
+
+Important integrity constraints should be enforced in the database, including unique Team slugs, unique Person/Team membership, unique Person/Event attendance, valid attendance states and valid staff assignments.
 
 Every mutating API endpoint must enforce authorization server-side and use appropriate HTTP status codes and consistent JSON errors.
 
@@ -220,7 +222,7 @@ The application must:
 - Never expose secrets or unnecessary internal errors.
 - Treat calendar feed tokens as private credentials.
 - Log security-relevant failures without passwords, tokens or secrets.
-- Never infer a User/Person association from matching profile information.
+- Never infer or create any User/Person relationship from matching profile information.
 
 ## 14. Persistence and deployment
 
@@ -248,26 +250,27 @@ The frontend remains independent of the persistence layer. Business rules affect
 
 A complete implementation must at minimum demonstrate:
 
-1. OIDC authentication creates/updates a User without creating a Person.
+1. OIDC authentication creates/updates a User without creating or modifying a Person.
 2. A Person can exist without a User.
-3. A User can exist without a Person.
-4. User/Person association is explicit and can be changed without deleting either entity.
+3. A User can exist without being a Person.
+4. PandaPlan contains no User/Person association and never creates one.
 5. The first administrator can create and manage Teams.
 6. Team managers can manage only explicitly authorized Teams.
 7. Users cannot access another Team's data.
-8. A User associated with a Person can change that Person's attendance when the applicable authorization rules allow it, but cannot thereby change another Person's attendance.
-9. Team managers can manage attendance for People in their authorized Teams.
-10. People can belong to multiple Teams with independent functional roles.
-11. Events support date/time/category/location and clickable map locations.
-12. Staff assignments enforce valid Person roles and uniqueness per Person/Event.
-13. Team and Person calendar feeds are available and their URLs can be copied.
-14. Attendance editing requires explicit intent and bulk changes require confirmation.
-15. English and Belgian Dutch are supported.
-16. The UI works on mobile and desktop.
-17. Authorization changes take effect without indefinite reliance on stale session roles.
-18. Database constraints prevent invalid relationships and cross-Team access.
-19. Persistent application data survives container restarts.
-20. No functionality depends on a special/default Team once real Teams exist.
+8. Attendance is always associated with a Person and Event, never a User.
+9. There is no `attendance:self` permission or equivalent User/Person linkage.
+10. Authorized Users can manage attendance for People in their authorized Teams.
+11. People can belong to multiple Teams with independent functional roles.
+12. Events support date/time/category/location and clickable map locations.
+13. Staff assignments enforce valid Person roles and uniqueness per Person/Event.
+14. Team and Person calendar feeds are available and their URLs can be copied.
+15. Attendance editing requires explicit intent and bulk changes require confirmation.
+16. English and Belgian Dutch are supported.
+17. The UI works on mobile and desktop.
+18. Authorization changes take effect without indefinite reliance on stale session roles.
+19. Database constraints prevent invalid relationships and cross-Team access.
+20. Persistent application data survives container restarts.
+21. No functionality depends on a special/default Team once real Teams exist.
 
 ## 17. Product principle
 
