@@ -21,4 +21,11 @@ function requireTeamPermission(permission) {
   };
 }
 
-module.exports = { requireSiteAdmin, requireTeamPermission };
+function requireTeamReadWrite(readPermission, writePermission) {
+  return (req, res, next) => {
+    const permission = req.method === 'GET' || req.method === 'HEAD' ? readPermission : writePermission;
+    return requireTeamPermission(permission)(req, res, next);
+  };
+}
+
+module.exports = { requireSiteAdmin, requireTeamPermission, requireTeamReadWrite };
