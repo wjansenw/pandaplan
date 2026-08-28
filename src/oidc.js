@@ -147,7 +147,7 @@ router.put('/admin/users/:id/team-role', requireSiteAdmin, (req, res, next) => {
   }
 });
 
-router.get('/logout', async (req, res, next) => {
+async function logout(req, res, next) {
   try {
     const client = await getClient();
     const idToken = req.session.idToken;
@@ -165,6 +165,9 @@ router.get('/logout', async (req, res, next) => {
   } catch (error) {
     next(error);
   }
-});
+}
+
+router.get('/logout', logout);
+router.post('/logout', logout);
 
 module.exports = router;
