@@ -1,0 +1,126 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>PandaPlan users</title>
+  <style>
+    body { font-family: system-ui, sans-serif; max-width: 64rem; margin: 2rem auto; padding: 0 1rem; }
+    .toolbar { display: flex; justify-content: space-between; align-items: center; gap: 1rem; margin-bottom: 1rem; }
+    .user { border: 1px solid #ddd; border-radius: .75rem; padding: 1rem; margin: .75rem 0; }
+    .meta { color: #666; font-size: .9rem; }
+    .teams { display: grid; gap: .5rem; margin-top: .75rem; }
+    .team-row { display: grid; grid-template-columns: minmax(8rem, 1fr) minmax(12rem, 16rem) auto; gap: .5rem; align-items: center; }
+    select, button { font: inherit; padding: .4rem .6rem; }
+    .admin { margin-top: .75rem; }
+    .error { color: #a00; }
+    @media (max-width: 600px) { .team-row { grid-template-columns: 1fr; } }
+  </style>
+</head>
+<body>
+  <div class="toolbar">
+    <h1>User management</h1>
+    <a href="/oidc">Authentication</a>
+  </div>
+  <div id="status">Loading…</div>
+  <main id="users"></main>
+
+  <script>
+    let teams = [];
+
+    const roleNames = {
+      'team_member': 'Team Member',
+      'staff_coordinator': 'Staff Coordinator',
+      'team_manager': 'Team Manager',
+    };
+
+    async function api(url, options) {
+      const response = await fetch(url, { credentials: 'same-origin', ...options });
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(data.error || `Request failed (${response.status})`);
+      return data;
+    }
+
+    async function load() {
+      const status = document.getElementById('status');
+      try {
+        const [teamData, userData] = await Promise.all([
+          api('/oidc/admin/teams'),
+          api('/oidc/admin/users'),
+        ]);
+        teams = teamData.teams;
+        render(userData.users);
+        status.textContent = '';
+      } catch (error) {
+        status.className = 'error';
+        status.textContent = error.message;
+      }
+    }
+
+    function render(users) {
+      const container = document.getElementById('users');
+      container.innerHTML = users.map((user) => {
+        const roles = new Map(user.teamRoles.map((r) => [r.teamId, r.role]));
+        return `
+          <section class="user">
+            <strong>${escapeHtml(user.name || 'Unnamed')}</strong>
+            <div class="meta">${escapeHtml(user.email || 'No email')} · ${escapeHtml(user.provider)}</div>
+            <div class="admin">
+              <label>
+                <input type="checkbox" ${user.isSiteAdmin ? 'checked' : ''} onchange="setAdmin('${user.id}', this.checked)">
+                Site administrator
+              </label>
+            </div>
+            <div class="teams">
+              ${teams.map((team) => `
+                <div class="team-row">
+                  <span>${escapeHtml(team.name)}</span>
+                  <select onchange="setTeamRole('${user.id}', '${team.id}', this.value)">
+                    <option value="">No access</option>
+                    ${Object.entries(roleNames).map(([role, label]) => `<option value="${role}" ${roles.get(team.id) === role ? 'selected' : ''}>${label}</option>`).join('')}
+                  </select>
+                </div>
+              `).join('')}
+            </div>
+          </section>`;
+      }).join('');
+    }
+
+    async function setAdmin(id, checked) {
+      try {
+        await api(`/oidc/admin/users/${encodeURIComponent(id)}/site-admin`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ isSiteAdmin: checked }),
+        });
+        await load();
+      } catch (error) {
+        alert(error.message);
+        await load();
+      }
+    }
+
+    async function setTeamRole(id, teamId, role) {
+      try {
+        await api(`/oidc/admin/users/${encodeURIComponent(id)}/team-role`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ teamId, role: role || null }),
+        });
+        await load();
+      } catch (error) {
+        alert(error.message);
+        await load();
+      }
+    }
+
+    function escapeHtml(value) {
+      return String(value).replace(/[&<>\"']/g, (char) => ({
+        '&': '&amp;', '<': '&lt;', '>': '&gt;', '\"': '&quot;', "'": '&#39;'
+      })[char]);
+    }
+
+    load();
+  </script>
+</body>
+</html>
