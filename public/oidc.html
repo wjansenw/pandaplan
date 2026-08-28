@@ -12,6 +12,7 @@
     .error { color: #a00; }
     dt { font-weight: 600; margin-top: .75rem; }
     dd { margin-left: 0; }
+    .actions { display: flex; gap: .75rem; margin-top: 1rem; flex-wrap: wrap; }
   </style>
 </head>
 <body>
@@ -30,6 +31,7 @@
           return;
         }
         const user = session.user;
+        const adminLink = session.account?.isSiteAdmin ? '<a class="button" href="/oidc/admin">User management</a>' : '';
         content.innerHTML =
           '<p><strong>You are authenticated.</strong></p>' +
           '<dl>' +
@@ -37,7 +39,7 @@
           '<dt>Email</dt><dd>' + escapeHtml(user.email || 'Not provided') + '</dd>' +
           '<dt>Subject</dt><dd>' + escapeHtml(user.sub) + '</dd>' +
           '</dl>' +
-          '<form method="post" action="/oidc/logout"><button class="button" type="submit">Log out</button></form>';
+          '<div class="actions">' + adminLink + '<form method="post" action="/oidc/logout"><button class="button" type="submit">Log out</button></form></div>';
       } catch (error) {
         content.innerHTML = '<p class="error">Could not check authentication.</p>';
         console.error(error);
