@@ -58,7 +58,7 @@ Locations should be clickable map links.
 
 Attendance belongs to a Person and Event, never directly to a User. Supported states are Going, Maybe, Not going and Unknown/no response, with an optional note.
 
-When a User is associated with a Person, that User may be authorized to manage that Person's own attendance. This does not make User and Person the same entity.
+A User who is explicitly associated with a Person may be authorized to manage that Person's attendance. This is a relationship-based authorization rule, not a separate `attendance:self` permission, and does not make User and Person the same entity.
 
 ## 3. Authentication
 
@@ -92,16 +92,15 @@ A Staff coordinator can view the relevant Team, People and Events and manage Sta
 
 ### Team member
 
-Team-member participation belongs to a Person and is not itself an application authorization role. A User associated with a Person can receive self-service access to that Person's attendance.
+Team-member participation belongs to a Person and is not itself an application authorization role. A User associated with a Person may receive access to manage that Person's attendance according to the applicable authorization rules.
 
-### Ownership-sensitive permissions
+### Attendance authorization
 
-Permissions must distinguish between a User operating on their associated Person and a User managing other People. For example:
+Attendance authorization must be based on the relationship between the authenticated User and the Person whose attendance is being changed, together with the User's applicable team permissions.
 
-- `attendance:self` — modify attendance belonging to the Person explicitly associated with the authenticated User.
-- `attendance:manage` — modify attendance for any Person in an authorized Team.
+There is **no generic `attendance:self` permission** because “self” is not an inherent concept when User and Person are independent entities.
 
-Ordinary self-service Users must not receive `attendance:manage` merely because they can modify their own attendance.
+A User explicitly associated with a Person may be allowed to modify that Person's attendance. An authorized Team manager may modify attendance for any Person in the relevant Team. A User must not be able to modify another Person's attendance merely because the User is associated with some Person.
 
 Authorization must use current server-side User/team role information so role changes and revocations do not remain effective indefinitely because of stale login-session data.
 
@@ -131,7 +130,7 @@ Team managers can create, edit and delete Categories, including their display co
 
 Attendance is always associated with a Person and Event.
 
-A User explicitly associated with a Person can manage that Person's own attendance when authorized. Team managers can manage attendance for People in their authorized Teams. A Person without a User can still have attendance records.
+A User explicitly associated with a Person can manage that Person's attendance when permitted by the applicable team authorization rules. Team managers can manage attendance for People in their authorized Teams. A Person without a User can still have attendance records.
 
 Attendance browsing is read-only by default. Changing attendance requires explicit edit mode/action so scrolling cannot accidentally modify data.
 
@@ -256,7 +255,7 @@ A complete implementation must at minimum demonstrate:
 5. The first administrator can create and manage Teams.
 6. Team managers can manage only explicitly authorized Teams.
 7. Users cannot access another Team's data.
-8. Self-service Users can change their own associated Person's attendance but not another Person's attendance.
+8. A User associated with a Person can change that Person's attendance when the applicable authorization rules allow it, but cannot thereby change another Person's attendance.
 9. Team managers can manage attendance for People in their authorized Teams.
 10. People can belong to multiple Teams with independent functional roles.
 11. Events support date/time/category/location and clickable map locations.
