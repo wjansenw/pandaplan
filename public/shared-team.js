@@ -22,7 +22,7 @@ function teamApiUrl(path, slug = getTeamSlug()) {
 function isTeamAdminMode() {
   return Boolean(
     window.pandaplanAuth?.authenticated && window.pandaplanAuth.account?.isSiteAdmin,
-  ) || new URLSearchParams(location.search).get("mode") === "admin";
+  );
 }
 
 function applyTeamAdminVisibility(adminMode = isTeamAdminMode()) {
