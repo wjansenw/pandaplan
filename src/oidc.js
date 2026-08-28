@@ -1,5 +1,4 @@
 const express = require('express');
-const session = require('express-session');
 const { Issuer, generators } = require('openid-client');
 const path = require('path');
 const accountsRepository = require('./repositories/accountsRepository');
@@ -7,7 +6,6 @@ const { hasGlobalAccess } = require('./auth/authorization');
 
 const router = express.Router();
 
-const SESSION_SECRET = process.env.OIDC_SESSION_SECRET || process.env.SESSION_SECRET;
 const ISSUER_URL = process.env.OIDC_ISSUER_URL;
 const CLIENT_ID = process.env.OIDC_CLIENT_ID;
 const CLIENT_SECRET = process.env.OIDC_CLIENT_SECRET;
@@ -18,22 +16,7 @@ const OIDC_LOGOUT_URL = process.env.OIDC_LOGOUT_URL;
 let clientPromise;
 
 function configured() {
-  return Boolean(SESSION_SECRET && ISSUER_URL && CLIENT_ID && CLIENT_SECRET && REDIRECT_URI);
-}
-
-function sessionMiddleware() {
-  return session({
-    name: 'pandaplan_oidc',
-    secret: SESSION_SECRET || 'oidc-not-configured',
-    resave: false,
-    saveUninitialized: false,
-    cookie: {
-      httpOnly: true,
-      sameSite: 'lax',
-      secure: process.env.NODE_ENV === 'production',
-      maxAge: 8 * 60 * 60 * 1000,
-    },
-  });
+  return Boolean(ISSUER_URL && CLIENT_ID && CLIENT_SECRET && REDIRECT_URI);
 }
 
 async function getClient() {
@@ -68,7 +51,6 @@ function requireSiteAdmin(req, res, next) {
   next();
 }
 
-router.use(sessionMiddleware());
 router.get('/', (req, res) => res.sendFile(path.join(__dirname, '..', 'public', 'oidc.html')));
 router.get('/admin', requireSiteAdmin, (req, res) => res.sendFile(path.join(__dirname, '..', 'public', 'oidc-users.html')));
 router.get('/session', (req, res) => {
@@ -84,17 +66,15 @@ router.get('/login', async (req, res, next) => {
     const state = generators.state();
     const nonce = generators.nonce();
     req.session.oidc = { codeVerifier, state, nonce };
-    res.redirect(
-      client.authorizationUrl({
-        scope: 'openid profile email',
-        response_type: 'code',
-        redirect_uri: REDIRECT_URI,
-        code_challenge: codeChallenge,
-        code_challenge_method: 'S256',
-        state,
-        nonce,
-      }),
-    );
+    res.redirect(client.authorizationUrl({
+      scope: 'openid profile email',
+      response_type: 'code',
+      redirect_uri: REDIRECT_URI,
+      code_challenge: codeChallenge,
+      code_challenge_method: 'S256',
+      state,
+      nonce,
+    }));
   } catch (error) {
     next(error);
   }
@@ -110,10 +90,7 @@ router.get('/callback', async (req, res, next) => {
       state: expected.state,
       nonce: expected.nonce,
     });
-    const claims = {
-      ...tokenSet.claims(),
-      ...(await client.userinfo(tokenSet)),
-    };
+    const claims = { ...tokenSet.claims(), ...(await client.userinfo(tokenSet)) };
     const issuer = claims.iss || ISSUER_URL;
     const account = accountsRepository.findOrCreateFromOidc({
       provider: issuer,
@@ -122,15 +99,10 @@ router.get('/callback', async (req, res, next) => {
       name: claims.name || claims.preferred_username || claims.email || claims.sub,
     });
     req.session.oidc = undefined;
-    req.session.user = {
-      sub: claims.sub,
-      name: account.name,
-      email: account.email || null,
-      issuer,
-    };
+    req.session.user = { sub: claims.sub, name: account.name, email: account.email || null, issuer };
     req.session.account = account;
     req.session.idToken = tokenSet.id_token;
-    res.redirect('/oidc');
+    res.redirect('/teams.html');
   } catch (error) {
     next(error);
   }

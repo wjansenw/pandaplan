@@ -2,7 +2,7 @@ const peoplePageState = {
   slug: getTeamSlug(),
   team: null,
   selectedRoles: new Set(["participant"]),
-  adminMode: isTeamAdminMode(),
+  adminMode: false,
 };
 function applyPageTranslations() {
   document.documentElement.lang = currentLanguage === "nl-BE" ? "nl" : "en";
@@ -10,7 +10,9 @@ function applyPageTranslations() {
     .querySelectorAll("[data-i18n]")
     .forEach((el) => (el.textContent = t(el.dataset.i18n)));
 }
-function loadPeople() {
+async function loadPeople() {
+  if (window.pandaplanAuthReady) await window.pandaplanAuthReady;
+  peoplePageState.adminMode = isTeamAdminMode();
   return peopleApi.load(peoplePageState.slug).then((team) => {
     peoplePageState.team = team;
     setTeamNavigation(peoplePageState.slug, peoplePageState.adminMode);
