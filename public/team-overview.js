@@ -49,14 +49,14 @@ function updatePersonCalendar() {
   const personCalendar = document.getElementById("personCalendar");
   const urlField = document.getElementById("personCalendarUrl");
   const copy = document.getElementById("copyPersonCalendar");
-  const id = personCalendar.value;
-  if (!id) {
+  const token = personCalendar.value;
+  if (!token) {
     urlField.value = "";
     copy.disabled = true;
     return;
   }
   const url =
-    location.origin + "/calendar/person/" + encodeURIComponent(id) + ".ics";
+    location.origin + "/calendar/person/" + encodeURIComponent(token) + ".ics";
   urlField.value = url;
   copy.disabled = false;
   copy.onclick = async () => {
@@ -154,7 +154,10 @@ async function load() {
   const copyCalendar = document.getElementById("copyCalendar");
   const personCalendar = document.getElementById("personCalendar");
   const url =
-    location.origin + "/calendar/team/" + encodeURIComponent(slug) + ".ics";
+    location.origin +
+    "/calendar/team/" +
+    encodeURIComponent(pageState.state.team.calendarToken) +
+    ".ics";
   calendarUrl.value = url;
   copyCalendar.onclick = async () => {
     try {
@@ -171,7 +174,7 @@ async function load() {
     .sort((a, b) => a.name.localeCompare(b.name))
     .forEach((p) => {
       const o = document.createElement("option");
-      o.value = p.id;
+      o.value = p.calendarToken;
       o.textContent = p.name;
       personCalendar.appendChild(o);
     });
