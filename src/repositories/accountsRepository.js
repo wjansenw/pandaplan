@@ -22,10 +22,11 @@ function findByIdentity(provider, providerSubject) {
   const db = getDb();
   return toAccount(db.prepare(`
     SELECT a.*, COALESCE(json_group_array(
-      CASE WHEN atr.team_id IS NULL THEN NULL ELSE json_object('teamId', atr.team_id, 'role', atr.role) END
+      CASE WHEN atr.team_id IS NULL THEN NULL ELSE json_object('teamId', atr.team_id, 'teamName', t.name, 'role', atr.role) END
     ) FILTER (WHERE atr.team_id IS NOT NULL), '[]') AS team_roles
     FROM accounts a
     LEFT JOIN account_team_roles atr ON atr.account_id = a.id
+    LEFT JOIN teams t ON t.id = atr.team_id
     WHERE a.provider = ? AND a.provider_subject = ?
     GROUP BY a.id
   `).get(provider, providerSubject));
@@ -53,10 +54,11 @@ function findById(id) {
   const db = getDb();
   return toAccount(db.prepare(`
     SELECT a.*, COALESCE(json_group_array(
-      CASE WHEN atr.team_id IS NULL THEN NULL ELSE json_object('teamId', atr.team_id, 'role', atr.role) END
+      CASE WHEN atr.team_id IS NULL THEN NULL ELSE json_object('teamId', atr.team_id, 'teamName', t.name, 'role', atr.role) END
     ) FILTER (WHERE atr.team_id IS NOT NULL), '[]') AS team_roles
     FROM accounts a
     LEFT JOIN account_team_roles atr ON atr.account_id = a.id
+    LEFT JOIN teams t ON t.id = atr.team_id
     WHERE a.id = ?
     GROUP BY a.id
   `).get(id));
