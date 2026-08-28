@@ -38,6 +38,11 @@ app.get('/about.html', requireAuthentication, (req, res) =>
   res.sendFile(path.join(__dirname, 'public', 'about.html')),
 );
 
+app.use((req, res, next) => {
+  const publicHtml = new Set(['/oidc.html', '/oidc-users.html']);
+  if (req.path.endsWith('.html') && !publicHtml.has(req.path)) return requireAuthentication(req, res, next);
+  next();
+});
 app.use(express.static(path.join(__dirname, 'public')));
 
 app.get('/api/version', (req, res) => res.json({ version: packageJson.version }));
