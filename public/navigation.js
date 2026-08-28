@@ -4,8 +4,8 @@
   const currentTeamSlug = teamMatch ? decodeURIComponent(teamMatch[1]) : null;
   const currentPage = teamMatch ? path.split("/")[3] || "overview" : null;
   let adminMode = false;
+  let auth = null;
 
-  const modeUrl = (url) => adminMode ? `${url}${url.includes("?") ? "&" : "?"}mode=admin` : url;
   const pageId = (page) => ({ overview: "overviewLink", people: "peopleLink", events: "eventsLink", categories: "categoriesLink" })[page] || null;
 
   function ensureNavigationAssets() {
@@ -44,12 +44,15 @@
 
   function link(href, label, id, current = false, adminOnly = false) {
     const a = document.createElement("a");
-    a.href = modeUrl(href);
+    a.href = href;
     a.textContent = label;
     a.className = "sidebar-link";
     if (id) a.id = id;
     if (current) a.classList.add("current");
-    if (adminOnly) { a.dataset.adminOnly = "true"; a.hidden = !adminMode; }
+    if (adminOnly) {
+      a.dataset.adminOnly = "true";
+      a.hidden = !adminMode;
+    }
     return a;
   }
 
@@ -68,7 +71,7 @@
     const brand = document.createElement("a");
     brand.className = "brand";
     brand.id = "brand";
-    brand.href = modeUrl("/teams.html");
+    brand.href = "/teams.html";
     brand.textContent = "🐼 pandaplan";
     header.appendChild(brand);
     const close = document.createElement("button");
@@ -118,7 +121,7 @@
         toggle.setAttribute("aria-expanded", String(open));
       };
       teamLink.onclick = closeMobile;
-      children.querySelectorAll("a").forEach((child) => child.onclick = closeMobile);
+      children.querySelectorAll("a").forEach((child) => (child.onclick = closeMobile));
       teamList.appendChild(item);
     });
     menu.appendChild(teamList);
@@ -126,6 +129,28 @@
     about.classList.add("sidebar-section-link");
     about.onclick = closeMobile;
     menu.appendChild(about);
+
+    const account = document.createElement("div");
+    account.className = "sidebar-account";
+    if (auth?.user?.name) {
+      const identity = document.createElement("div");
+      identity.className = "sidebar-account-name";
+      identity.textContent = auth.user.name;
+      account.appendChild(identity);
+    }
+    if (auth?.user?.email) {
+      const email = document.createElement("div");
+      email.className = "sidebar-account-email";
+      email.textContent = auth.user.email;
+      account.appendChild(email);
+    }
+    const logout = document.createElement("a");
+    logout.href = "/oidc/logout";
+    logout.className = "sidebar-link sidebar-logout";
+    logout.textContent = t("oidcLogout");
+    logout.onclick = closeMobile;
+    account.appendChild(logout);
+    menu.appendChild(account);
     nav.appendChild(menu);
 
     function closeMobile() {
@@ -139,9 +164,11 @@
       openButton.setAttribute("aria-expanded", "true");
     }
     close.onclick = closeMobile;
-    openButton.onclick = () => nav.classList.contains("mobile-open") ? closeMobile() : openMobile();
+    openButton.onclick = () => (nav.classList.contains("mobile-open") ? closeMobile() : openMobile());
     backdrop.onclick = closeMobile;
-    document.addEventListener("keydown", (event) => { if (event.key === "Escape") closeMobile(); });
+    document.addEventListener("keydown", (event) => {
+      if (event.key === "Escape") closeMobile();
+    });
   }
 
   async function init() {
@@ -149,13 +176,13 @@
     window.pandaplanAuthReady = (async () => {
       try {
         const sessionResponse = await fetch("/oidc/session", { credentials: "same-origin" });
-        const auth = sessionResponse.ok ? await sessionResponse.json() : { authenticated: false };
+        auth = sessionResponse.ok ? await sessionResponse.json() : { authenticated: false };
         window.pandaplanAuth = auth;
         adminMode = Boolean(auth.authenticated && auth.account?.isSiteAdmin);
         return auth;
       } catch (error) {
         console.error("Could not load authentication state:", error);
-        const auth = { authenticated: false };
+        auth = { authenticated: false };
         window.pandaplanAuth = auth;
         adminMode = false;
         return auth;
@@ -171,5 +198,6 @@
       render([]);
     }
   }
+
   init();
 })();
