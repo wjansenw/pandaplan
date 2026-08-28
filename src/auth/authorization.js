@@ -1,6 +1,8 @@
 const { SITE_ADMIN_ROLE, ALL_TEAM_ROLES, getRoleDefinition, isTeamRole, isSiteAdminRole, roleHasPermission } = require('./roles');
 
-function hasGlobalAccess(account) { return Boolean(account?.is_site_admin); }
+function hasGlobalAccess(account) {
+  return Boolean(account?.is_site_admin || account?.isSiteAdmin);
+}
 function hasTeamRole(account, teamId, role) {
   if (!account || !teamId || !isTeamRole(role)) return false;
   if (hasGlobalAccess(account)) return true;
