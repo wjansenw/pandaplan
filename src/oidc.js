@@ -2,6 +2,8 @@ const express = require('express');
 const session = require('express-session');
 const { Issuer, generators } = require('openid-client');
 const path = require('path');
+const accountsRepository = require('./repositories/accountsRepository');
+const { hasGlobalAccess } = require('./auth/authorization');
 
 const router = express.Router();
 
@@ -14,9 +16,7 @@ const REDIRECT_URI = process.env.OIDC_REDIRECT_URI;
 let clientPromise;
 
 function configured() {
-  return Boolean(
-    SESSION_SECRET && ISSUER_URL && CLIENT_ID && CLIENT_SECRET && REDIRECT_URI,
-  );
+  return Boolean(SESSION_SECRET && ISSUER_URL && CLIENT_ID && CLIENT_SECRET && REDIRECT_URI);
 }
 
 function sessionMiddleware() {
@@ -37,28 +37,28 @@ function sessionMiddleware() {
 async function getClient() {
   if (!configured()) throw new Error('OIDC is not configured');
   if (!clientPromise) {
-    clientPromise = Issuer.discover(ISSUER_URL).then(
-      (issuer) =>
-        new issuer.Client({
-          client_id: CLIENT_ID,
-          client_secret: CLIENT_SECRET,
-          redirect_uris: [REDIRECT_URI],
-          response_types: ['code'],
-        }),
-    );
+    clientPromise = Issuer.discover(ISSUER_URL).then((issuer) => new issuer.Client({
+      client_id: CLIENT_ID,
+      client_secret: CLIENT_SECRET,
+      redirect_uris: [REDIRECT_URI],
+      response_types: ['code'],
+    }));
   }
   return clientPromise;
 }
 
+function requireSiteAdmin(req, res, next) {
+  if (!req.session.account || !hasGlobalAccess(req.session.account)) return res.status(403).json({ error: 'site administrator access required' });
+  next();
+}
+
 router.use(sessionMiddleware());
 
-router.get('/', (req, res) => {
-  res.sendFile(path.join(__dirname, '..', 'public', 'oidc.html'));
-});
+router.get('/', (req, res) => res.sendFile(path.join(__dirname, '..', 'public', 'oidc.html')));
 
 router.get('/session', (req, res) => {
-  if (!req.session.user) return res.json({ authenticated: false });
-  res.json({ authenticated: true, user: req.session.user });
+  if (!req.session.account) return res.json({ authenticated: false });
+  res.json({ authenticated: true, user: req.session.user, account: req.session.account });
 });
 
 router.get('/login', async (req, res, next) => {
@@ -68,9 +68,7 @@ router.get('/login', async (req, res, next) => {
     const codeChallenge = generators.codeChallenge(codeVerifier);
     const state = generators.state();
     const nonce = generators.nonce();
-
     req.session.oidc = { codeVerifier, state, nonce };
-
     const authorizationUrl = client.authorizationUrl({
       scope: 'openid profile email',
       response_type: 'code',
@@ -80,11 +78,8 @@ router.get('/login', async (req, res, next) => {
       state,
       nonce,
     });
-
     res.redirect(authorizationUrl);
-  } catch (error) {
-    next(error);
-  }
+  } catch (error) { next(error); }
 });
 
 router.get('/callback', async (req, res, next) => {
@@ -92,27 +87,48 @@ router.get('/callback', async (req, res, next) => {
     const client = await getClient();
     const expected = req.session.oidc;
     if (!expected) return res.status(400).send('Missing OIDC login state');
-
     const params = client.callbackParams(req);
     const tokenSet = await client.callback(REDIRECT_URI, params, {
       code_verifier: expected.codeVerifier,
       state: expected.state,
       nonce: expected.nonce,
     });
-
     const claims = tokenSet.claims();
+    const issuer = claims.iss || ISSUER_URL;
+    const account = accountsRepository.findOrCreateFromOidc({
+      provider: issuer,
+      providerSubject: claims.sub,
+      email: claims.email,
+      name: claims.name || claims.preferred_username || claims.email || claims.sub,
+    });
     req.session.oidc = undefined;
     req.session.user = {
       sub: claims.sub,
-      name: claims.name || claims.preferred_username || claims.email || claims.sub,
-      email: claims.email || null,
-      issuer: claims.iss || ISSUER_URL,
+      name: account.name,
+      email: account.email || null,
+      issuer,
     };
-
+    req.session.account = account;
     res.redirect('/oidc');
-  } catch (error) {
-    next(error);
-  }
+  } catch (error) { next(error); }
+});
+
+router.get('/admin/users', requireSiteAdmin, (req, res) => res.json({ users: accountsRepository.findAll() }));
+router.get('/admin/teams', requireSiteAdmin, (req, res) => res.json({ teams: accountsRepository.listTeams() }));
+
+router.put('/admin/users/:id/site-admin', requireSiteAdmin, (req, res, next) => {
+  try {
+    const account = accountsRepository.setSiteAdmin(req.params.id, Boolean(req.body.isSiteAdmin));
+    if (!account) return res.status(404).json({ error: 'account not found' });
+    res.json(account);
+  } catch (error) { next(error); }
+});
+
+router.put('/admin/users/:id/team-role', requireSiteAdmin, (req, res, next) => {
+  try {
+    const account = accountsRepository.setTeamRole(req.params.id, req.body.teamId, req.body.role ?? null);
+    res.json(account);
+  } catch (error) { next(error); }
 });
 
 router.post('/logout', (req, res, next) => {
