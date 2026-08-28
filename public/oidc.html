@@ -3,53 +3,44 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>PandaPlan OIDC</title>
-  <style>
-    body { font-family: system-ui, sans-serif; max-width: 42rem; margin: 4rem auto; padding: 0 1rem; }
-    .card { border: 1px solid #ddd; border-radius: .75rem; padding: 1.5rem; }
-    a, button { font: inherit; }
-    .button { display: inline-block; padding: .65rem 1rem; border-radius: .5rem; border: 1px solid #999; text-decoration: none; cursor: pointer; background: #fff; color: inherit; }
-    .error { color: #a00; }
-    dt { font-weight: 600; margin-top: .75rem; }
-    dd { margin-left: 0; }
-    .actions { display: flex; gap: .75rem; margin-top: 1rem; flex-wrap: wrap; }
-  </style>
+  <title>PandaPlan</title>
 </head>
 <body>
   <main class="card">
-    <h1>PandaPlan OIDC test</h1>
-    <div id="content">Checking authentication…</div>
+    <h1 data-oidc-i18n="oidcTitle">PandaPlan authentication</h1>
+    <div id="content"><span data-oidc-i18n="oidcChecking">Checking authentication…</span></div>
   </main>
+  <script src="/shared.js"></script>
+  <script src="/oidc-i18n.js"></script>
   <script>
-    async function load() {
+    function renderSession(session) {
       const content = document.getElementById('content');
-      try {
-        const response = await fetch('/oidc/session', { credentials: 'same-origin' });
-        const session = await response.json();
-        if (!session.authenticated) {
-          content.innerHTML = '<p>You are not authenticated.</p><p><a class="button" href="/oidc/login">Log in</a></p>';
-          return;
-        }
-        const user = session.user;
-        const adminLink = session.account?.isSiteAdmin ? '<a class="button" href="/oidc/admin">User management</a>' : '';
-        content.innerHTML =
-          '<p><strong>You are authenticated.</strong></p>' +
-          '<dl>' +
-          '<dt>Name</dt><dd>' + escapeHtml(user.name) + '</dd>' +
-          '<dt>Email</dt><dd>' + escapeHtml(user.email || 'Not provided') + '</dd>' +
-          '<dt>Subject</dt><dd>' + escapeHtml(user.sub) + '</dd>' +
-          '</dl>' +
-          '<div class="actions">' + adminLink + '<form method="post" action="/oidc/logout"><button class="button" type="submit">Log out</button></form></div>';
-      } catch (error) {
-        content.innerHTML = '<p class="error">Could not check authentication.</p>';
-        console.error(error);
+      document.documentElement.lang = oidcLanguage();
+      document.title = oidcT('oidcTitle');
+      if (!session.authenticated) {
+        content.innerHTML = `<p>${escapeHtml(oidcT('oidcNotAuthenticated'))}</p><p><a class="button" href="/oidc/login">${escapeHtml(oidcT('oidcLogin'))}</a></p>`;
+        return;
       }
+      const user = session.user;
+      content.innerHTML =
+        `<p><strong>${escapeHtml(oidcT('oidcAuthenticated'))}</strong></p>` +
+        '<dl>' +
+        `<dt>${escapeHtml(oidcT('oidcName'))}</dt><dd>${escapeHtml(user.name)}</dd>` +
+        `<dt>${escapeHtml(oidcT('oidcEmail'))}</dt><dd>${escapeHtml(user.email || oidcT('oidcNoEmail'))}</dd>` +
+        `<dt>${escapeHtml(oidcT('oidcSubject'))}</dt><dd>${escapeHtml(user.sub)}</dd>` +
+        `<dt>${escapeHtml(oidcT('oidcIssuer'))}</dt><dd>${escapeHtml(user.issuer || '')}</dd>` +
+        '</dl>' +
+        `<form method="post" action="/oidc/logout"><button class="button" type="submit">${escapeHtml(oidcT('oidcLogout'))}</button></form>`;
     }
 
-    function escapeHtml(value) {
-      return String(value).replace(/[&<>\"']/g, (char) => ({
-        '&': '&amp;', '<': '&lt;', '>': '&gt;', '\"': '&quot;', "'": '&#39;'
-      })[char]);
+    async function load() {
+      try {
+        const response = await fetch('/oidc/session', { credentials: 'same-origin' });
+        renderSession(await response.json());
+      } catch (error) {
+        document.getElementById('content').innerHTML = `<p class="error">${escapeHtml(oidcT('oidcAuthError'))}</p>`;
+        console.error(error);
+      }
     }
 
     load();
