@@ -3,7 +3,19 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>PandaPlan</title>
+  <title>PandaPlan users</title>
+  <style>
+    body { font-family: system-ui, sans-serif; max-width: 64rem; margin: 2rem auto; padding: 0 1rem; }
+    .toolbar { display: flex; justify-content: space-between; align-items: center; gap: 1rem; margin-bottom: 1rem; }
+    .user { border: 1px solid #ddd; border-radius: .75rem; padding: 1rem; margin: .75rem 0; }
+    .meta { color: #666; font-size: .9rem; }
+    .teams { display: grid; gap: .5rem; margin-top: .75rem; }
+    .team-row { display: grid; grid-template-columns: minmax(8rem, 1fr) minmax(12rem, 16rem) auto; gap: .5rem; align-items: center; }
+    select, button { font: inherit; padding: .4rem .6rem; }
+    .admin { margin-top: .75rem; }
+    .error { color: #a00; }
+    @media (max-width: 600px) { .team-row { grid-template-columns: 1fr; } }
+  </style>
 </head>
 <body>
   <div class="toolbar">
@@ -27,13 +39,13 @@
     async function api(url, options) {
       const response = await fetch(url, { credentials: 'same-origin', ...options });
       const data = await response.json().catch(() => ({}));
-      if (!response.ok) throw new Error(data.error || oidcT('oidcSaveFailed'));
+      if (!response.ok) throw new Error(data.error || t('oidcSaveFailed'));
       return data;
     }
 
     async function load() {
       const status = document.getElementById('status');
-      status.textContent = oidcT('oidcLoading');
+      status.textContent = t('oidcLoading');
       try {
         const [teamData, userData] = await Promise.all([
           api('/oidc/admin/teams'),
@@ -50,18 +62,18 @@
 
     function render(users) {
       const container = document.getElementById('users');
-      document.documentElement.lang = oidcLanguage();
-      document.title = oidcT('oidcUsersTitle');
+      document.documentElement.lang = currentLanguage;
+      document.title = t('oidcUsersTitle');
       container.innerHTML = users.length ? users.map((user) => {
         const roles = new Map(user.teamRoles.map((r) => [r.teamId, r.role]));
         return `
           <section class="user">
-            <strong>${escapeHtml(user.name || oidcT('oidcNoEmail'))}</strong>
-            <div class="meta">${escapeHtml(user.email || oidcT('oidcNoEmail'))} · ${escapeHtml(user.provider)}</div>
+            <strong>${escapeHtml(user.name || t('oidcNoEmail'))}</strong>
+            <div class="meta">${escapeHtml(user.email || t('oidcNoEmail'))} · ${escapeHtml(user.provider)}</div>
             <div class="admin">
               <label>
                 <input type="checkbox" data-user-id="${escapeHtml(user.id)}" ${user.isSiteAdmin ? 'checked' : ''} onchange="setAdmin(this.dataset.userId, this.checked)">
-                ${escapeHtml(oidcT('oidcSiteAdmin'))}
+                ${escapeHtml(t('oidcSiteAdmin'))}
               </label>
             </div>
             <div class="teams">
@@ -69,14 +81,14 @@
                 <div class="team-row">
                   <span>${escapeHtml(team.name)}</span>
                   <select data-user-id="${escapeHtml(user.id)}" data-team-id="${escapeHtml(team.id)}" onchange="setTeamRole(this.dataset.userId, this.dataset.teamId, this.value)">
-                    <option value="">${escapeHtml(oidcT('oidcNoAccess'))}</option>
-                    ${Object.entries(roleNames).map(([role, key]) => `<option value="${role}" ${roles.get(team.id) === role ? 'selected' : ''}>${escapeHtml(oidcT(key))}</option>`).join('')}
+                    <option value="">${escapeHtml(t('oidcNoAccess'))}</option>
+                    ${Object.entries(roleNames).map(([role, key]) => `<option value="${role}" ${roles.get(team.id) === role ? 'selected' : ''}>${escapeHtml(t(key))}</option>`).join('')}
                   </select>
                 </div>
               `).join('')}
             </div>
           </section>`;
-      }).join('') : `<p>${escapeHtml(oidcT('oidcNoUsers'))}</p>`;
+      }).join('') : `<p>${escapeHtml(t('oidcNoUsers'))}</p>`;
     }
 
     async function setAdmin(id, checked) {
@@ -98,6 +110,8 @@
         await load();
       } catch (error) { alert(error.message); await load(); }
     }
+
+    load();
   </script>
 </body>
 </html>
