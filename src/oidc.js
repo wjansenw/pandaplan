@@ -21,16 +21,8 @@ function configured() {
 
 function sessionMiddleware() {
   return session({
-    name: 'pandaplan_oidc',
-    secret: SESSION_SECRET || 'oidc-not-configured',
-    resave: false,
-    saveUninitialized: false,
-    cookie: {
-      httpOnly: true,
-      sameSite: 'lax',
-      secure: process.env.NODE_ENV === 'production',
-      maxAge: 8 * 60 * 60 * 1000,
-    },
+    name: 'pandaplan_oidc', secret: SESSION_SECRET || 'oidc-not-configured', resave: false, saveUninitialized: false,
+    cookie: { httpOnly: true, sameSite: 'lax', secure: process.env.NODE_ENV === 'production', maxAge: 8 * 60 * 60 * 1000 },
   });
 }
 
@@ -38,10 +30,7 @@ async function getClient() {
   if (!configured()) throw new Error('OIDC is not configured');
   if (!clientPromise) {
     clientPromise = Issuer.discover(ISSUER_URL).then((issuer) => new issuer.Client({
-      client_id: CLIENT_ID,
-      client_secret: CLIENT_SECRET,
-      redirect_uris: [REDIRECT_URI],
-      response_types: ['code'],
+      client_id: CLIENT_ID, client_secret: CLIENT_SECRET, redirect_uris: [REDIRECT_URI], response_types: ['code'],
     }));
   }
   return clientPromise;
@@ -53,9 +42,8 @@ function requireSiteAdmin(req, res, next) {
 }
 
 router.use(sessionMiddleware());
-
 router.get('/', (req, res) => res.sendFile(path.join(__dirname, '..', 'public', 'oidc.html')));
-
+router.get('/admin', requireSiteAdmin, (req, res) => res.sendFile(path.join(__dirname, '..', 'public', 'oidc-users.html')));
 router.get('/session', (req, res) => {
   if (!req.session.account) return res.json({ authenticated: false });
   res.json({ authenticated: true, user: req.session.user, account: req.session.account });
@@ -69,16 +57,7 @@ router.get('/login', async (req, res, next) => {
     const state = generators.state();
     const nonce = generators.nonce();
     req.session.oidc = { codeVerifier, state, nonce };
-    const authorizationUrl = client.authorizationUrl({
-      scope: 'openid profile email',
-      response_type: 'code',
-      redirect_uri: REDIRECT_URI,
-      code_challenge: codeChallenge,
-      code_challenge_method: 'S256',
-      state,
-      nonce,
-    });
-    res.redirect(authorizationUrl);
+    res.redirect(client.authorizationUrl({ scope: 'openid profile email', response_type: 'code', redirect_uri: REDIRECT_URI, code_challenge: codeChallenge, code_challenge_method: 'S256', state, nonce }));
   } catch (error) { next(error); }
 });
 
@@ -87,27 +66,12 @@ router.get('/callback', async (req, res, next) => {
     const client = await getClient();
     const expected = req.session.oidc;
     if (!expected) return res.status(400).send('Missing OIDC login state');
-    const params = client.callbackParams(req);
-    const tokenSet = await client.callback(REDIRECT_URI, params, {
-      code_verifier: expected.codeVerifier,
-      state: expected.state,
-      nonce: expected.nonce,
-    });
+    const tokenSet = await client.callback(REDIRECT_URI, client.callbackParams(req), { code_verifier: expected.codeVerifier, state: expected.state, nonce: expected.nonce });
     const claims = tokenSet.claims();
     const issuer = claims.iss || ISSUER_URL;
-    const account = accountsRepository.findOrCreateFromOidc({
-      provider: issuer,
-      providerSubject: claims.sub,
-      email: claims.email,
-      name: claims.name || claims.preferred_username || claims.email || claims.sub,
-    });
+    const account = accountsRepository.findOrCreateFromOidc({ provider: issuer, providerSubject: claims.sub, email: claims.email, name: claims.name || claims.preferred_username || claims.email || claims.sub });
     req.session.oidc = undefined;
-    req.session.user = {
-      sub: claims.sub,
-      name: account.name,
-      email: account.email || null,
-      issuer,
-    };
+    req.session.user = { sub: claims.sub, name: account.name, email: account.email || null, issuer };
     req.session.account = account;
     res.redirect('/oidc');
   } catch (error) { next(error); }
@@ -115,7 +79,6 @@ router.get('/callback', async (req, res, next) => {
 
 router.get('/admin/users', requireSiteAdmin, (req, res) => res.json({ users: accountsRepository.findAll() }));
 router.get('/admin/teams', requireSiteAdmin, (req, res) => res.json({ teams: accountsRepository.listTeams() }));
-
 router.put('/admin/users/:id/site-admin', requireSiteAdmin, (req, res, next) => {
   try {
     const account = accountsRepository.setSiteAdmin(req.params.id, Boolean(req.body.isSiteAdmin));
@@ -123,12 +86,9 @@ router.put('/admin/users/:id/site-admin', requireSiteAdmin, (req, res, next) => 
     res.json(account);
   } catch (error) { next(error); }
 });
-
 router.put('/admin/users/:id/team-role', requireSiteAdmin, (req, res, next) => {
-  try {
-    const account = accountsRepository.setTeamRole(req.params.id, req.body.teamId, req.body.role ?? null);
-    res.json(account);
-  } catch (error) { next(error); }
+  try { res.json(accountsRepository.setTeamRole(req.params.id, req.body.teamId, req.body.role ?? null)); }
+  catch (error) { next(error); }
 });
 
 router.post('/logout', (req, res, next) => {
