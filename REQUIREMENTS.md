@@ -10,13 +10,37 @@ The requirements below describe the product independently of the current impleme
 
 ## 2. Core concepts
 
-### 2.1 Account
+### 2.1 Account and Person are independent entities
 
-An account represents a person authenticated through an external identity provider. Authentication identifies the user; application authorization determines what that user may do.
+**Account and Person are deliberately separate concepts and must be modeled as independent entities. Neither is a subtype of the other, and neither is required to exist for the other to exist.**
+
+An **Account** represents an identity that can authenticate to PandaPlan. It is concerned with access to the application, authentication and authorization.
+
+A **Person** represents an individual who participates in the club/team domain. It is concerned with team membership, participation, attendance and functional roles such as player, coach or referee.
+
+The following rules are fundamental:
+
+- A Person can exist without an Account. For example, a child/player may be managed by a parent or team administrator without ever logging into PandaPlan.
+- An Account can exist without being a Person. For example, an administrator may need application access without being a player, coach or other team participant.
+- An Account and a Person may optionally be associated, but this association is not the identity of either entity.
+- An Account may not automatically become a Person merely because the user logs in.
+- A Person may not automatically receive an Account merely because their contact details match an authenticated user.
+- Email addresses, names and other profile fields must not be used to implicitly merge an Account and Person.
+- Authorization is based on the Account and its memberships/roles; team participation and attendance are based on Person and team membership.
+- When an Account is deleted or loses application access, the associated Person must remain intact unless the Person is explicitly deleted through person management.
+- When a Person is deleted, the associated Account must remain intact unless the Account is explicitly deleted through account management.
+
+If an Account is associated with a Person, the relationship must be explicit and represented separately from both entities.
+
+### 2.2 Account
+
+An account represents an identity authenticated through an external identity provider. Authentication identifies the account; application authorization determines what that account may do.
 
 An account may have access to multiple teams and may have a different application role in each team.
 
-### 2.2 Team
+An account does not represent team participation. An account may be authorized to manage a team without itself being a member/person in that team.
+
+### 2.3 Team
 
 A team is an independent operational unit. Examples include an age group, squad, committee or other club group.
 
@@ -32,15 +56,17 @@ A team has:
 
 There must be no implicit or special “default team” after teams have been created. Team context must always be explicit.
 
-### 2.3 Person
+### 2.4 Person
 
-A person is an individual belonging to one or more teams.
+A person is an independent domain entity representing an individual who may belong to one or more teams.
 
 A person can have multiple functional roles within a team, such as participant, coach, assistant coach, trainer, scorekeeper or referee.
 
 Functional person roles describe what the person does in the team. They are distinct from account/application roles, which control access to PandaPlan.
 
-### 2.4 Event
+A person does not need an Account to be included in a team, event, attendance record or staff assignment.
+
+### 2.5 Event
 
 An event belongs to exactly one team and may have:
 
@@ -55,13 +81,13 @@ An event belongs to exactly one team and may have:
 
 The location should be presented as a clickable map link when supplied.
 
-### 2.5 Category
+### 2.6 Category
 
 A category is a team-specific classification of events. It has a name and display color and may define the staff roles applicable to events in that category.
 
-### 2.6 Attendance
+### 2.7 Attendance
 
-Attendance is recorded per person and event.
+Attendance is recorded per Person and Event. It is not recorded against an Account.
 
 Supported states:
 
@@ -71,6 +97,8 @@ Supported states:
 - Unknown / no response
 
 An attendance record may contain an optional note.
+
+When an Account is associated with a Person, that Account may be allowed to manage that Person's own attendance. This is an authorization relationship, not an indication that the Account and Person are the same entity.
 
 ## 3. Authentication
 
@@ -87,6 +115,8 @@ The application must not handle or store the user's identity-provider password.
 An authenticated account must be identified by the identity provider and stable provider subject, not by email address alone.
 
 Email, display name and other profile information may be synchronized from the identity provider but must not be the primary identity key.
+
+OIDC authentication creates or updates an **Account**. It must not implicitly create or modify a **Person**.
 
 ### 3.3 Sessions
 
@@ -114,6 +144,8 @@ Authorization failures must return HTTP 403 and must not reveal information abou
 ## 4. Authorization and roles
 
 Authorization must be enforced by the backend. Hiding UI controls is not a security boundary.
+
+Application roles belong to Accounts. Functional/team roles belong to Persons. These role systems must remain separate.
 
 ### 4.1 Site administrator
 
@@ -162,14 +194,16 @@ A team member has team-scoped access to:
 
 A normal team member must not be able to modify another person's attendance.
 
+The term “team member” refers to a Person's participation in a team, not necessarily to an Account having access to PandaPlan. A Person may be a team member without having an Account.
+
 ### 4.5 Ownership-sensitive permissions
 
 Permissions must distinguish between operations on the user's own data and management operations on other users' data.
 
 For example:
 
-- `attendance:self` — change the authenticated user's own attendance
-- `attendance:manage` — change attendance for any person in an authorized team
+- `attendance:self` — an authenticated Account may change attendance belonging to the Person explicitly associated with that Account
+- `attendance:manage` — an authorized Account may change attendance for any Person in an authorized team
 
 A generic `attendance:manage` permission must not be granted to ordinary team members merely because they are allowed to record their own attendance.
 
@@ -183,7 +217,7 @@ At minimum, sensitive authorization decisions must use current account/team memb
 
 Every team-scoped API operation must verify both:
 
-1. The authenticated account has the required permission.
+1. The authenticated Account has the required permission.
 2. The requested resource belongs to the team for which that permission is held.
 
 IDs or URLs from another team must never allow cross-team access.
@@ -213,10 +247,16 @@ Authorized team managers can:
 - Edit person information
 - Assign one or more functional roles
 - View attendance and event participation
+- Optionally associate a Person with an existing Account
+- Remove or change an Account/Person association without deleting either entity
 
 A person may belong to multiple teams. Team membership and team-specific roles must therefore be modeled independently from the global person record.
 
+A Person may be managed entirely by an administrator without having an Account.
+
 Removing a person from a team must remove or invalidate team-specific assignments that can no longer be valid.
+
+Deleting a Person must not implicitly delete an Account. Deleting an Account must not implicitly delete a Person.
 
 ## 7. Events
 
@@ -241,9 +281,13 @@ Locations should be clickable and open a suitable map service rather than being 
 
 ### 8.1 Individual attendance
 
-A participant can change their own attendance for an event.
+Attendance belongs to a Person and Event.
 
-Authorized managers can change attendance for participants in their team.
+A Person associated with the authenticated Account can change their own attendance when the Account has the required self-service permission.
+
+Authorized managers can change attendance for Persons in their team.
+
+A Person without an Account can still have attendance records. An authorized Account must be able to manage that attendance through normal team management.
 
 Attendance changes must be persisted through the API.
 
@@ -376,15 +420,16 @@ The frontend must communicate with the backend through a documented REST-style H
 
 The API is authoritative for all persistent operations, including:
 
+- Accounts and authorization
 - Teams
 - People
 - Team memberships
 - Functional roles
+- Account/Person associations
 - Events
 - Categories
 - Attendance
 - Staff assignments
-- Application authorization
 
 The frontend must never bypass authorization or persistence rules by directly manipulating the database.
 
@@ -397,8 +442,9 @@ API responses should use appropriate HTTP status codes and consistent JSON error
 The persistent data model must represent at least:
 
 - Accounts
-- Application/team authorization roles
+- Account/team authorization roles
 - Persons
+- Optional explicit Account/Person associations
 - Teams
 - Team memberships
 - Team-specific functional roles
@@ -408,6 +454,8 @@ The persistent data model must represent at least:
 - Attendance
 - Staff assignments
 
+Account and Person records must be independently creatable, editable and deletable, subject to normal referential-integrity rules.
+
 Important integrity rules should be enforced in the database wherever practical, including:
 
 - Unique team slugs
@@ -416,6 +464,7 @@ Important integrity rules should be enforced in the database wherever practical,
 - Valid attendance states
 - Maximum one staff role per person/event
 - Staff role must belong to the person's team roles
+- An optional Account/Person association must reference existing entities
 - Referential integrity and appropriate cascading behavior
 
 ## 18. Persistence and deployment
@@ -452,6 +501,7 @@ The application must:
 - Avoid exposing stack traces or sensitive internal information to users.
 - Treat calendar feed URLs as private credentials where applicable.
 - Log security-relevant failures without logging passwords, tokens or other secrets.
+- Never infer an Account/Person association solely from matching email addresses or other profile fields.
 
 ## 20. Non-functional requirements
 
@@ -488,25 +538,29 @@ The frontend should remain independent of the persistence layer. All business ru
 A new implementation is functionally complete when all of the following are true:
 
 1. A new installation can authenticate through OIDC.
-2. The first configured administrator can create and manage teams.
-3. A team manager can manage only the teams to which they are assigned.
-4. A team member cannot access or modify another team's data.
-5. A team member can change their own attendance but cannot manage another participant's attendance.
-6. A team manager can manage attendance for participants in their authorized team.
-7. People can belong to multiple teams with independent team roles.
-8. Events can be created, edited and displayed with date/time/category/location.
-9. Event locations are clickable map links.
-10. Staff can be assigned to events using valid team staff roles.
-11. The system prevents more than one staff role for the same person/event.
-12. Team and person calendar feeds are available and their URLs can be copied.
-13. Attendance browsing does not accidentally modify data; editing requires explicit intent.
-14. Bulk attendance changes require explicit selection and confirmation.
-15. English and Belgian Dutch are supported throughout the UI.
-16. The UI works on desktop and mobile.
-17. Authorization changes take effect without relying indefinitely on stale login-session role data.
-18. Database integrity rules prevent invalid cross-team or orphaned relationships.
-19. Container restart does not lose persistent application data or unexpectedly invalidate all sessions in a production deployment.
-20. No functionality depends on a special/default team once real teams exist.
+2. OIDC authentication creates or updates an Account without implicitly creating a Person.
+3. A Person can exist without an Account.
+4. An Account can exist without a Person.
+5. An administrator can explicitly associate an Account with a Person and later change/remove that association without deleting either entity.
+6. The first configured administrator can create and manage teams.
+7. A team manager can manage only the teams to which they are assigned.
+8. A team member cannot access or modify another team's data.
+9. A team member can change their own attendance but cannot manage another participant's attendance.
+10. A team manager can manage attendance for participants in their authorized team.
+11. People can belong to multiple teams with independent team roles.
+12. Events can be created, edited and displayed with date/time/category/location.
+13. Event locations are clickable map links.
+14. Staff can be assigned to events using valid team staff roles.
+15. The system prevents more than one staff role for the same person/event.
+16. Team and person calendar feeds are available and their URLs can be copied.
+17. Attendance browsing does not accidentally modify data; editing requires explicit intent.
+18. Bulk attendance changes require explicit selection and confirmation.
+19. English and Belgian Dutch are supported throughout the UI.
+20. The UI works on desktop and mobile.
+21. Authorization changes take effect without relying indefinitely on stale login-session role data.
+22. Database integrity rules prevent invalid cross-team or orphaned relationships.
+23. Container restart does not lose persistent application data or unexpectedly invalidate all sessions in a production deployment.
+24. No functionality depends on a special/default team once real teams exist.
 
 ## 23. Product principle
 
