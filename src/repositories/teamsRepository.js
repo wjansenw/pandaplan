@@ -11,6 +11,21 @@ function findAll() {
   `).all();
 }
 
+function findAllForAccount(account) {
+  if (account?.isSiteAdmin) return findAll();
+  const teamIds = (account?.teamRoles || []).map((membership) => membership.teamId).filter(Boolean);
+  if (!teamIds.length) return [];
+  const placeholders = teamIds.map(() => '?').join(',');
+  return getDb().prepare(`
+    SELECT t.id, t.name, t.slug, t.description, COUNT(tm.person_id) AS memberCount
+    FROM teams t
+    LEFT JOIN team_memberships tm ON tm.team_id = t.id
+    WHERE t.id IN (${placeholders})
+    GROUP BY t.id
+    ORDER BY t.name
+  `).all(...teamIds);
+}
+
 function findBySlug(slug) {
   return getDb().prepare('SELECT id, name, slug, description FROM teams WHERE slug = ?').get(slug) || null;
 }
@@ -80,4 +95,4 @@ function hasRole(teamId, personId, role) {
   return !!getDb().prepare('SELECT 1 FROM team_membership_roles WHERE team_id = ? AND person_id = ? AND role = ?').get(teamId, personId, role);
 }
 
-module.exports = { findAll, findBySlug, findMembers, create, update, count, remove, addMember, removeMember, setRoles, isMember, hasRole };
+module.exports = { findAll, findAllForAccount, findBySlug, findMembers, create, update, count, remove, addMember, removeMember, setRoles, isMember, hasRole };
