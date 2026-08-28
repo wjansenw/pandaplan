@@ -9,7 +9,7 @@ services:
       - ./data:/app/data
     networks:
       - swag
-
+    env_file: ".env"
 networks:
   swag:
     name: swag_network
