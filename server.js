@@ -58,7 +58,11 @@ app.use('/api/teams/:slug/categories', requireTeamReadWrite('team:view', 'catego
 app.use('/api/teams/:slug/events', requireTeamReadWrite('team:view', 'events:manage'), require('./src/routes/teamEventsRoutes'));
 app.use('/api/teams/:slug/attendance', requireTeamReadWrite('team:view', 'attendance:manage'), require('./src/routes/teamAttendanceRoutes'));
 app.use('/api/teams/:slug/staffAssignments', requireTeamReadWrite('team:view', 'staff:manage'), require('./src/routes/teamStaffAssignmentsRoutes'));
-app.use('/calendar', requireAuthentication, require('./src/routes/calendarRoutes'));
+// Deliberately no requireAuthentication here: calendar feed URLs are
+// consumed by external calendar apps that can't send our session cookie.
+// Each route validates its own unguessable :token instead — see
+// src/routes/calendarRoutes.js.
+app.use('/calendar', require('./src/routes/calendarRoutes'));
 
 app.use((err, req, res, next) => {
   if (err instanceof AppError) return res.status(err.status).json({ error: err.message });
