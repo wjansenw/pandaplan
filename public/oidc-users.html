@@ -1,0 +1,117 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>PandaPlan users</title>
+  <style>
+    body { font-family: system-ui, sans-serif; max-width: 64rem; margin: 2rem auto; padding: 0 1rem; }
+    .toolbar { display: flex; justify-content: space-between; align-items: center; gap: 1rem; margin-bottom: 1rem; }
+    .user { border: 1px solid #ddd; border-radius: .75rem; padding: 1rem; margin: .75rem 0; }
+    .meta { color: #666; font-size: .9rem; }
+    .teams { display: grid; gap: .5rem; margin-top: .75rem; }
+    .team-row { display: grid; grid-template-columns: minmax(8rem, 1fr) minmax(12rem, 16rem) auto; gap: .5rem; align-items: center; }
+    select, button { font: inherit; padding: .4rem .6rem; }
+    .admin { margin-top: .75rem; }
+    .error { color: #a00; }
+    @media (max-width: 600px) { .team-row { grid-template-columns: 1fr; } }
+  </style>
+</head>
+<body>
+  <div class="toolbar">
+    <h1 data-oidc-i18n="oidcUsersTitle">User management</h1>
+    <a href="/oidc" data-oidc-i18n="oidcAuthentication">Authentication</a>
+  </div>
+  <div id="status" data-oidc-i18n="oidcLoading">Loading…</div>
+  <main id="users"></main>
+
+  <script src="/shared.js"></script>
+  <script src="/oidc-i18n.js"></script>
+  <script>
+    let teams = [];
+
+    const roleNames = {
+      team_member: 'oidcTeamMember',
+      staff_coordinator: 'oidcStaffCoordinator',
+      team_manager: 'oidcTeamManager',
+    };
+
+    async function api(url, options) {
+      const response = await fetch(url, { credentials: 'same-origin', ...options });
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(data.error || t('oidcSaveFailed'));
+      return data;
+    }
+
+    async function load() {
+      const status = document.getElementById('status');
+      status.textContent = t('oidcLoading');
+      try {
+        const [teamData, userData] = await Promise.all([
+          api('/oidc/admin/teams'),
+          api('/oidc/admin/users'),
+        ]);
+        teams = teamData.teams;
+        render(userData.users);
+        status.textContent = '';
+      } catch (error) {
+        status.className = 'error';
+        status.textContent = error.message;
+      }
+    }
+
+    function render(users) {
+      const container = document.getElementById('users');
+      document.documentElement.lang = currentLanguage;
+      document.title = t('oidcUsersTitle');
+      container.innerHTML = users.length ? users.map((user) => {
+        const roles = new Map(user.teamRoles.map((r) => [r.teamId, r.role]));
+        return `
+          <section class="user">
+            <strong>${escapeHtml(user.name || t('oidcNoEmail'))}</strong>
+            <div class="meta">${escapeHtml(user.email || t('oidcNoEmail'))} · ${escapeHtml(user.provider)}</div>
+            <div class="admin">
+              <label>
+                <input type="checkbox" data-user-id="${escapeHtml(user.id)}" ${user.isSiteAdmin ? 'checked' : ''} onchange="setAdmin(this.dataset.userId, this.checked)">
+                ${escapeHtml(t('oidcSiteAdmin'))}
+              </label>
+            </div>
+            <div class="teams">
+              ${teams.map((team) => `
+                <div class="team-row">
+                  <span>${escapeHtml(team.name)}</span>
+                  <select data-user-id="${escapeHtml(user.id)}" data-team-id="${escapeHtml(team.id)}" onchange="setTeamRole(this.dataset.userId, this.dataset.teamId, this.value)">
+                    <option value="">${escapeHtml(t('oidcNoAccess'))}</option>
+                    ${Object.entries(roleNames).map(([role, key]) => `<option value="${role}" ${roles.get(team.id) === role ? 'selected' : ''}>${escapeHtml(t(key))}</option>`).join('')}
+                  </select>
+                </div>
+              `).join('')}
+            </div>
+          </section>`;
+      }).join('') : `<p>${escapeHtml(t('oidcNoUsers'))}</p>`;
+    }
+
+    async function setAdmin(id, checked) {
+      try {
+        await api(`/oidc/admin/users/${encodeURIComponent(id)}/site-admin`, {
+          method: 'PUT', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ isSiteAdmin: checked }),
+        });
+        await load();
+      } catch (error) { alert(error.message); await load(); }
+    }
+
+    async function setTeamRole(id, teamId, role) {
+      try {
+        await api(`/oidc/admin/users/${encodeURIComponent(id)}/team-role`, {
+          method: 'PUT', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ teamId, role: role || null }),
+        });
+        await load();
+      } catch (error) { alert(error.message); await load(); }
+    }
+
+    load();
+  </script>
+</body>
+</html>

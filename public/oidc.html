@@ -1,0 +1,78 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>PandaPlan OIDC</title>
+  <style>
+    body { font-family: system-ui, sans-serif; max-width: 42rem; margin: 4rem auto; padding: 0 1rem; }
+    .card { border: 1px solid #ddd; border-radius: .75rem; padding: 1.5rem; }
+    a, button { font: inherit; }
+    .button { display: inline-block; padding: .65rem 1rem; border-radius: .5rem; border: 1px solid #999; text-decoration: none; cursor: pointer; background: #fff; color: inherit; }
+    .error { color: #a00; }
+    dt { font-weight: 600; margin-top: .75rem; }
+    dd { margin-left: 0; }
+    .actions { display: flex; gap: .75rem; margin-top: 1rem; flex-wrap: wrap; }
+    .roles { margin-top: 1.5rem; }
+    .roles h2 { font-size: 1.1rem; margin-bottom: .75rem; }
+    .roles ul { margin: 0; padding-left: 1.25rem; }
+    .roles li { margin: .4rem 0; }
+  </style>
+</head>
+<body>
+  <main class="card">
+    <h1 data-oidc-i18n="oidcTitle">PandaPlan authentication</h1>
+    <div id="content" data-oidc-i18n="oidcChecking">Checking authentication…</div>
+  </main>
+  <script src="/shared.js"></script>
+  <script src="/oidc-i18n.js"></script>
+  <script src="/oidc-role-i18n.js"></script>
+  <script>
+    const roleTranslationKeys = {
+      team_member: 'oidcTeamMember',
+      staff_coordinator: 'oidcStaffCoordinator',
+      team_manager: 'oidcTeamManager',
+    };
+
+    async function load() {
+      const content = document.getElementById('content');
+      document.documentElement.lang = currentLanguage;
+      document.title = t('oidcTitle');
+      try {
+        const response = await fetch('/oidc/session', { credentials: 'same-origin' });
+        const session = await response.json();
+        if (!session.authenticated) {
+          content.innerHTML = `<p>${escapeHtml(t('oidcNotAuthenticated'))}</p><p><a class="button" href="/oidc/login">${escapeHtml(t('oidcLogin'))}</a></p>`;
+          return;
+        }
+        const user = session.user;
+        const account = session.account || {};
+        const adminLink = account.isSiteAdmin ? `<a class="button" href="/oidc/admin">${escapeHtml(t('oidcUsersTitle'))}</a>` : '';
+        const teamRoles = Array.isArray(account.teamRoles) ? account.teamRoles : [];
+        const rolesHtml = teamRoles.length
+          ? `<section class="roles"><h2>${escapeHtml(t('oidcYourRoles'))}</h2><ul>${teamRoles.map((assignment) => {
+              const roleKey = roleTranslationKeys[assignment.role];
+              const role = roleKey ? t(roleKey) : assignment.role;
+              return `<li><strong>${escapeHtml(assignment.teamName || assignment.teamId)}</strong>: ${escapeHtml(role)}</li>`;
+            }).join('')}</ul></section>`
+          : `<section class="roles"><h2>${escapeHtml(t('oidcYourRoles'))}</h2><p>${escapeHtml(t('oidcNoTeamRoles'))}</p></section>`;
+        content.innerHTML =
+          `<p><strong>${escapeHtml(t('oidcAuthenticated'))}</strong></p>` +
+          '<dl>' +
+          `<dt>${escapeHtml(t('oidcName'))}</dt><dd>${escapeHtml(user.name)}</dd>` +
+          `<dt>${escapeHtml(t('oidcEmail'))}</dt><dd>${escapeHtml(user.email || t('oidcNoEmail'))}</dd>` +
+          `<dt>${escapeHtml(t('oidcSubject'))}</dt><dd>${escapeHtml(user.sub)}</dd>` +
+          `<dt>${escapeHtml(t('oidcIssuer'))}</dt><dd>${escapeHtml(user.issuer || '')}</dd>` +
+          '</dl>' +
+          rolesHtml +
+          '<div class="actions">' + adminLink + `<form method="post" action="/oidc/logout"><button class="button" type="submit">${escapeHtml(t('oidcLogout'))}</button></form></div>`;
+      } catch (error) {
+        content.innerHTML = `<p class="error">${escapeHtml(t('oidcAuthError'))}</p>`;
+        console.error(error);
+      }
+    }
+
+    load();
+  </script>
+</body>
+</html>
