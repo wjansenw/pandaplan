@@ -5,7 +5,6 @@
   const currentPage = teamMatch ? path.split("/")[3] || "overview" : null;
   let adminMode = false;
 
-  const modeUrl = (url) => adminMode ? `${url}${url.includes("?") ? "&" : "?"}mode=admin` : url;
   const pageId = (page) => ({ overview: "overviewLink", people: "peopleLink", events: "eventsLink", categories: "categoriesLink" })[page] || null;
 
   function ensureNavigationAssets() {
@@ -44,7 +43,7 @@
 
   function link(href, label, id, current = false, adminOnly = false) {
     const a = document.createElement("a");
-    a.href = modeUrl(href);
+    a.href = href;
     a.textContent = label;
     a.className = "sidebar-link";
     if (id) a.id = id;
@@ -68,7 +67,7 @@
     const brand = document.createElement("a");
     brand.className = "brand";
     brand.id = "brand";
-    brand.href = modeUrl("/teams.html");
+    brand.href = "/teams.html";
     brand.textContent = "🐼 pandaplan";
     header.appendChild(brand);
     const close = document.createElement("button");
@@ -146,11 +145,23 @@
 
   async function init() {
     ensureNavigationAssets();
+    window.pandaplanAuthReady = (async () => {
+      try {
+        const sessionResponse = await fetch("/oidc/session", { credentials: "same-origin" });
+        const auth = sessionResponse.ok ? await sessionResponse.json() : { authenticated: false };
+        window.pandaplanAuth = auth;
+        adminMode = Boolean(auth.authenticated && auth.account?.isSiteAdmin);
+        return auth;
+      } catch (error) {
+        console.error("Could not load authentication state:", error);
+        const auth = { authenticated: false };
+        window.pandaplanAuth = auth;
+        return auth;
+      }
+    })();
+
     try {
-      const sessionResponse = await fetch("/oidc/session");
-      const auth = sessionResponse.ok ? await sessionResponse.json() : { authenticated: false };
-      adminMode = Boolean(auth.authenticated && auth.account?.isSiteAdmin);
-      window.pandaplanAuth = auth;
+      await window.pandaplanAuthReady;
       const teams = typeof api === "function" ? await api("/api/teams") : await (await fetch("/api/teams")).json();
       render(teams);
     } catch (error) {
