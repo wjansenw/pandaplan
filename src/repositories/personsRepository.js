@@ -1,15 +1,20 @@
 const { getDb } = require('../db/connection');
+const { generateToken } = require('../utils/id');
 
 function findAll() {
-  return getDb().prepare('SELECT id, name FROM persons ORDER BY rowid').all();
+  return getDb().prepare('SELECT id, name, calendar_token AS calendarToken FROM persons ORDER BY rowid').all();
 }
 
 function findById(id) {
-  return getDb().prepare('SELECT id, name FROM persons WHERE id = ?').get(id) || null;
+  return getDb().prepare('SELECT id, name, calendar_token AS calendarToken FROM persons WHERE id = ?').get(id) || null;
+}
+
+function findByCalendarToken(token) {
+  return getDb().prepare('SELECT id, name, calendar_token AS calendarToken FROM persons WHERE calendar_token = ?').get(token) || null;
 }
 
 function create({ id, name }) {
-  getDb().prepare('INSERT INTO persons (id, name) VALUES (?, ?)').run(id, name);
+  getDb().prepare('INSERT INTO persons (id, name, calendar_token) VALUES (?, ?, ?)').run(id, name, generateToken());
   return findAll();
 }
 
@@ -23,4 +28,4 @@ function remove(id) {
   return findAll();
 }
 
-module.exports = { findAll, findById, create, update, remove };
+module.exports = { findAll, findById, findByCalendarToken, create, update, remove };

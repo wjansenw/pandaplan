@@ -1,4 +1,5 @@
 const { getDb } = require('../db/connection');
+const { generateToken } = require('../utils/id');
 
 function findAll() {
   const db = getDb();
@@ -27,13 +28,17 @@ function findAllForAccount(account) {
 }
 
 function findBySlug(slug) {
-  return getDb().prepare('SELECT id, name, slug, description FROM teams WHERE slug = ?').get(slug) || null;
+  return getDb().prepare('SELECT id, name, slug, description, calendar_token AS calendarToken FROM teams WHERE slug = ?').get(slug) || null;
+}
+
+function findByCalendarToken(token) {
+  return getDb().prepare('SELECT id, name, slug, description, calendar_token AS calendarToken FROM teams WHERE calendar_token = ?').get(token) || null;
 }
 
 function findMembers(teamId) {
   const db = getDb();
   const persons = db.prepare(`
-    SELECT p.id, p.name
+    SELECT p.id, p.name, p.calendar_token AS calendarToken
     FROM persons p
     JOIN team_memberships tm ON tm.person_id = p.id
     WHERE tm.team_id = ?
@@ -46,7 +51,8 @@ function findMembers(teamId) {
 }
 
 function create({ id, name, slug, description }) {
-  getDb().prepare('INSERT INTO teams (id, name, slug, description) VALUES (?, ?, ?, ?)').run(id, name, slug, description || '');
+  getDb().prepare('INSERT INTO teams (id, name, slug, description, calendar_token) VALUES (?, ?, ?, ?, ?)')
+    .run(id, name, slug, description || '', generateToken());
   return findBySlug(slug);
 }
 
@@ -95,4 +101,4 @@ function hasRole(teamId, personId, role) {
   return !!getDb().prepare('SELECT 1 FROM team_membership_roles WHERE team_id = ? AND person_id = ? AND role = ?').get(teamId, personId, role);
 }
 
-module.exports = { findAll, findAllForAccount, findBySlug, findMembers, create, update, count, remove, addMember, removeMember, setRoles, isMember, hasRole };
+module.exports = { findAll, findAllForAccount, findBySlug, findByCalendarToken, findMembers, create, update, count, remove, addMember, removeMember, setRoles, isMember, hasRole };
