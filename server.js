@@ -50,7 +50,7 @@ app.get('/api/version', (req, res) => res.json({ version: packageJson.version })
 app.use('/api', requireAuthentication);
 app.use('/api/state', requireSiteAdmin, require('./src/routes/stateRoutes'));
 app.use('/api/persons', requireSiteAdmin, require('./src/routes/personsRoutes'));
-app.use('/api/teams', requireSiteAdmin, require('./src/routes/teamsRoutes'));
+app.use('/api/teams', require('./src/routes/teamsRoutes'));
 app.use('/api/teams/:slug/state', requireTeamReadWrite('team:view', 'team:view'), require('./src/routes/teamStateRoutes'));
 app.use('/api/teams/:slug/persons', requireTeamReadWrite('team:view', 'people:manage'), require('./src/routes/teamPersonsRoutes'));
 app.use('/api/teams/:slug/categories', requireTeamReadWrite('team:view', 'categories:manage'), require('./src/routes/teamCategoriesRoutes'));
