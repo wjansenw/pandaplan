@@ -22,6 +22,7 @@ const teamPages = {
 
 app.use('/oidc', require('./src/oidc'));
 
+app.get('/', requireAuthentication, (req, res) => res.redirect('/teams.html'));
 app.get('/team/:slug', requireAuthentication, (req, res) => {
   res.redirect(`/team/${encodeURIComponent(req.params.slug)}/overview`);
 });
