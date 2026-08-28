@@ -67,7 +67,10 @@ router.get('/callback', async (req, res, next) => {
     const expected = req.session.oidc;
     if (!expected) return res.status(400).send('Missing OIDC login state');
     const tokenSet = await client.callback(REDIRECT_URI, client.callbackParams(req), { code_verifier: expected.codeVerifier, state: expected.state, nonce: expected.nonce });
-    const claims = tokenSet.claims();
+    const claims = {
+      ...tokenSet.claims(),
+      ...(await client.userinfo(tokenSet)),
+    };
     const issuer = claims.iss || ISSUER_URL;
     const account = accountsRepository.findOrCreateFromOidc({ provider: issuer, providerSubject: claims.sub, email: claims.email, name: claims.name || claims.preferred_username || claims.email || claims.sub });
     req.session.oidc = undefined;
