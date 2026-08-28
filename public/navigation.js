@@ -133,16 +133,19 @@
     const account = document.createElement("div");
     account.className = "sidebar-account";
     if (auth?.user?.name) {
-      const identity = document.createElement("div");
-      identity.className = "sidebar-account-name";
+      const identity = document.createElement("a");
+      identity.className = "sidebar-account-user";
+      identity.href = "/oidc";
       identity.textContent = auth.user.name;
+      identity.title = auth.user.name;
+      identity.onclick = closeMobile;
       account.appendChild(identity);
     }
-    if (auth?.user?.email) {
-      const email = document.createElement("div");
-      email.className = "sidebar-account-email";
-      email.textContent = auth.user.email;
-      account.appendChild(email);
+    if (auth?.account?.isSiteAdmin) {
+      const admin = link("/oidc/admin", t("admin"), null, path === "/oidc/admin", true);
+      admin.classList.add("sidebar-account-admin");
+      admin.onclick = closeMobile;
+      account.appendChild(admin);
     }
     const logout = document.createElement("a");
     logout.href = "/oidc/logout";
