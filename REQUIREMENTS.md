@@ -2,572 +2,278 @@
 
 ## 1. Purpose
 
-PandaPlan is a self-hosted web application for clubs, sports teams and similar groups that need a simple way to manage teams, people, events, attendance and staff assignments.
+PandaPlan is a self-hosted web application for clubs, sports teams and similar groups to manage teams, people, events, attendance and staff assignments.
 
-The application should make routine team administration fast and safe, while remaining simple enough for participants to use without training.
-
-The requirements below describe the product independently of the current implementation. A new implementation should be able to use this document as its functional specification.
+The product should make routine team administration fast and safe while remaining simple for participants to use without training. These requirements describe the product independently of its implementation and should be sufficient to build a compatible implementation from scratch.
 
 ## 2. Core concepts
 
-### 2.1 Account and Person are independent entities
+### 2.1 User and Person are independent
 
-**Account and Person are deliberately separate concepts and must be modeled as independent entities. Neither is a subtype of the other, and neither is required to exist for the other to exist.**
+**User and Person are deliberately separate entities. Neither is a subtype of the other, and neither is required to exist for the other to exist.**
 
-An **Account** represents an identity that can authenticate to PandaPlan. It is concerned with access to the application, authentication and authorization.
+A **User** represents someone who can authenticate to PandaPlan. Authentication, application access and authorization belong to the User.
 
-A **Person** represents an individual who participates in the club/team domain. It is concerned with team membership, participation, attendance and functional roles such as player, coach or referee.
+A **Person** represents an individual in the club/team domain. Team membership, participation, attendance and functional roles belong to the Person.
 
-The following rules are fundamental:
+These rules are fundamental:
 
-- A Person can exist without an Account. For example, a child/player may be managed by a parent or team administrator without ever logging into PandaPlan.
-- An Account can exist without being a Person. For example, an administrator may need application access without being a player, coach or other team participant.
-- An Account and a Person may optionally be associated, but this association is not the identity of either entity.
-- An Account may not automatically become a Person merely because the user logs in.
-- A Person may not automatically receive an Account merely because their contact details match an authenticated user.
-- Email addresses, names and other profile fields must not be used to implicitly merge an Account and Person.
-- Authorization is based on the Account and its memberships/roles; team participation and attendance are based on Person and team membership.
-- When an Account is deleted or loses application access, the associated Person must remain intact unless the Person is explicitly deleted through person management.
-- When a Person is deleted, the associated Account must remain intact unless the Account is explicitly deleted through account management.
+- A Person can exist without a User. For example, a child/player can be managed by a parent or team administrator without ever logging in.
+- A User can exist without a Person. For example, an administrator can have application access without being a player, coach or other participant.
+- A User and Person may optionally be explicitly associated.
+- Logging in must never implicitly create a Person.
+- Creating a Person must never implicitly create a User.
+- Email address, name or other profile data must never implicitly associate or merge a User and Person.
+- Deleting a User must not delete its associated Person.
+- Deleting a Person must not delete its associated User.
+- The User/Person association must be represented explicitly and separately from both entities.
 
-If an Account is associated with a Person, the relationship must be explicit and represented separately from both entities.
+### 2.2 User
 
-### 2.2 Account
+A User represents an authenticated application identity. A User may have access to multiple teams and may have different authorization roles in different teams.
 
-An account represents an identity authenticated through an external identity provider. Authentication identifies the account; application authorization determines what that account may do.
+A User does not represent team participation. A User may manage a team without being a Person in that team.
 
-An account may have access to multiple teams and may have a different application role in each team.
+OIDC authentication creates or updates a User; it does not create or modify a Person.
 
-An account does not represent team participation. An account may be authorized to manage a team without itself being a member/person in that team.
+### 2.3 Person
 
-### 2.3 Team
+A Person is an independent domain entity. A Person may belong to multiple teams and may have different functional roles in each team, such as player, coach, assistant coach, trainer, referee or scorekeeper.
 
-A team is an independent operational unit. Examples include an age group, squad, committee or other club group.
+A Person does not need a User to appear in teams, events, attendance records or staff assignments.
 
-A team has:
+### 2.4 Team
 
-- Name
-- Unique URL-safe slug
-- Optional description
-- Members
-- Events
-- Categories
-- Staff assignments
+A Team is an independent operational unit with a name, unique URL-safe slug, optional description, People, Events, Categories and Staff assignments.
 
-There must be no implicit or special “default team” after teams have been created. Team context must always be explicit.
-
-### 2.4 Person
-
-A person is an independent domain entity representing an individual who may belong to one or more teams.
-
-A person can have multiple functional roles within a team, such as participant, coach, assistant coach, trainer, scorekeeper or referee.
-
-Functional person roles describe what the person does in the team. They are distinct from account/application roles, which control access to PandaPlan.
-
-A person does not need an Account to be included in a team, event, attendance record or staff assignment.
+Team context must always be explicit. There must be no implicit or special “default team” once real teams exist.
 
 ### 2.5 Event
 
-An event belongs to exactly one team and may have:
+An Event belongs to exactly one Team and supports date, optional start/end time, category, optional location, description, attendance and staff assignments.
 
-- Date
-- Start time
-- End time
-- Category
-- Location
-- Description
-- Participant attendance
-- Staff assignments
+Locations should be clickable map links.
 
-The location should be presented as a clickable map link when supplied.
+### 2.6 Attendance
 
-### 2.6 Category
+Attendance belongs to a Person and Event, never directly to a User. Supported states are Going, Maybe, Not going and Unknown/no response, with an optional note.
 
-A category is a team-specific classification of events. It has a name and display color and may define the staff roles applicable to events in that category.
-
-### 2.7 Attendance
-
-Attendance is recorded per Person and Event. It is not recorded against an Account.
-
-Supported states:
-
-- Going
-- Maybe
-- Not going
-- Unknown / no response
-
-An attendance record may contain an optional note.
-
-When an Account is associated with a Person, that Account may be allowed to manage that Person's own attendance. This is an authorization relationship, not an indication that the Account and Person are the same entity.
+When a User is associated with a Person, that User may be authorized to manage that Person's own attendance. This does not make User and Person the same entity.
 
 ## 3. Authentication
 
-### 3.1 Identity provider
+The application must support OpenID Connect (OIDC), preferably Authorization Code + PKCE (S256), with state and nonce validation. PandaPlan must not handle or store identity-provider passwords.
 
-The application should support OpenID Connect (OIDC) authentication.
+A User must be identified using the identity provider and stable provider subject, not email alone. Profile information may be synchronized but is not the primary identity key.
 
-The preferred flow is Authorization Code with PKCE (S256), with state and nonce validation.
+Sessions must be server-side with finite lifetime and secure cookies: HttpOnly, Secure in production and SameSite=Lax or stricter where compatible. Production must use a persistent/shared session store rather than Express MemoryStore.
 
-The application must not handle or store the user's identity-provider password.
+Unauthenticated API requests return HTTP 401. Authenticated users without permission receive HTTP 403.
 
-### 3.2 Account identity
+Logout must end the local session and should support identity-provider logout where available.
 
-An authenticated account must be identified by the identity provider and stable provider subject, not by email address alone.
+## 4. Authorization
 
-Email, display name and other profile information may be synchronized from the identity provider but must not be the primary identity key.
+Authorization is enforced by the backend. UI visibility is never a security boundary.
 
-OIDC authentication creates or updates an **Account**. It must not implicitly create or modify a **Person**.
+**User authorization roles and Person functional roles are separate systems.**
 
-### 3.3 Sessions
+### Site administrator
 
-After successful authentication, the application creates a secure server-side session.
+A site administrator has global access and can manage Users, authorization, Teams and all team data. The final site administrator cannot be removed or demoted if that would leave the installation without an administrator.
 
-Session cookies must be:
+### Team manager
 
-- HttpOnly
-- Secure in production
-- SameSite=Lax or stricter where compatible with the authentication flow
-- Given a finite lifetime
+A Team manager has management access only to explicitly assigned Teams and can manage People/team membership, Person functional roles, Events, Categories, Attendance, Staff assignments and relevant calendar feeds.
 
-Production deployments must use a persistent/shared session store rather than the Express in-memory session store.
+### Staff coordinator
 
-### 3.4 Logout
+A Staff coordinator can view the relevant Team, People and Events and manage Staff assignments, but does not automatically gain permission to manage People, Categories or Attendance.
 
-The user must be able to end the local application session. The application should also support identity-provider logout when the configured provider supports it.
+### Team member
 
-### 3.5 Authentication failure
+Team-member participation belongs to a Person and is not itself an application authorization role. A User associated with a Person can receive self-service access to that Person's attendance.
 
-Unauthenticated API requests must return an appropriate HTTP 401 response. Browser pages requiring authentication should redirect to the login flow.
+### Ownership-sensitive permissions
 
-Authorization failures must return HTTP 403 and must not reveal information about resources the user is not permitted to access.
+Permissions must distinguish between a User operating on their associated Person and a User managing other People. For example:
 
-## 4. Authorization and roles
+- `attendance:self` — modify attendance belonging to the Person explicitly associated with the authenticated User.
+- `attendance:manage` — modify attendance for any Person in an authorized Team.
 
-Authorization must be enforced by the backend. Hiding UI controls is not a security boundary.
+Ordinary self-service Users must not receive `attendance:manage` merely because they can modify their own attendance.
 
-Application roles belong to Accounts. Functional/team roles belong to Persons. These role systems must remain separate.
+Authorization must use current server-side User/team role information so role changes and revocations do not remain effective indefinitely because of stale login-session data.
 
-### 4.1 Site administrator
+Every team-scoped operation must verify both the required User permission and that the requested resource belongs to an authorized Team. Cross-team access must never be possible through IDs or URLs.
 
-A site administrator has global access to the application, including:
+## 5. People and teams
 
-- Create, edit and delete teams
-- Manage accounts and application roles
-- Manage all team data
-- Access all teams regardless of membership
+Authorized Team managers can add/remove People, edit Person information, manage Team membership and assign functional Person roles.
 
-The system must prevent removal or demotion of the final site administrator if that would leave the installation without an administrator.
+People and Users are independently managed. A Person may optionally be associated with an existing User, and the association can later be changed or removed without deleting either entity.
 
-### 4.2 Team manager
+A Person may belong to multiple Teams with independent functional roles.
 
-A team manager has management access within explicitly assigned teams:
+Site administrators manage creation, editing and deletion of Teams. Team slugs must be unique. Team deletion must follow explicit referential-integrity/cascade rules.
 
-- View team information
-- Manage people and team membership
-- Manage person/team roles
-- Create and manage events
-- Manage categories
-- Manage attendance for team members
-- Manage staff assignments
-- Access team calendar feeds
+The primary team URL should be `/team/<slug>`, with the team overview as the main landing page. There should not be a redundant team page that provides little useful information.
 
-A team manager must not automatically receive access to another team.
+## 6. Events and categories
 
-### 4.3 Staff coordinator
+Authorized users can create and manage Team Events with date/time, Category, location and description.
 
-A staff coordinator has team-scoped access to:
+Events are shown chronologically. Location information should be a clickable link to a suitable map service.
 
-- View team information
-- View relevant events and people
-- Manage staff assignments
+Team managers can create, edit and delete Categories, including their display color and applicable staff roles. Historical events must not be unexpectedly destroyed when a Category is removed.
 
-They must not automatically receive permission to manage people, categories or attendance.
+## 7. Attendance
 
-### 4.4 Team member
+Attendance is always associated with a Person and Event.
 
-A team member has team-scoped access to:
+A User explicitly associated with a Person can manage that Person's own attendance when authorized. Team managers can manage attendance for People in their authorized Teams. A Person without a User can still have attendance records.
 
-- View their team
-- View events relevant to them
-- View appropriate team information
-- Manage their own attendance
+Attendance browsing is read-only by default. Changing attendance requires explicit edit mode/action so scrolling cannot accidentally modify data.
 
-A normal team member must not be able to modify another person's attendance.
+Bulk attendance allows an authorized User to select a Person and apply a state to multiple selected/filtered Events. Bulk changes require deliberate selection and explicit confirmation.
 
-The term “team member” refers to a Person's participation in a team, not necessarily to an Account having access to PandaPlan. A Person may be a team member without having an Account.
+## 8. Staff assignments
 
-### 4.5 Ownership-sensitive permissions
+Authorized Users can assign Staff to Events using applicable Team/Category staff roles.
 
-Permissions must distinguish between operations on the user's own data and management operations on other users' data.
+A Person may have at most one staff role for a particular Event. A Person may only be assigned staff roles that they hold in the relevant Team. These rules must be enforced by the backend/database, not only the frontend.
 
-For example:
+## 9. Calendar feeds
 
-- `attendance:self` — an authenticated Account may change attendance belonging to the Person explicitly associated with that Account
-- `attendance:manage` — an authorized Account may change attendance for any Person in an authorized team
+The application provides iCalendar feeds for Teams and individual People.
 
-A generic `attendance:manage` permission must not be granted to ordinary team members merely because they are allowed to record their own attendance.
-
-### 4.6 Authorization evaluation
-
-Authorization must evaluate current server-side role/membership information. Application roles stored in a login session must not become a stale security decision after an administrator changes a user's permissions.
-
-At minimum, sensitive authorization decisions must use current account/team membership data or a deliberately short-lived, invalidatable authorization cache.
-
-### 4.7 Team isolation
-
-Every team-scoped API operation must verify both:
-
-1. The authenticated Account has the required permission.
-2. The requested resource belongs to the team for which that permission is held.
-
-IDs or URLs from another team must never allow cross-team access.
-
-## 5. Team management
-
-Site administrators can:
-
-- Create teams
-- Rename teams
-- Change descriptions
-- Change slugs subject to uniqueness rules
-- Delete teams
-
-Deleting a team must safely remove or detach its team-scoped data according to defined database cascade rules.
-
-Team URLs should use the team slug, for example `/team/u13`.
-
-There should not be a redundant standalone team page that contains little useful information. The team landing page should be the team overview.
-
-## 6. People management
-
-Authorized team managers can:
-
-- Add people to a team
-- Remove people from a team
-- Edit person information
-- Assign one or more functional roles
-- View attendance and event participation
-- Optionally associate a Person with an existing Account
-- Remove or change an Account/Person association without deleting either entity
-
-A person may belong to multiple teams. Team membership and team-specific roles must therefore be modeled independently from the global person record.
-
-A Person may be managed entirely by an administrator without having an Account.
-
-Removing a person from a team must remove or invalidate team-specific assignments that can no longer be valid.
-
-Deleting a Person must not implicitly delete an Account. Deleting an Account must not implicitly delete a Person.
-
-## 7. Events
-
-Authorized users can create and manage team events.
-
-An event must support:
-
-- Date
-- Optional start time
-- Optional end time
-- Category
-- Optional location
-- Optional description
-
-Events must be displayed chronologically.
-
-The UI must make the event date, time and location immediately understandable.
-
-Locations should be clickable and open a suitable map service rather than being plain text.
-
-## 8. Attendance
-
-### 8.1 Individual attendance
-
-Attendance belongs to a Person and Event.
-
-A Person associated with the authenticated Account can change their own attendance when the Account has the required self-service permission.
-
-Authorized managers can change attendance for Persons in their team.
-
-A Person without an Account can still have attendance records. An authorized Account must be able to manage that attendance through normal team management.
-
-Attendance changes must be persisted through the API.
-
-### 8.2 Safe editing UX
-
-Attendance browsing should be read-only by default.
-
-Editing must require an explicit action/mode so that simply scrolling or browsing events cannot accidentally change attendance.
-
-### 8.3 Bulk attendance
-
-Authorized users can select a participant and apply an attendance state to multiple applicable events.
-
-The user must be able to filter the event set by relevant criteria such as:
-
-- Date range
-- Event category
-- Event selection
-
-The same selected event set must be used consistently by the bulk-edit workflow.
-
-Applying an attendance state across many events is a consequential operation and should require explicit confirmation before submission.
-
-## 9. Staff assignments
-
-Authorized users can assign staff members to events using the staff roles configured for the relevant category/team.
-
-A person may have at most one staff role for a particular event.
-
-The rule must be enforced by the backend/database, not only by frontend validation.
-
-A person cannot be assigned a staff role that they do not hold in the relevant team.
-
-Removing a person's applicable team role must not leave an invalid staff assignment behind.
-
-## 10. Categories
-
-Authorized team managers can:
-
-- Create categories
-- Rename categories
-- Set display color
-- Configure applicable staff roles
-- Remove categories
-
-Removing a category must not unexpectedly destroy historical event data. Events should either retain a valid nullable category reference or be handled according to an explicit deletion policy.
-
-## 11. Calendar feeds
-
-The application must provide iCalendar (`.ics`) feeds for:
-
-- Teams
-- Individual people
-
-Example URL patterns:
+Example patterns:
 
 ```text
 /calendar/team/<team>.ics
 /calendar/person/<person>.ics
 ```
 
-Calendar feed URLs are credentials/secrets if they contain an unguessable access token. They must therefore be treated as private links.
+Feed URLs containing unguessable access tokens are private credentials and must be treated accordingly.
 
-The UI must display calendar feed URLs as copyable text/links. It must not present the URL as a button whose primary behavior is to download the ICS file.
+The UI must expose calendar feed URLs as copyable links/text, not as a button whose primary action is downloading the file.
 
-Events imported or generated for calendars must preserve the intended timezone semantics.
+Timezone semantics must be preserved in generated calendar events.
 
-## 12. Main user experience
+## 10. User experience
 
-The application should prioritize a single useful team workspace rather than forcing administrators through many separate pages.
+The team overview should be the primary workspace and provide or directly expose:
 
-The team overview should provide, or provide direct access to:
-
-- Upcoming events
+- Upcoming Events
 - Attendance overview
 - People/participants
 - Staff assignments
-- Relevant event information
+- Event information
 - Calendar feed URL
 
-Management controls may be enabled explicitly when needed rather than making every view editable.
+Attendance and other potentially destructive operations should be read-only until explicit editing is enabled. Bulk operations require deliberate selection and confirmation.
 
-For example:
+The UI must work well on desktop, tablet and mobile. Mobile attendance use is especially important: controls must be easy to tap without accidental changes while scrolling.
 
-- Attendance is normally read-only.
-- An explicit attendance edit mode enables changes.
-- Staff editing can be enabled explicitly.
-- Bulk actions require deliberate selection and confirmation.
+Navigation must be team-context aware and show only functions the current User is authorized to use.
 
-This is intended to minimize accidental attendance changes on mobile devices.
+## 11. Internationalization
 
-## 13. Navigation
+The UI must support English and Dutch (Belgian). All user-facing strings use a shared translation mechanism, including placeholders. New strings require both translations.
 
-Desktop layouts should provide persistent navigation.
+## 12. API and data model
 
-Mobile layouts should provide a compact navigation drawer/menu.
+The frontend communicates with the backend through a REST-style HTTP API. The backend is authoritative for all persistent operations and all authorization decisions.
 
-The navigation should be team-context aware.
+The data model must contain at least:
 
-When a user is viewing a team, the team navigation should expose the functions they are actually authorized to use.
-
-The overview should be the primary team landing page. Separate pages should exist only when they provide substantial additional functionality.
-
-## 14. Internationalization
-
-The UI must support:
-
-- English
-- Dutch (Belgian)
-
-All user-facing strings must use a shared translation mechanism.
-
-The translation system should support translated placeholders and correctly set the document language.
-
-Adding a new user-facing string requires translations in both supported languages.
-
-## 15. Responsive design
-
-The application must work on:
-
-- Desktop browsers
-- Tablets
-- Mobile phones
-
-Mobile use is especially important for attendance management. Controls must be large enough to use reliably and must not make accidental state changes likely during scrolling.
-
-## 16. API
-
-The frontend must communicate with the backend through a documented REST-style HTTP API.
-
-The API is authoritative for all persistent operations, including:
-
-- Accounts and authorization
-- Teams
-- People
-- Team memberships
-- Functional roles
-- Account/Person associations
-- Events
-- Categories
-- Attendance
-- Staff assignments
-
-The frontend must never bypass authorization or persistence rules by directly manipulating the database.
-
-Every mutating API endpoint must enforce authorization on the server.
-
-API responses should use appropriate HTTP status codes and consistent JSON error structures.
-
-## 17. Data model requirements
-
-The persistent data model must represent at least:
-
-- Accounts
-- Account/team authorization roles
+- Users
+- User/team authorization roles
 - Persons
-- Optional explicit Account/Person associations
+- Optional explicit User/Person associations
 - Teams
 - Team memberships
-- Team-specific functional roles
+- Team-specific Person functional roles
 - Categories
 - Category staff roles
 - Events
 - Attendance
 - Staff assignments
 
-Account and Person records must be independently creatable, editable and deletable, subject to normal referential-integrity rules.
+Users and Persons must be independently creatable, editable and deletable, subject to referential integrity.
 
-Important integrity rules should be enforced in the database wherever practical, including:
+Important integrity constraints should be enforced in the database, including unique Team slugs, unique Person/Team membership, unique Person/Event attendance, valid attendance states, valid staff assignments and valid User/Person associations.
 
-- Unique team slugs
-- Unique team/person membership
-- Unique person/event attendance
-- Valid attendance states
-- Maximum one staff role per person/event
-- Staff role must belong to the person's team roles
-- An optional Account/Person association must reference existing entities
-- Referential integrity and appropriate cascading behavior
+Every mutating API endpoint must enforce authorization server-side and use appropriate HTTP status codes and consistent JSON errors.
 
-## 18. Persistence and deployment
-
-The application should be self-hostable with minimal operational complexity.
-
-A reference deployment should support Docker Compose.
-
-SQLite is suitable for the initial deployment model and should be stored on persistent storage.
-
-Database schema changes must use numbered migrations. Existing migrations must not be edited after being applied; fixes and changes must be introduced through new migrations.
-
-Configuration should be provided through environment variables, including at minimum:
-
-- `PORT`
-- `DATA_DIR`
-- Event/calendar timezone configuration
-- OIDC configuration
-- Session configuration/secrets
-
-## 19. Security requirements
+## 13. Security
 
 The application must:
 
 - Require authentication for protected resources.
 - Enforce authorization server-side.
-- Prevent cross-team data access.
-- Validate OIDC state and nonce.
-- Use PKCE for OIDC authorization-code flows.
-- Use secure session cookies in production.
-- Protect session secrets and encryption keys through environment/configuration management.
-- Validate all user-controlled IDs, slugs and input fields.
+- Prevent cross-Team data access.
+- Validate OIDC state and nonce and use PKCE.
+- Use secure session cookies.
+- Protect session secrets and encryption keys.
+- Validate user-controlled IDs, slugs and input.
 - Use parameterized database queries.
-- Avoid exposing stack traces or sensitive internal information to users.
-- Treat calendar feed URLs as private credentials where applicable.
-- Log security-relevant failures without logging passwords, tokens or other secrets.
-- Never infer an Account/Person association solely from matching email addresses or other profile fields.
+- Never expose secrets or unnecessary internal errors.
+- Treat calendar feed tokens as private credentials.
+- Log security-relevant failures without passwords, tokens or secrets.
+- Never infer a User/Person association from matching profile information.
 
-## 20. Non-functional requirements
+## 14. Persistence and deployment
 
-The application should be:
+The application should be self-hostable with minimal operational complexity and support Docker Compose. SQLite on persistent storage is suitable for the initial deployment model.
 
-- Simple to deploy
-- Fast for normal team sizes
-- Understandable to maintain
-- Usable without a frontend framework
-- Usable on mobile
-- Resilient to container restarts
-- Safe against accidental data modification
-- Explicit about authorization boundaries
+Database schema changes use numbered migrations. Applied migrations must not be edited; changes use new migrations.
 
-The initial architecture should favor straightforward code over unnecessary abstraction. Shared infrastructure should be introduced where it genuinely prevents duplication or inconsistency.
+Configuration is supplied through environment variables, including application port/data directory, timezone, OIDC configuration and session secrets/configuration.
 
-## 21. Suggested reference architecture
+## 15. Suggested reference architecture
 
-A similar implementation can use:
+A suitable implementation may use:
 
-- **Backend:** Node.js + Express
-- **Database:** SQLite
-- **Database driver:** better-sqlite3 or equivalent synchronous SQLite driver
-- **Frontend:** HTML/CSS/vanilla JavaScript
-- **Authentication:** OIDC Authorization Code + PKCE
-- **Sessions:** server-side sessions with a production-capable persistent store
-- **Calendar:** iCalendar generation
-- **Deployment:** Docker Compose
+- Node.js + Express backend
+- SQLite with better-sqlite3 or equivalent
+- HTML/CSS/vanilla JavaScript frontend
+- OIDC Authorization Code + PKCE
+- Server-side sessions with a production-capable persistent store
+- iCalendar generation
+- Docker Compose deployment
 
-The frontend should remain independent of the persistence layer. All business rules that affect security or data integrity belong in the backend/database.
+The frontend remains independent of the persistence layer. Business rules affecting security and data integrity belong in the backend/database.
 
-## 22. Acceptance criteria
+## 16. Acceptance criteria
 
-A new implementation is functionally complete when all of the following are true:
+A complete implementation must at minimum demonstrate:
 
-1. A new installation can authenticate through OIDC.
-2. OIDC authentication creates or updates an Account without implicitly creating a Person.
-3. A Person can exist without an Account.
-4. An Account can exist without a Person.
-5. An administrator can explicitly associate an Account with a Person and later change/remove that association without deleting either entity.
-6. The first configured administrator can create and manage teams.
-7. A team manager can manage only the teams to which they are assigned.
-8. A team member cannot access or modify another team's data.
-9. A team member can change their own attendance but cannot manage another participant's attendance.
-10. A team manager can manage attendance for participants in their authorized team.
-11. People can belong to multiple teams with independent team roles.
-12. Events can be created, edited and displayed with date/time/category/location.
-13. Event locations are clickable map links.
-14. Staff can be assigned to events using valid team staff roles.
-15. The system prevents more than one staff role for the same person/event.
-16. Team and person calendar feeds are available and their URLs can be copied.
-17. Attendance browsing does not accidentally modify data; editing requires explicit intent.
-18. Bulk attendance changes require explicit selection and confirmation.
-19. English and Belgian Dutch are supported throughout the UI.
-20. The UI works on desktop and mobile.
-21. Authorization changes take effect without relying indefinitely on stale login-session role data.
-22. Database integrity rules prevent invalid cross-team or orphaned relationships.
-23. Container restart does not lose persistent application data or unexpectedly invalidate all sessions in a production deployment.
-24. No functionality depends on a special/default team once real teams exist.
+1. OIDC authentication creates/updates a User without creating a Person.
+2. A Person can exist without a User.
+3. A User can exist without a Person.
+4. User/Person association is explicit and can be changed without deleting either entity.
+5. The first administrator can create and manage Teams.
+6. Team managers can manage only explicitly authorized Teams.
+7. Users cannot access another Team's data.
+8. Self-service Users can change their own associated Person's attendance but not another Person's attendance.
+9. Team managers can manage attendance for People in their authorized Teams.
+10. People can belong to multiple Teams with independent functional roles.
+11. Events support date/time/category/location and clickable map locations.
+12. Staff assignments enforce valid Person roles and uniqueness per Person/Event.
+13. Team and Person calendar feeds are available and their URLs can be copied.
+14. Attendance editing requires explicit intent and bulk changes require confirmation.
+15. English and Belgian Dutch are supported.
+16. The UI works on mobile and desktop.
+17. Authorization changes take effect without indefinite reliance on stale session roles.
+18. Database constraints prevent invalid relationships and cross-Team access.
+19. Persistent application data survives container restarts.
+20. No functionality depends on a special/default Team once real Teams exist.
 
-## 23. Product principle
+## 17. Product principle
 
-PandaPlan should optimize for **simple, safe team administration**.
+PandaPlan optimizes for **simple, safe team administration**:
 
-The application should make the common operations obvious:
+> See what is happening → see who is involved → explicitly update attendance or staff when needed → move on.
 
-> See what is happening → see who is involved → update attendance or staff when explicitly requested → move on.
-
-Complexity should be kept out of the normal user workflow, while the backend remains strict about identity, authorization, team isolation and data integrity.
+The backend remains strict about identity, authorization, Team isolation and data integrity while the normal user workflow stays simple.
