@@ -54,6 +54,7 @@ body.has-sidebar {
   gap: 4px;
   min-width: 0;
   width: 100%;
+  min-height: 100%;
 }
 .sidebar-link {
   display: block;
@@ -62,7 +63,6 @@ body.has-sidebar {
   font-size: 13px;
   font-weight: 600;
 }
-/* .sidebar-link's display rule otherwise overrides the browser's hidden rule. */
 .sidebar-link[hidden] {
   display: none !important;
 }
@@ -126,6 +126,39 @@ body.has-sidebar {
 .sidebar-team-children .sidebar-link {
   padding: 7px 10px;
   border-radius: 4px;
+  font-size: 12.5px;
+  font-weight: 500;
+}
+.sidebar-account {
+  margin-top: auto;
+  padding: 12px 4px 4px;
+  border-top: 1px solid var(--line);
+}
+.sidebar-account-user {
+  display: block;
+  min-width: 0;
+  padding: 9px 10px;
+  border-radius: var(--radius);
+  color: var(--ink);
+  font-size: 13px;
+  font-weight: 600;
+  text-decoration: none;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.sidebar-account-user:hover {
+  background: var(--paper-dim);
+}
+.sidebar-account-admin {
+  margin-top: 2px;
+  padding: 7px 10px;
+  font-size: 12.5px;
+  font-weight: 500;
+}
+.sidebar-logout {
+  margin-top: 2px;
+  padding: 7px 10px;
   font-size: 12.5px;
   font-weight: 500;
 }
