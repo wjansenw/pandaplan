@@ -7,12 +7,8 @@ const {
   roleHasPermission,
 } = require('./roles');
 
-/**
- * Authorization foundation only.
- * Existing API routes and UI do not call these helpers yet.
- */
 function hasGlobalAccess(account) {
-  return Boolean(account?.is_site_admin);
+  return Boolean(account?.isSiteAdmin);
 }
 
 function hasTeamRole(account, teamId, role) {
@@ -26,7 +22,6 @@ function hasTeamRole(account, teamId, role) {
 function can(account, teamId, permission) {
   if (!account) return false;
   if (hasGlobalAccess(account)) return true;
-
   return (account.teamRoles || []).some(
     (membership) =>
       membership.teamId === teamId &&
