@@ -13,6 +13,7 @@ const CLIENT_ID = process.env.OIDC_CLIENT_ID;
 const CLIENT_SECRET = process.env.OIDC_CLIENT_SECRET;
 const REDIRECT_URI = process.env.OIDC_REDIRECT_URI;
 const POST_LOGOUT_REDIRECT_URI = process.env.OIDC_POST_LOGOUT_REDIRECT_URI || '/oidc';
+const OIDC_LOGOUT_URL = process.env.OIDC_LOGOUT_URL;
 
 let clientPromise;
 
@@ -52,6 +53,13 @@ async function getClient() {
 
 function postLogoutRedirectUri(req) {
   return new URL(POST_LOGOUT_REDIRECT_URI, `${req.protocol}://${req.get('host')}`).toString();
+}
+
+function providerLogoutUrl(req) {
+  if (!OIDC_LOGOUT_URL) return null;
+  const url = new URL(OIDC_LOGOUT_URL);
+  url.searchParams.set('rd', postLogoutRedirectUri(req));
+  return url.toString();
 }
 
 function requireSiteAdmin(req, res, next) {
@@ -149,18 +157,11 @@ router.put('/admin/users/:id/team-role', requireSiteAdmin, (req, res, next) => {
 
 async function logout(req, res, next) {
   try {
-    const client = await getClient();
-    const idToken = req.session.idToken;
-    const logoutUrl = client.endSessionUrl({
-      id_token_hint: idToken,
-      post_logout_redirect_uri: postLogoutRedirectUri(req),
-      client_id: CLIENT_ID,
-    });
-
+    const logoutUrl = providerLogoutUrl(req);
     req.session.destroy((error) => {
       if (error) return next(error);
       res.clearCookie('pandaplan_oidc');
-      res.redirect(logoutUrl);
+      res.redirect(logoutUrl || postLogoutRedirectUri(req));
     });
   } catch (error) {
     next(error);
