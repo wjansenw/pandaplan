@@ -3,7 +3,6 @@ const { Issuer, generators } = require('openid-client');
 const path = require('path');
 const accountsRepository = require('./repositories/accountsRepository');
 const { hasGlobalAccess } = require('./auth/authorization');
-const { sessionMiddleware } = require('./auth/session');
 
 const router = express.Router();
 
@@ -52,7 +51,6 @@ function requireSiteAdmin(req, res, next) {
   next();
 }
 
-router.use(sessionMiddleware());
 router.get('/', (req, res) => res.sendFile(path.join(__dirname, '..', 'public', 'oidc.html')));
 router.get('/admin', requireSiteAdmin, (req, res) => res.sendFile(path.join(__dirname, '..', 'public', 'oidc-users.html')));
 router.get('/session', (req, res) => {
