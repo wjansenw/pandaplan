@@ -203,6 +203,7 @@ Important settings include:
 
 - `PORT` — HTTP port used by the application
 - `DATA_DIR` — location for persistent application data and the SQLite database
+- `EVENT_TIMEZONE` — IANA timezone name (e.g. `Europe/Brussels`, `America/New_York`) used to convert UTC-based ICS import times to local wall-clock time. Defaults to `Europe/Brussels`. Only affects ICS feeds whose times are expressed in UTC (ending in `Z`); feeds that already use local/floating time are unaffected.
 
 The default application port can be overridden through `PORT`.
 
