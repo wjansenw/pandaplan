@@ -67,7 +67,7 @@
             <div class="meta">${escapeHtml(user.email || 'No email')} · ${escapeHtml(user.provider)}</div>
             <div class="admin">
               <label>
-                <input type="checkbox" ${user.isSiteAdmin ? 'checked' : ''} onchange="setAdmin('${user.id}', this.checked)">
+                <input type="checkbox" data-user-id="${escapeHtml(user.id)}" ${user.isSiteAdmin ? 'checked' : ''} onchange="setAdmin(this.dataset.userId, this.checked)">
                 Site administrator
               </label>
             </div>
@@ -75,7 +75,7 @@
               ${teams.map((team) => `
                 <div class="team-row">
                   <span>${escapeHtml(team.name)}</span>
-                  <select onchange="setTeamRole('${user.id}', '${team.id}', this.value)">
+                  <select data-user-id="${escapeHtml(user.id)}" data-team-id="${escapeHtml(team.id)}" onchange="setTeamRole(this.dataset.userId, this.dataset.teamId, this.value)">
                     <option value="">No access</option>
                     ${Object.entries(roleNames).map(([role, label]) => `<option value="${role}" ${roles.get(team.id) === role ? 'selected' : ''}>${label}</option>`).join('')}
                   </select>

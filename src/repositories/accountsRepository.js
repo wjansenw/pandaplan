@@ -1,6 +1,7 @@
 const crypto = require('crypto');
 const { getDb } = require('../db/connection');
 const { isTeamRole } = require('../auth/roles');
+const AppError = require('../errors');
 
 function toAccount(row) {
   if (!row) return null;
@@ -87,7 +88,7 @@ function setSiteAdmin(id, isSiteAdmin) {
   const db = getDb();
   const value = isSiteAdmin ? 1 : 0;
   if (!value && db.prepare('SELECT COUNT(*) AS n FROM accounts WHERE is_site_admin = 1').get().n <= 1) {
-    throw new Error('cannot remove the last site administrator');
+    throw new AppError(400, 'cannot remove the last site administrator');
   }
   db.prepare('UPDATE accounts SET is_site_admin = ? WHERE id = ?').run(value, id);
   return findById(id);
@@ -95,9 +96,9 @@ function setSiteAdmin(id, isSiteAdmin) {
 
 function setTeamRole(accountId, teamId, role) {
   const db = getDb();
-  if (role !== null && !isTeamRole(role)) throw new Error('invalid team role');
-  if (!db.prepare('SELECT 1 FROM accounts WHERE id = ?').get(accountId)) throw new Error('account not found');
-  if (!db.prepare('SELECT 1 FROM teams WHERE id = ?').get(teamId)) throw new Error('team not found');
+  if (role !== null && !isTeamRole(role)) throw new AppError(400, 'invalid team role');
+  if (!db.prepare('SELECT 1 FROM accounts WHERE id = ?').get(accountId)) throw new AppError(404, 'account not found');
+  if (!db.prepare('SELECT 1 FROM teams WHERE id = ?').get(teamId)) throw new AppError(404, 'team not found');
 
   if (role === null) {
     db.prepare('DELETE FROM account_team_roles WHERE account_id = ? AND team_id = ?').run(accountId, teamId);
