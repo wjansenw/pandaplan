@@ -4,8 +4,10 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>PandaPlan users</title>
+  <link rel="stylesheet" href="/navigation.css" data-pandanav-css>
   <style>
-    body { font-family: system-ui, sans-serif; max-width: 64rem; margin: 2rem auto; padding: 0 1rem; }
+    body { font-family: system-ui, sans-serif; }
+    .oidc-admin-content { max-width: 64rem; margin: 2rem auto; padding: 0 1rem; }
     .toolbar { display: flex; justify-content: space-between; align-items: center; gap: 1rem; margin-bottom: 1rem; }
     .user { border: 1px solid #ddd; border-radius: .75rem; padding: 1rem; margin: .75rem 0; }
     .meta { color: #666; font-size: .9rem; }
@@ -18,15 +20,20 @@
   </style>
 </head>
 <body>
-  <div class="toolbar">
-    <h1 data-oidc-i18n="oidcUsersTitle">User management</h1>
-    <a href="/oidc" data-oidc-i18n="oidcAuthentication">Authentication</a>
-  </div>
-  <div id="status" data-oidc-i18n="oidcLoading">Loading…</div>
-  <main id="users"></main>
+  <div class="nav"></div>
+
+  <main class="oidc-admin-content">
+    <div class="toolbar">
+      <h1 data-oidc-i18n="oidcUsersTitle">User management</h1>
+      <a href="/oidc" data-oidc-i18n="oidcAuthentication">Authentication</a>
+    </div>
+    <div id="status" data-oidc-i18n="oidcLoading">Loading…</div>
+    <div id="users"></div>
+  </main>
 
   <script src="/shared.js"></script>
   <script src="/oidc-i18n.js"></script>
+  <script src="/navigation.js"></script>
   <script>
     let teams = [];
 
