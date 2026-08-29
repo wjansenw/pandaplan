@@ -56,8 +56,8 @@ app.use('/api/teams/:slug/state', requireTeamReadWrite('team:view', 'team:view')
 app.use('/api/teams/:slug/persons', requireTeamReadWrite('team:view', 'people:manage'), require('./src/routes/teamPersonsRoutes'));
 app.use('/api/teams/:slug/categories', requireTeamReadWrite('team:view', 'categories:manage'), require('./src/routes/teamCategoriesRoutes'));
 app.use('/api/teams/:slug/events', requireTeamReadWrite('team:view', 'events:manage'), require('./src/routes/teamEventsRoutes'));
-app.use('/api/teams/:slug/attendance', requireTeamReadWrite('team:view', 'attendance:manage'), require('./src/routes/teamAttendanceRoutes'));
-app.use('/api/teams/:slug/staffAssignments', requireTeamReadWrite('team:view', 'staff:manage'), require('./src/routes/teamStaffAssignmentsRoutes'));
+app.use('/api/teams/:slug/attendance', requireTeamReadWrite('team:view', 'roster:manage'), require('./src/routes/teamAttendanceRoutes'));
+app.use('/api/teams/:slug/staffAssignments', requireTeamReadWrite('team:view', 'roster:manage'), require('./src/routes/teamStaffAssignmentsRoutes'));
 // Deliberately no requireAuthentication here: calendar feed URLs are
 // consumed by external calendar apps that can't send our session cookie.
 // Each route validates its own unguessable :token instead — see
