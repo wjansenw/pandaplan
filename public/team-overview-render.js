@@ -125,7 +125,7 @@ function renderTeamOverview() {
             ? roster(t("unknownShort"), unknown, "attendance-unknown")
             : "") +
           "</div>") +
-      (pageState.staffEditMode
+      (pageState.editMode
         ? renderStaffEditor(ev)
         : staff.length
           ? '<div class="staff-summary"><strong>' +

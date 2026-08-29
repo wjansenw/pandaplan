@@ -209,15 +209,10 @@
   }
 
   function watchEditButtons() {
-    const attendanceButton = document.getElementById("editAttendance");
-    const staffButton = document.getElementById("editStaff");
-    if (attendanceButton && !attendanceButton.dataset.bulkWatched) {
-      attendanceButton.dataset.bulkWatched = "1";
-      attendanceButton.addEventListener("click", syncEditMode);
-    }
-    if (staffButton && !staffButton.dataset.bulkWatched) {
-      staffButton.dataset.bulkWatched = "1";
-      attendanceEditMode = false;
+    const editButton = document.getElementById("editRoster");
+    if (editButton && !editButton.dataset.bulkWatched) {
+      editButton.dataset.bulkWatched = "1";
+      editButton.addEventListener("click", syncEditMode);
     }
   }
 

@@ -14,7 +14,6 @@ const pageState = {
   dateTo: defaultSeasonEndDate(),
   categoryIds: new Set(),
   editMode: false,
-  staffEditMode: false,
   adminMode: new URLSearchParams(location.search).get("mode") === "admin",
 };
 function modeUrl(url) {
@@ -72,12 +71,9 @@ function updatePersonCalendar() {
   };
 }
 function updateEditButtons() {
-  document.getElementById("editAttendance").textContent = pageState.editMode
-    ? t("doneAttendance")
-    : t("editAttendance");
-  document.getElementById("editStaff").textContent = pageState.staffEditMode
-    ? t("doneStaff")
-    : t("editStaff");
+  document.getElementById("editRoster").textContent = pageState.editMode
+    ? t("doneRoster")
+    : t("editRoster");
 }
 function render() {
   renderCategoryFilterChips(
@@ -113,14 +109,8 @@ function handleOverviewClick(event) {
 }
 function bindEventHandlers() {
   document.getElementById("events").onclick = handleOverviewClick;
-  document.getElementById("editAttendance").onclick = () => {
+  document.getElementById("editRoster").onclick = () => {
     pageState.editMode = !pageState.editMode;
-    if (pageState.editMode) pageState.staffEditMode = false;
-    render();
-  };
-  document.getElementById("editStaff").onclick = () => {
-    pageState.staffEditMode = !pageState.staffEditMode;
-    if (pageState.staffEditMode) pageState.editMode = false;
     render();
   };
 }

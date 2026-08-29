@@ -127,6 +127,8 @@ const MESSAGES = {
     doneAttendance: "Done attendance",
     editStaff: "Edit staff",
     doneStaff: "Done staff",
+    editRoster: "Edit",
+    doneRoster: "Done",
     subscribeTeamEvents:
       "Subscribe to this Team's events in your calendar app.",
     subscribePersonEvents: "Subscribe to a person's events",
@@ -306,6 +308,8 @@ const MESSAGES = {
     doneAttendance: "Aanwezigheid klaar",
     editStaff: "Staff bewerken",
     doneStaff: "Staff klaar",
+    editRoster: "Bewerken",
+    doneRoster: "Klaar",
     subscribeTeamEvents:
       "Abonneer je op de events van dit team in je kalender-app.",
     subscribePersonEvents: "Abonneren op de events van een persoon",
