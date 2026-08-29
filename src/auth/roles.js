@@ -1,11 +1,9 @@
 // PandaPlan authorization roles.
-// These are foundations only: existing API routes and UI do not use them yet.
 
 const SITE_ADMIN_ROLE = 'site_admin';
 
 const TEAM_ROLES = Object.freeze({
   TEAM_MEMBER: 'team_member',
-  STAFF_COORDINATOR: 'staff_coordinator',
   TEAM_MANAGER: 'team_manager',
 });
 
@@ -17,17 +15,16 @@ const ROLE_DEFINITIONS = Object.freeze({
     scope: 'global',
     permissions: Object.freeze(['*']),
   }),
+  // Attendance and staff assignment are edited together in one screen, so
+  // one permission ('roster:manage') covers both instead of two roles that
+  // could grant just one or the other.
   [TEAM_ROLES.TEAM_MEMBER]: Object.freeze({
     scope: 'team',
-    permissions: Object.freeze(['team:view', 'attendance:manage']),
-  }),
-  [TEAM_ROLES.STAFF_COORDINATOR]: Object.freeze({
-    scope: 'team',
-    permissions: Object.freeze(['team:view', 'staff:manage']),
+    permissions: Object.freeze(['team:view', 'roster:manage']),
   }),
   [TEAM_ROLES.TEAM_MANAGER]: Object.freeze({
     scope: 'team',
-    permissions: Object.freeze(['team:view', 'attendance:manage', 'people:manage', 'events:manage', 'staff:manage', 'categories:manage']),
+    permissions: Object.freeze(['team:view', 'roster:manage', 'people:manage', 'events:manage', 'categories:manage']),
   }),
 });
 
