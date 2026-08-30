@@ -13,7 +13,7 @@ services:
     #     - EVENT_TIMEZONE=Europe/Brussels
     networks:
       - swag
-
+    env_file: ".env"
 networks:
   swag:
     name: swag_network
