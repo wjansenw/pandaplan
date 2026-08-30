@@ -85,11 +85,9 @@ A site administrator has global access and can manage Users, authorization, Team
 
 A Team manager has management access only to explicitly assigned Teams and can manage People/team membership, Person functional roles, Events, Categories, Attendance, Staff assignments and relevant calendar feeds.
 
-### Staff coordinator
-
-A Staff coordinator can view the relevant Team, People and Events and manage Staff assignments, but does not automatically gain permission to manage People, Categories or Attendance.
-
 ### Team member
+
+A Team member can view the relevant Team, People and Events and manage Attendance and Staff assignments for that Team, but does not automatically gain permission to manage People, Categories or Events.
 
 Team-member participation belongs to a Person and is not itself an application authorization role. A User can have team access/authorization without being a Person in that team.
 
@@ -99,7 +97,7 @@ Attendance authorization is based on the authenticated User's permissions for th
 
 There is **no `attendance:self` permission** because “self” has no meaning at the User level: PandaPlan does not link Users to Persons.
 
-An authorized User may modify attendance for People in the Teams for which the User has the required attendance-management permission. A User cannot modify attendance for a Person merely because the User and Person have matching names, email addresses or other attributes.
+An authorized User may modify attendance for People in the Teams for which the User has the required permission for that Team. A User cannot modify attendance for a Person merely because the User and Person have matching names, email addresses or other attributes.
 
 Authorization must use current server-side User/team role information so role changes and revocations do not remain effective indefinitely because of stale login-session data.
 

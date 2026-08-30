@@ -123,10 +123,6 @@ const MESSAGES = {
     calendar: "Calendar",
     teamOverview: "Team overview",
     teamOverviewSubtitle: "Attendance and staff assignments for this Team.",
-    editAttendance: "Edit attendance",
-    doneAttendance: "Done attendance",
-    editStaff: "Edit staff",
-    doneStaff: "Done staff",
     editRoster: "Edit",
     doneRoster: "Done",
     subscribeTeamEvents:
@@ -304,10 +300,6 @@ const MESSAGES = {
     calendar: "Kalender",
     teamOverview: "Teamoverzicht",
     teamOverviewSubtitle: "Aanwezigheid en staff-toewijzingen voor dit team.",
-    editAttendance: "Aanwezigheid bewerken",
-    doneAttendance: "Aanwezigheid klaar",
-    editStaff: "Staff bewerken",
-    doneStaff: "Staff klaar",
     editRoster: "Bewerken",
     doneRoster: "Klaar",
     subscribeTeamEvents:
