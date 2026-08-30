@@ -61,7 +61,11 @@ function renderTeamOverview() {
       formatDate(ev.date) +
       "</span>" +
       categoryBadge(pageState.state.categories, ev.categoryId) +
-      '</div><div class="event-meta">' +
+      '</div>' +
+      (ev.subject
+        ? '<div class="event-subject">' + escapeHtml(ev.subject) + "</div>"
+        : "") +
+      '<div class="event-meta">' +
       [
         formatTimeRange(ev.startTime, ev.endTime),
         ev.location
@@ -113,7 +117,7 @@ function renderTeamOverview() {
                 escapeHtml(t("save")) +
                 '</button><button type="button" class="btn secondary note-cancel">' +
                 escapeHtml(t("cancel")) +
-                "</button></div></div>",
+                '</button></div></div>',
             )
             .join("") +
           "</div>"
