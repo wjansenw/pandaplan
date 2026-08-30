@@ -2,7 +2,7 @@ const categoriesPageState = {
   slug: getTeamSlug(),
   team: null,
   categories: [],
-  adminMode: isTeamAdminMode(),
+  adminMode: false,
 };
 function applyCategoryTranslations() {
   document.documentElement.lang = currentLanguage === "nl-BE" ? "nl" : "en";
@@ -11,6 +11,8 @@ function applyCategoryTranslations() {
     .forEach((el) => (el.textContent = t(el.dataset.i18n)));
 }
 async function loadCategories() {
+  if (window.pandaplanAuthReady) await window.pandaplanAuthReady;
+  categoriesPageState.adminMode = isTeamAdminMode();
   const data = await categoriesApi.load(categoriesPageState.slug);
   categoriesPageState.team = data.team;
   categoriesPageState.categories = data.categories;

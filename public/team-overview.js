@@ -14,7 +14,6 @@ const pageState = {
   dateTo: defaultSeasonEndDate(),
   categoryIds: new Set(),
   editMode: false,
-  staffEditMode: false,
   adminMode: new URLSearchParams(location.search).get("mode") === "admin",
 };
 function modeUrl(url) {
@@ -49,14 +48,14 @@ function updatePersonCalendar() {
   const personCalendar = document.getElementById("personCalendar");
   const urlField = document.getElementById("personCalendarUrl");
   const copy = document.getElementById("copyPersonCalendar");
-  const id = personCalendar.value;
-  if (!id) {
+  const token = personCalendar.value;
+  if (!token) {
     urlField.value = "";
     copy.disabled = true;
     return;
   }
   const url =
-    location.origin + "/calendar/person/" + encodeURIComponent(id) + ".ics";
+    location.origin + "/calendar/person/" + encodeURIComponent(token) + ".ics";
   urlField.value = url;
   copy.disabled = false;
   copy.onclick = async () => {
@@ -72,12 +71,9 @@ function updatePersonCalendar() {
   };
 }
 function updateEditButtons() {
-  document.getElementById("editAttendance").textContent = pageState.editMode
-    ? t("doneAttendance")
-    : t("editAttendance");
-  document.getElementById("editStaff").textContent = pageState.staffEditMode
-    ? t("doneStaff")
-    : t("editStaff");
+  document.getElementById("editRoster").textContent = pageState.editMode
+    ? t("doneRoster")
+    : t("editRoster");
 }
 function render() {
   renderCategoryFilterChips(
@@ -113,14 +109,8 @@ function handleOverviewClick(event) {
 }
 function bindEventHandlers() {
   document.getElementById("events").onclick = handleOverviewClick;
-  document.getElementById("editAttendance").onclick = () => {
+  document.getElementById("editRoster").onclick = () => {
     pageState.editMode = !pageState.editMode;
-    if (pageState.editMode) pageState.staffEditMode = false;
-    render();
-  };
-  document.getElementById("editStaff").onclick = () => {
-    pageState.staffEditMode = !pageState.staffEditMode;
-    if (pageState.staffEditMode) pageState.editMode = false;
     render();
   };
 }
@@ -154,7 +144,10 @@ async function load() {
   const copyCalendar = document.getElementById("copyCalendar");
   const personCalendar = document.getElementById("personCalendar");
   const url =
-    location.origin + "/calendar/team/" + encodeURIComponent(slug) + ".ics";
+    location.origin +
+    "/calendar/team/" +
+    encodeURIComponent(pageState.state.team.calendarToken) +
+    ".ics";
   calendarUrl.value = url;
   copyCalendar.onclick = async () => {
     try {
@@ -171,7 +164,7 @@ async function load() {
     .sort((a, b) => a.name.localeCompare(b.name))
     .forEach((p) => {
       const o = document.createElement("option");
-      o.value = p.id;
+      o.value = p.calendarToken;
       o.textContent = p.name;
       personCalendar.appendChild(o);
     });

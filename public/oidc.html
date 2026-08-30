@@ -1,0 +1,124 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>PandaPlan authentication</title>
+    <link rel="stylesheet" href="/style.css" />
+    <link rel="stylesheet" href="/navigation.css" data-pandanav-css />
+    <style>
+      .oidc-card {
+        max-width: 760px;
+        margin: 0 auto;
+      }
+      .oidc-actions {
+        display: flex;
+        gap: 0.75rem;
+        margin-top: 1.5rem;
+        flex-wrap: wrap;
+      }
+      .oidc-identity dd {
+        overflow-wrap: anywhere;
+      }
+      .roles {
+        margin-top: 1.5rem;
+      }
+      .roles h2 {
+        font-size: 1.1rem;
+        margin-bottom: 0.75rem;
+      }
+      .roles ul {
+        margin: 0;
+        padding-left: 1.25rem;
+      }
+      .roles li {
+        margin: 0.4rem 0;
+      }
+      .oidc-button {
+        display: inline-block;
+        padding: 0.65rem 1rem;
+        border-radius: 0.5rem;
+        border: 1px solid #999;
+        text-decoration: none;
+        cursor: pointer;
+        background: #fff;
+        color: inherit;
+        font: inherit;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="nav"></div>
+    <div class="wrap">
+      <main class="card oidc-card">
+        <h1 data-oidc-i18n="oidcTitle">PandaPlan authentication</h1>
+        <div id="content" data-oidc-i18n="oidcChecking">
+          Checking authentication…
+        </div>
+      </main>
+    </div>
+
+    <script src="/shared.js"></script>
+    <script src="/oidc-i18n.js"></script>
+    <script src="/oidc-role-i18n.js"></script>
+    <script src="/navigation.js"></script>
+    <script>
+      const roleTranslationKeys = {
+        team_member: 'oidcTeamMember',
+        team_manager: 'oidcTeamManager',
+      };
+
+      async function load() {
+        const content = document.getElementById('content');
+        document.documentElement.lang = currentLanguage;
+        document.title = t('oidcTitle');
+        try {
+          const response = await fetch('/oidc/session', {
+            credentials: 'same-origin',
+          });
+          const session = await response.json();
+          if (!session.authenticated) {
+            content.innerHTML =
+              `<p>${escapeHtml(t('oidcNotAuthenticated'))}</p>` +
+              `<p><a class="oidc-button" href="/oidc/login">${escapeHtml(t('oidcLogin'))}</a></p>`;
+            return;
+          }
+
+          const user = session.user;
+          const account = session.account || {};
+          const teamRoles = Array.isArray(account.teamRoles)
+            ? account.teamRoles
+            : [];
+          const rolesHtml = teamRoles.length
+            ? `<section class="roles"><h2>${escapeHtml(t('oidcYourRoles'))}</h2><ul>${teamRoles
+                .map((assignment) => {
+                  const roleKey = roleTranslationKeys[assignment.role];
+                  const role = roleKey ? t(roleKey) : assignment.role;
+                  return `<li><strong>${escapeHtml(assignment.teamName || assignment.teamId)}</strong>: ${escapeHtml(role)}</li>`;
+                })
+                .join('')}</ul></section>`
+            : `<section class="roles"><h2>${escapeHtml(t('oidcYourRoles'))}</h2><p>${escapeHtml(t('oidcNoTeamRoles'))}</p></section>`;
+
+          content.innerHTML =
+            `<p><strong>${escapeHtml(t('oidcAuthenticated'))}</strong></p>` +
+            '<dl class="oidc-identity">' +
+            `<dt>${escapeHtml(t('oidcName'))}</dt><dd>${escapeHtml(user.name)}</dd>` +
+            `<dt>${escapeHtml(t('oidcEmail'))}</dt><dd>${escapeHtml(user.email || t('oidcNoEmail'))}</dd>` +
+            `<dt>${escapeHtml(t('oidcSubject'))}</dt><dd>${escapeHtml(user.sub)}</dd>` +
+            `<dt>${escapeHtml(t('oidcIssuer'))}</dt><dd>${escapeHtml(user.issuer || '')}</dd>` +
+            '</dl>' +
+            rolesHtml +
+            '<div class="oidc-actions">' +
+            '<form method="post" action="/oidc/logout">' +
+            `<button class="oidc-button" type="submit">${escapeHtml(t('oidcLogout'))}</button>` +
+            '</form></div>';
+        } catch (error) {
+          content.innerHTML = `<p class="error">${escapeHtml(t('oidcAuthError'))}</p>`;
+          console.error(error);
+        }
+      }
+
+      load();
+    </script>
+  </body>
+</html>

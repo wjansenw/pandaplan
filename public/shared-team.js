@@ -7,12 +7,8 @@ function teamBaseUrl(slug = getTeamSlug()) {
   return "/team/" + encodeURIComponent(slug);
 }
 
-function teamModeUrl(
-  url,
-  adminMode = new URLSearchParams(location.search).get("mode") === "admin",
-) {
-  if (!adminMode) return url;
-  return url + (url.includes("?") ? "&" : "?") + "mode=admin";
+function teamModeUrl(url) {
+  return url;
 }
 
 function teamApiUrl(path, slug = getTeamSlug()) {
@@ -24,7 +20,9 @@ function teamApiUrl(path, slug = getTeamSlug()) {
 }
 
 function isTeamAdminMode() {
-  return new URLSearchParams(location.search).get("mode") === "admin";
+  return Boolean(
+    window.pandaplanAuth?.authenticated && window.pandaplanAuth.account?.isSiteAdmin,
+  );
 }
 
 function applyTeamAdminVisibility(adminMode = isTeamAdminMode()) {
@@ -33,10 +31,7 @@ function applyTeamAdminVisibility(adminMode = isTeamAdminMode()) {
   });
 }
 
-function setTeamNavigation(
-  slug = getTeamSlug(),
-  adminMode = isTeamAdminMode(),
-) {
+function setTeamNavigation(slug = getTeamSlug(), adminMode = isTeamAdminMode()) {
   const base = teamBaseUrl(slug);
   const links = {
     brand: base + "/overview",
@@ -51,7 +46,7 @@ function setTeamNavigation(
   };
   Object.entries(links).forEach(([id, url]) => {
     const el = document.getElementById(id);
-    if (el) el.href = teamModeUrl(url, adminMode);
+    if (el) el.href = teamModeUrl(url);
   });
   applyTeamAdminVisibility(adminMode);
 }

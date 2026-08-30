@@ -1,4 +1,5 @@
 const { getDb } = require('../db/connection');
+const { generateToken } = require('../utils/id');
 
 function findAll() {
   const db = getDb();
@@ -11,14 +12,33 @@ function findAll() {
   `).all();
 }
 
+function findAllForAccount(account) {
+  if (account?.isSiteAdmin) return findAll();
+  const teamIds = (account?.teamRoles || []).map((membership) => membership.teamId).filter(Boolean);
+  if (!teamIds.length) return [];
+  const placeholders = teamIds.map(() => '?').join(',');
+  return getDb().prepare(`
+    SELECT t.id, t.name, t.slug, t.description, COUNT(tm.person_id) AS memberCount
+    FROM teams t
+    LEFT JOIN team_memberships tm ON tm.team_id = t.id
+    WHERE t.id IN (${placeholders})
+    GROUP BY t.id
+    ORDER BY t.name
+  `).all(...teamIds);
+}
+
 function findBySlug(slug) {
-  return getDb().prepare('SELECT id, name, slug, description FROM teams WHERE slug = ?').get(slug) || null;
+  return getDb().prepare('SELECT id, name, slug, description, calendar_token AS calendarToken FROM teams WHERE slug = ?').get(slug) || null;
+}
+
+function findByCalendarToken(token) {
+  return getDb().prepare('SELECT id, name, slug, description, calendar_token AS calendarToken FROM teams WHERE calendar_token = ?').get(token) || null;
 }
 
 function findMembers(teamId) {
   const db = getDb();
   const persons = db.prepare(`
-    SELECT p.id, p.name
+    SELECT p.id, p.name, p.calendar_token AS calendarToken
     FROM persons p
     JOIN team_memberships tm ON tm.person_id = p.id
     WHERE tm.team_id = ?
@@ -31,7 +51,8 @@ function findMembers(teamId) {
 }
 
 function create({ id, name, slug, description }) {
-  getDb().prepare('INSERT INTO teams (id, name, slug, description) VALUES (?, ?, ?, ?)').run(id, name, slug, description || '');
+  getDb().prepare('INSERT INTO teams (id, name, slug, description, calendar_token) VALUES (?, ?, ?, ?, ?)')
+    .run(id, name, slug, description || '', generateToken());
   return findBySlug(slug);
 }
 
@@ -80,4 +101,4 @@ function hasRole(teamId, personId, role) {
   return !!getDb().prepare('SELECT 1 FROM team_membership_roles WHERE team_id = ? AND person_id = ? AND role = ?').get(teamId, personId, role);
 }
 
-module.exports = { findAll, findBySlug, findMembers, create, update, count, remove, addMember, removeMember, setRoles, isMember, hasRole };
+module.exports = { findAll, findAllForAccount, findBySlug, findByCalendarToken, findMembers, create, update, count, remove, addMember, removeMember, setRoles, isMember, hasRole };
