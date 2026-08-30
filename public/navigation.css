@@ -54,7 +54,8 @@ body.has-sidebar {
   gap: 4px;
   min-width: 0;
   width: 100%;
-  min-height: 100%;
+  flex: 1 1 auto;
+  min-height: 0;
 }
 .sidebar-link {
   display: block;
