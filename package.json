@@ -4,7 +4,8 @@
   "description": "Self-hosted event attendance roster",
   "main": "server.js",
   "scripts": {
-    "start": "node server.js"
+    "start": "node server.js",
+    "test": "node --test"
   },
   "dependencies": {
     "@touch4it/ical-timezones": "^1.9.0",
