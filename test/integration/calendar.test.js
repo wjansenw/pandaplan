@@ -100,7 +100,7 @@ test('Pandaplan event creation and ICS export preserve CET and CEST local times'
   }
 });
 
-test('ICS attendee list only includes people with yes attendance status', () => {
+test('ICS description splits attendance by status and lists assigned staff by role', () => {
   const event = {
     id: 'attendance-test-event',
     categoryId: null,
@@ -112,18 +112,29 @@ test('ICS attendee list only includes people with yes attendance status', () => 
   };
   const persons = [
     { id: 'person-yes', name: 'Alice Attending' },
+    { id: 'person-maybe', name: 'Charlie Maybe' },
     { id: 'person-no', name: 'Bob Not Attending' },
-    { id: 'person-unknown', name: 'Charlie Unknown' },
+    { id: 'person-coach', name: 'Coach Carol' },
+    { id: 'person-referee', name: 'Referee Rob' },
   ];
   const attendance = {
     'person-yes': { [event.id]: { status: 'yes', note: '' } },
+    'person-maybe': { [event.id]: { status: 'maybe', note: 'Not decided' } },
     'person-no': { [event.id]: { status: 'no', note: 'Unavailable' } },
-    'person-unknown': { [event.id]: { status: 'maybe', note: 'Not decided' } },
+  };
+  const staffByEvent = {
+    [event.id]: {
+      coach: ['person-coach'],
+      referee: ['person-referee'],
+    },
   };
 
-  const ics = buildCalendar('Attendance test', [event], [], persons, attendance);
+  const ics = buildCalendar('Attendance test', [event], [], persons, attendance, staffByEvent);
 
-  assert.match(ics, /Attending \(1\): Alice Attending/);
-  assert.doesNotMatch(ics, /Bob Not Attending/);
-  assert.doesNotMatch(ics, /Charlie Unknown/);
+  assert.match(ics, /Attending:\\n• Alice Attending/);
+  assert.match(ics, /Maybe:\\n• Charlie Maybe \(Not decided\)/);
+  assert.match(ics, /Not attending:\\n• Bob Not Attending \(Unavailable\)/);
+  assert.match(ics, /Staff:\\nCoach:\\n• Coach Carol/);
+  assert.match(ics, /Referee:\\n• Referee Rob/);
+  assert.doesNotMatch(ics, /Attending \(3\)/);
 });
