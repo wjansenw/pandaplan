@@ -15,7 +15,7 @@ function buildTeamCalendarIcs(token) {
   const team = teamsRepository.findByCalendarToken(token);
   if (!team) return null;
   const db = getDb();
-  const events = db.prepare(`SELECT id, team_id AS teamId, category_id AS categoryId, date, start_time AS startTime, end_time AS endTime, location, description FROM events WHERE team_id = ? ORDER BY date, start_time`).all(team.id);
+  const events = db.prepare(`SELECT id, team_id AS teamId, category_id AS categoryId, subject, date, start_time AS startTime, end_time AS endTime, location, description FROM events WHERE team_id = ? ORDER BY date, start_time`).all(team.id);
   const categories = categoriesRepository.findByTeam(team.id);
   return { ics: buildCalendar(`pandaplan – ${team.name}`, events, categories, personsRepository.findAll(), attendanceRepository.findAll(), staffAssignmentsRepository.findAllGroupedByEvent()) };
 }
@@ -25,7 +25,7 @@ function buildPersonCalendarIcs(token) {
   if (!person) return null;
   const db = getDb();
   const events = db.prepare(`
-    SELECT DISTINCT e.id, e.team_id AS teamId, e.category_id AS categoryId, e.date, e.start_time AS startTime,
+    SELECT DISTINCT e.id, e.team_id AS teamId, e.category_id AS categoryId, e.subject, e.date, e.start_time AS startTime,
       e.end_time AS endTime, e.location, e.description
     FROM events e JOIN team_memberships tm ON tm.team_id = e.team_id AND tm.person_id = ?
     LEFT JOIN attendance a ON a.event_id = e.id AND a.person_id = ?
