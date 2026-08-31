@@ -11,7 +11,13 @@ function icsEscape(s) {
     .replace(/\r?\n/g, '\\n');
 }
 
-function buildDescription(ev, categoryName, timeRange, attendeeNames) {
+function formatRole(role) {
+  return String(role || '')
+    .replace(/-/g, ' ')
+    .replace(/\b\w/g, (c) => c.toUpperCase());
+}
+
+function buildDescription(ev, categoryName, timeRange, attendance, staff) {
   const sections = [];
   const details = [];
   if (categoryName) details.push(categoryName);
@@ -19,11 +25,24 @@ function buildDescription(ev, categoryName, timeRange, attendeeNames) {
   if (ev.location) details.push(ev.location);
   if (details.length) sections.push(details.join('  •  '));
   if (ev.description) sections.push(ev.description);
-  sections.push(
-    attendeeNames.length
-      ? `Attending (${attendeeNames.length}): ${attendeeNames.join(', ')}`
-      : 'Attending: no one registered yet'
-  );
+
+  const attendanceSections = [
+    ['Attending', attendance.yes],
+    ['Maybe', attendance.maybe],
+    ['Not attending', attendance.no],
+  ];
+  const attendanceText = attendanceSections
+    .filter(([, names]) => names.length)
+    .map(([label, names]) => `${label}:\n${names.map((name) => `• ${name}`).join('\n')}`)
+    .join('\n\n');
+  if (attendanceText) sections.push(attendanceText);
+
+  const staffText = Object.entries(staff)
+    .filter(([, names]) => names.length)
+    .map(([role, names]) => `${formatRole(role)}:\n${names.map((name) => `• ${name}`).join('\n')}`)
+    .join('\n\n');
+  if (staffText) sections.push(`Staff:\n${staffText}`);
+
   return sections.join('\n\n');
 }
 
@@ -33,19 +52,30 @@ function localDateTime(date, time) {
   });
 }
 
-function buildCalendar(calName, events, categories, persons, attendanceByPerson) {
+function buildCalendar(calName, events, categories, persons, attendanceByPerson, staffByEvent = {}) {
   const catName = (id) => (categories.find((c) => c.id === id) || {}).name || '';
-  const attendeesFor = (eventId) =>
-    persons
-      .filter((p) => {
-        const entry = attendanceByPerson[p.id] && attendanceByPerson[p.id][eventId];
-        return entry && entry.status === 'yes';
-      })
-      .map((p) => {
-        const entry = attendanceByPerson[p.id][eventId];
-        const note = (entry && entry.note) || '';
-        return note ? `${p.name} (${note})` : p.name;
-      });
+  const attendeesFor = (eventId) => {
+    const result = { yes: [], maybe: [], no: [] };
+    persons.forEach((p) => {
+      const entry = attendanceByPerson[p.id] && attendanceByPerson[p.id][eventId];
+      if (!entry || !result[entry.status]) return;
+      const note = entry.note || '';
+      result[entry.status].push(note ? `${p.name} (${note})` : p.name);
+    });
+    return result;
+  };
+  const staffFor = (eventId) => {
+    const assignments = staffByEvent[eventId] || {};
+    return Object.fromEntries(
+      Object.entries(assignments).map(([role, personIds]) => [
+        role,
+        personIds.map((personId) => {
+          const person = persons.find((p) => p.id === personId);
+          return person ? person.name : personId;
+        }),
+      ])
+    );
+  };
 
   const calendar = ical({
     name: calName,
@@ -59,7 +89,8 @@ function buildCalendar(calName, events, categories, persons, attendanceByPerson)
 
   events.forEach((ev) => {
     const categoryName = catName(ev.categoryId);
-    const attendeeNames = attendeesFor(ev.id);
+    const attendance = attendeesFor(ev.id);
+    const staff = staffFor(ev.id);
     const timeRange = ev.startTime
       ? `${ev.startTime}${ev.endTime ? '–' + ev.endTime : ''}`
       : '';
@@ -71,7 +102,7 @@ function buildCalendar(calName, events, categories, persons, attendanceByPerson)
       id: ev.id,
       uid: `${ev.id}@pandaplan`,
       summary,
-      description: buildDescription(ev, categoryName, timeRange, attendeeNames),
+      description: buildDescription(ev, categoryName, timeRange, attendance, staff),
       location: ev.location || undefined,
       categories: categoryName ? [{ name: categoryName }] : [],
       status: 'CONFIRMED',
