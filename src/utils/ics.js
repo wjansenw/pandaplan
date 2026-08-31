@@ -1,4 +1,4 @@
-const ical = require('ical-generator');
+const { default: ical } = require('ical-generator');
 const { getVtimezoneComponent } = require('@touch4it/ical-timezones');
 const { DateTime } = require('luxon');
 const config = require('../config');
