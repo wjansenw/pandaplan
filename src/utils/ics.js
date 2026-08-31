@@ -1,3 +1,5 @@
+const config = require('../config');
+
 function icsEscape(s) {
   return String(s || '')
     .replace(/\\/g, '\\\\')
@@ -60,8 +62,11 @@ function buildVEvent(ev, categoryName, attendeeNames) {
   lines.push(`DTSTAMP:${new Date().toISOString().replace(/[-:]/g, '').split('.')[0]}Z`);
 
   if (ev.startTime) {
-    lines.push(`DTSTART:${icsDateTime(ev.date, ev.startTime)}`);
-    lines.push(`DTEND:${icsDateTime(ev.date, ev.endTime || ev.startTime)}`);
+    // Pandaplan stores event times as local wall-clock times. Explicitly attach
+    // the configured IANA timezone so calendar clients do not interpret them
+    // as UTC (and so CET/CEST is handled correctly throughout the year).
+    lines.push(`DTSTART;TZID=${config.EVENT_TIMEZONE}:${icsDateTime(ev.date, ev.startTime)}`);
+    lines.push(`DTEND;TZID=${config.EVENT_TIMEZONE}:${icsDateTime(ev.date, ev.endTime || ev.startTime)}`);
   } else {
     lines.push(`DTSTART;VALUE=DATE:${icsDateOnly(ev.date)}`);
     lines.push(`DTEND;VALUE=DATE:${addDaysToIsoDate(ev.date, 1)}`);
@@ -94,6 +99,7 @@ function buildCalendar(calName, events, categories, persons, attendanceByPerson)
     'CALSCALE:GREGORIAN',
     'METHOD:PUBLISH',
     foldLine(`X-WR-CALNAME:${icsEscape(calName)}`),
+    `X-WR-TIMEZONE:${config.EVENT_TIMEZONE}`,
     ...events.map((ev) => buildVEvent(ev, catName(ev.categoryId), attendeesFor(ev.id))),
     'END:VCALENDAR',
   ];
