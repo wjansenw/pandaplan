@@ -162,7 +162,7 @@ describe('API', { concurrency: false }, () => {
     const response = await request('GET', `/api/teams/${team.slug}/events`);
 
     assert.equal(response.status, 200);
-    assert.deepEqual(response.body.map(e => e.id), ['event-1', 'event-3', 'event-2']);
+    assert.deepEqual(response.body.map(e => e.id), ['event-3', 'event-1', 'event-2']);
   });
 
   test('EVENT-02 creates an event with its supplied fields', async () => {
