@@ -3,6 +3,7 @@ const test = require('node:test');
 
 const teamService = require('../../src/services/teamService');
 const calendarService = require('../../src/services/calendarService');
+const { buildCalendar } = require('../../src/utils/ics');
 const { getDb } = require('../../src/db/connection');
 const { generateId } = require('../../src/utils/id');
 
@@ -97,4 +98,32 @@ test('Pandaplan event creation and ICS export preserve CET and CEST local times'
       db.prepare('DELETE FROM teams WHERE id = ?').run(team.id);
     })();
   }
+});
+
+test('ICS attendee list only includes people with yes attendance status', () => {
+  const event = {
+    id: 'attendance-test-event',
+    categoryId: null,
+    date: '2026-08-31',
+    startTime: '19:00',
+    endTime: '21:00',
+    location: 'Attendance test location',
+    description: '',
+  };
+  const persons = [
+    { id: 'person-yes', name: 'Alice Attending' },
+    { id: 'person-no', name: 'Bob Not Attending' },
+    { id: 'person-unknown', name: 'Charlie Unknown' },
+  ];
+  const attendance = {
+    'person-yes': { [event.id]: { status: 'yes', note: '' } },
+    'person-no': { [event.id]: { status: 'no', note: 'Unavailable' } },
+    'person-unknown': { [event.id]: { status: 'maybe', note: 'Not decided' } },
+  };
+
+  const ics = buildCalendar('Attendance test', [event], [], persons, attendance);
+
+  assert.match(ics, /Attending \(1\): Alice Attending/);
+  assert.doesNotMatch(ics, /Bob Not Attending/);
+  assert.doesNotMatch(ics, /Charlie Unknown/);
 });
