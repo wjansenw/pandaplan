@@ -24,6 +24,42 @@ function icsDateOnly(dateStr) {
   return dateStr.replace(/-/g, '');
 }
 
+// Convert a Pandaplan local wall-clock time in EVENT_TIMEZONE to an absolute
+// UTC instant. Using the configured IANA timezone makes the conversion honor
+// both CET and CEST (and future timezone-rule changes) without requiring the
+// consumer to understand a VTIMEZONE definition.
+function localDateTimeToUtc(dateStr, timeStr) {
+  const [year, month, day] = dateStr.split('-').map(Number);
+  const [hour, minute] = timeStr.split(':').map(Number);
+  const target = Date.UTC(year, month - 1, day, hour, minute, 0);
+
+  // Get the timezone offset at the target instant. Iterating once is enough
+  // for the normal DST transitions used by Europe/Brussels and makes the
+  // calculation independent of the server's local timezone.
+  let instant = new Date(target);
+  for (let i = 0; i < 3; i += 1) {
+    const parts = new Intl.DateTimeFormat('en-CA', {
+      timeZone: config.EVENT_TIMEZONE,
+      hourCycle: 'h23',
+      year: 'numeric', month: '2-digit', day: '2-digit',
+      hour: '2-digit', minute: '2-digit', second: '2-digit',
+    }).formatToParts(instant).reduce((acc, p) => {
+      acc[p.type] = p.value;
+      return acc;
+    }, {});
+    const asUtc = Date.UTC(
+      Number(parts.year), Number(parts.month) - 1, Number(parts.day),
+      Number(parts.hour), Number(parts.minute), Number(parts.second)
+    );
+    const offset = asUtc - instant.getTime();
+    const next = new Date(target - offset);
+    if (next.getTime() === instant.getTime()) break;
+    instant = next;
+  }
+
+  return instant.toISOString().replace(/[-:]/g, '').split('.')[0] + 'Z';
+}
+
 function icsDateTime(dateStr, timeStr) {
   const [hh, mm] = timeStr.split(':');
   return `${icsDateOnly(dateStr)}T${hh}${mm}00`;
@@ -62,11 +98,11 @@ function buildVEvent(ev, categoryName, attendeeNames) {
   lines.push(`DTSTAMP:${new Date().toISOString().replace(/[-:]/g, '').split('.')[0]}Z`);
 
   if (ev.startTime) {
-    // Pandaplan stores event times as local wall-clock times. Explicitly attach
-    // the configured IANA timezone so calendar clients do not interpret them
-    // as UTC (and so CET/CEST is handled correctly throughout the year).
-    lines.push(`DTSTART;TZID=${config.EVENT_TIMEZONE}:${icsDateTime(ev.date, ev.startTime)}`);
-    lines.push(`DTEND;TZID=${config.EVENT_TIMEZONE}:${icsDateTime(ev.date, ev.endTime || ev.startTime)}`);
+    // Export an absolute UTC instant. Google Calendar reliably interprets the
+    // Z suffix and converts it to the viewer's local timezone. The conversion
+    // from Pandaplan's local Europe/Brussels wall-clock time handles CET/CEST.
+    lines.push(`DTSTART:${localDateTimeToUtc(ev.date, ev.startTime)}`);
+    lines.push(`DTEND:${localDateTimeToUtc(ev.date, ev.endTime || ev.startTime)}`);
   } else {
     lines.push(`DTSTART;VALUE=DATE:${icsDateOnly(ev.date)}`);
     lines.push(`DTEND;VALUE=DATE:${addDaysToIsoDate(ev.date, 1)}`);
@@ -111,6 +147,7 @@ module.exports = {
   foldLine,
   icsDateOnly,
   icsDateTime,
+  localDateTimeToUtc,
   addDaysToIsoDate,
   buildDescription,
   buildVEvent,
