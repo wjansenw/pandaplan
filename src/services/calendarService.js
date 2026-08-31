@@ -1,6 +1,7 @@
 const personsRepository = require('../repositories/personsRepository');
 const categoriesRepository = require('../repositories/categoriesRepository');
 const attendanceRepository = require('../repositories/attendanceRepository');
+const staffAssignmentsRepository = require('../repositories/staffAssignmentsRepository');
 const { getDb } = require('../db/connection');
 const { buildCalendar } = require('../utils/ics');
 const teamsRepository = require('../repositories/teamsRepository');
@@ -16,7 +17,7 @@ function buildTeamCalendarIcs(token) {
   const db = getDb();
   const events = db.prepare(`SELECT id, team_id AS teamId, category_id AS categoryId, date, start_time AS startTime, end_time AS endTime, location, description FROM events WHERE team_id = ? ORDER BY date, start_time`).all(team.id);
   const categories = categoriesRepository.findByTeam(team.id);
-  return { ics: buildCalendar(`pandaplan – ${team.name}`, events, categories, personsRepository.findAll(), attendanceRepository.findAll()) };
+  return { ics: buildCalendar(`pandaplan – ${team.name}`, events, categories, personsRepository.findAll(), attendanceRepository.findAll(), staffAssignmentsRepository.findAllGroupedByEvent()) };
 }
 
 function buildPersonCalendarIcs(token) {
@@ -31,7 +32,7 @@ function buildPersonCalendarIcs(token) {
     LEFT JOIN staff_assignments sa ON sa.event_id = e.id AND sa.person_id = ?
     WHERE a.status = 'yes' OR sa.person_id IS NOT NULL ORDER BY e.date, e.start_time
   `).all(person.id, person.id, person.id);
-  const ics = buildCalendar(`pandaplan – ${person.name}`, events, categoriesRepository.findAll(), personsRepository.findAll(), attendanceRepository.findAll());
+  const ics = buildCalendar(`pandaplan – ${person.name}`, events, categoriesRepository.findAll(), personsRepository.findAll(), attendanceRepository.findAll(), staffAssignmentsRepository.findAllGroupedByEvent());
   return { ics, personName: person.name };
 }
 
