@@ -94,9 +94,7 @@ function buildCalendar(calName, events, categories, persons, attendanceByPerson,
     const timeRange = ev.startTime
       ? `${ev.startTime}${ev.endTime ? '–' + ev.endTime : ''}`
       : '';
-    const summary = categoryName
-      ? `${categoryName}${ev.location ? ' · ' + ev.location : ''}`
-      : (ev.location || 'pandaplan event');
+    const summary = ev.subject || 'pandaplan event';
 
     const eventData = {
       id: ev.id,
