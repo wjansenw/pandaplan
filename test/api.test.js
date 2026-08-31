@@ -11,7 +11,7 @@ const {
   seedPerson,
   addMember,
   seedEvent,
-} = require('./helpers/api');
+} = require('../test-support/api');
 
 describe('API', { concurrency: false }, () => {
   let team;
