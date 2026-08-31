@@ -26,17 +26,13 @@ function icsDateOnly(dateStr) {
 
 // Convert a Pandaplan local wall-clock time in EVENT_TIMEZONE to an absolute
 // UTC instant. Using the configured IANA timezone makes the conversion honor
-// both CET and CEST (and future timezone-rule changes) without requiring the
-// consumer to understand a VTIMEZONE definition.
+// both CET and CEST without depending on the server's local timezone.
 function localDateTimeToUtc(dateStr, timeStr) {
   const [year, month, day] = dateStr.split('-').map(Number);
   const [hour, minute] = timeStr.split(':').map(Number);
   const target = Date.UTC(year, month - 1, day, hour, minute, 0);
-
-  // Get the timezone offset at the target instant. Iterating once is enough
-  // for the normal DST transitions used by Europe/Brussels and makes the
-  // calculation independent of the server's local timezone.
   let instant = new Date(target);
+
   for (let i = 0; i < 3; i += 1) {
     const parts = new Intl.DateTimeFormat('en-CA', {
       timeZone: config.EVENT_TIMEZONE,
@@ -47,6 +43,7 @@ function localDateTimeToUtc(dateStr, timeStr) {
       acc[p.type] = p.value;
       return acc;
     }, {});
+
     const asUtc = Date.UTC(
       Number(parts.year), Number(parts.month) - 1, Number(parts.day),
       Number(parts.hour), Number(parts.minute), Number(parts.second)
@@ -73,21 +70,17 @@ function addDaysToIsoDate(dateStr, days) {
 
 function buildDescription(ev, categoryName, timeRange, attendeeNames) {
   const sections = [];
-
   const details = [];
   if (categoryName) details.push(categoryName);
   if (timeRange) details.push(timeRange);
   if (ev.location) details.push(ev.location);
   if (details.length) sections.push(details.join('  •  '));
-
   if (ev.description) sections.push(ev.description);
-
   sections.push(
     attendeeNames.length
       ? `Attending (${attendeeNames.length}): ${attendeeNames.join(', ')}`
       : 'Attending: no one registered yet'
   );
-
   return sections.join('\n\n');
 }
 
@@ -98,9 +91,8 @@ function buildVEvent(ev, categoryName, attendeeNames) {
   lines.push(`DTSTAMP:${new Date().toISOString().replace(/[-:]/g, '').split('.')[0]}Z`);
 
   if (ev.startTime) {
-    // Export an absolute UTC instant. Google Calendar reliably interprets the
-    // Z suffix and converts it to the viewer's local timezone. The conversion
-    // from Pandaplan's local Europe/Brussels wall-clock time handles CET/CEST.
+    // Export an absolute UTC instant. This avoids clients interpreting a
+    // TZID without a matching VTIMEZONE differently.
     lines.push(`DTSTART:${localDateTimeToUtc(ev.date, ev.startTime)}`);
     lines.push(`DTEND:${localDateTimeToUtc(ev.date, ev.endTime || ev.startTime)}`);
   } else {
@@ -109,13 +101,44 @@ function buildVEvent(ev, categoryName, attendeeNames) {
   }
 
   const timeRange = ev.startTime ? `${ev.startTime}${ev.endTime ? '–' + ev.endTime : ''}` : '';
-  const summary = categoryName ? `${categoryName}${ev.location ? ' · ' + ev.location : ''}` : (ev.location || 'pandaplan event');
+  const summary = categoryName
+    ? `${categoryName}${ev.location ? ' · ' + ev.location : ''}`
+    : (ev.location || 'pandaplan event');
   lines.push(`SUMMARY:${icsEscape(summary)}`);
   if (ev.location) lines.push(`LOCATION:${icsEscape(ev.location)}`);
   lines.push(`DESCRIPTION:${icsEscape(buildDescription(ev, categoryName, timeRange, attendeeNames))}`);
   if (categoryName) lines.push(`CATEGORIES:${icsEscape(categoryName)}`);
+  lines.push('STATUS:CONFIRMED');
+  lines.push('TRANSP:OPAQUE');
+  lines.push('SEQUENCE:0');
+  lines.push(`LAST-MODIFIED:${new Date().toISOString().replace(/[-:]/g, '').split('.')[0]}Z`);
   lines.push('END:VEVENT');
   return lines.map(foldLine).join('\r\n');
+}
+
+function buildBrusselsVTimezone() {
+  if (config.EVENT_TIMEZONE !== 'Europe/Brussels') return [];
+
+  return [
+    'BEGIN:VTIMEZONE',
+    'TZID:Europe/Brussels',
+    'X-LIC-LOCATION:Europe/Brussels',
+    'BEGIN:DAYLIGHT',
+    'TZOFFSETFROM:+0100',
+    'TZOFFSETTO:+0200',
+    'TZNAME:CEST',
+    'DTSTART:19700329T020000',
+    'RRULE:FREQ=YEARLY;BYMONTH=3;BYDAY=-1SU',
+    'END:DAYLIGHT',
+    'BEGIN:STANDARD',
+    'TZOFFSETFROM:+0200',
+    'TZOFFSETTO:+0100',
+    'TZNAME:CET',
+    'DTSTART:19701025T030000',
+    'RRULE:FREQ=YEARLY;BYMONTH=10;BYDAY=-1SU',
+    'END:STANDARD',
+    'END:VTIMEZONE',
+  ];
 }
 
 function buildCalendar(calName, events, categories, persons, attendanceByPerson) {
@@ -128,6 +151,7 @@ function buildCalendar(calName, events, categories, persons, attendanceByPerson)
         const note = (entry && entry.note) || '';
         return note ? `${p.name} (${note})` : p.name;
       });
+
   const body = [
     'BEGIN:VCALENDAR',
     'VERSION:2.0',
@@ -136,6 +160,7 @@ function buildCalendar(calName, events, categories, persons, attendanceByPerson)
     'METHOD:PUBLISH',
     foldLine(`X-WR-CALNAME:${icsEscape(calName)}`),
     `X-WR-TIMEZONE:${config.EVENT_TIMEZONE}`,
+    ...buildBrusselsVTimezone(),
     ...events.map((ev) => buildVEvent(ev, catName(ev.categoryId), attendeesFor(ev.id))),
     'END:VCALENDAR',
   ];
@@ -151,5 +176,6 @@ module.exports = {
   addDaysToIsoDate,
   buildDescription,
   buildVEvent,
+  buildBrusselsVTimezone,
   buildCalendar,
 };
