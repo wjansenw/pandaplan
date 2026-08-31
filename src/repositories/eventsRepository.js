@@ -4,6 +4,7 @@ const SELECT_COLUMNS = `
   id,
   team_id AS teamId,
   category_id AS categoryId,
+  subject,
   date,
   start_time AS startTime,
   end_time AS endTime,

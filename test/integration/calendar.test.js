@@ -3,6 +3,7 @@ const test = require('node:test');
 
 const teamService = require('../../src/services/teamService');
 const calendarService = require('../../src/services/calendarService');
+const { buildCalendar } = require('../../src/utils/ics');
 const { getDb } = require('../../src/db/connection');
 const { generateId } = require('../../src/utils/id');
 
@@ -97,4 +98,43 @@ test('Pandaplan event creation and ICS export preserve CET and CEST local times'
       db.prepare('DELETE FROM teams WHERE id = ?').run(team.id);
     })();
   }
+});
+
+test('ICS description splits attendance by status and lists assigned staff by role', () => {
+  const event = {
+    id: 'attendance-test-event',
+    categoryId: null,
+    date: '2026-08-31',
+    startTime: '19:00',
+    endTime: '21:00',
+    location: 'Attendance test location',
+    description: '',
+  };
+  const persons = [
+    { id: 'person-yes', name: 'Alice Attending' },
+    { id: 'person-maybe', name: 'Charlie Maybe' },
+    { id: 'person-no', name: 'Bob Not Attending' },
+    { id: 'person-coach', name: 'Coach Carol' },
+    { id: 'person-referee', name: 'Referee Rob' },
+  ];
+  const attendance = {
+    'person-yes': { [event.id]: { status: 'yes', note: '' } },
+    'person-maybe': { [event.id]: { status: 'maybe', note: 'Not decided' } },
+    'person-no': { [event.id]: { status: 'no', note: 'Unavailable' } },
+  };
+  const staffByEvent = {
+    [event.id]: {
+      coach: ['person-coach'],
+      referee: ['person-referee'],
+    },
+  };
+
+  const ics = buildCalendar('Attendance test', [event], [], persons, attendance, staffByEvent);
+
+  assert.match(ics, /Attending:\\n• Alice Attending/);
+  assert.match(ics, /Maybe:\\n• Charlie Maybe \(Not decided\)/);
+  assert.match(ics, /Not attending:\\n• Bob Not Attending \(Unavailable\)/);
+  assert.match(ics, /Staff:\\nCoach:\\n• Coach Carol/);
+  assert.match(ics, /Referee:\\n• Referee Rob/);
+  assert.doesNotMatch(ics, /Attending \(3\)/);
 });
