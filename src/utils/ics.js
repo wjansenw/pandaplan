@@ -37,7 +37,10 @@ function buildCalendar(calName, events, categories, persons, attendanceByPerson)
   const catName = (id) => (categories.find((c) => c.id === id) || {}).name || '';
   const attendeesFor = (eventId) =>
     persons
-      .filter((p) => attendanceByPerson[p.id] && attendanceByPerson[p.id][eventId])
+      .filter((p) => {
+        const entry = attendanceByPerson[p.id] && attendanceByPerson[p.id][eventId];
+        return entry && entry.status === 'yes';
+      })
       .map((p) => {
         const entry = attendanceByPerson[p.id][eventId];
         const note = (entry && entry.note) || '';
