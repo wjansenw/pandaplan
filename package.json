@@ -12,7 +12,7 @@
   },
   "dependencies": {
     "@touch4it/ical-timezones": "^1.9.0",
-    "better-sqlite3": "^11.3.0",
+    "better-sqlite3": "^13.0.3",
     "express": "^4.19.2",
     "express-session": "^1.18.2",
     "ical-generator": "^10.2.0",
