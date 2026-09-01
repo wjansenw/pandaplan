@@ -40,6 +40,16 @@ function createEvent(teamId, event) {
   `).get(id);
 }
 
+function getIcsDescription(ics) {
+  const line = ics.split(/\r?\n/).find((value) => value.startsWith('DESCRIPTION:'));
+  assert.ok(line, 'ICS event should contain a DESCRIPTION');
+  return line.slice('DESCRIPTION:'.length)
+    .replace(/\\n/g, '\n')
+    .replace(/\\,/g, ',')
+    .replace(/\\;/g, ';')
+    .replace(/\\\\/g, '\\');
+}
+
 test('Pandaplan event creation and ICS export preserve CET and CEST local times', () => {
   const team = createTestTeam();
 
@@ -130,11 +140,12 @@ test('ICS description splits attendance by status and lists assigned staff by ro
   };
 
   const ics = buildCalendar('Attendance test', [event], [], persons, attendance, staffByEvent);
+  const description = getIcsDescription(ics);
 
-  assert.match(ics, /Attending:\\n• Alice Attending/);
-  assert.match(ics, /Maybe:\\n• Charlie Maybe \(Not decided\)/);
-  assert.match(ics, /Not attending:\\n• Bob Not Attending \(Unavailable\)/);
-  assert.match(ics, /Staff:\\nCoach:\\n• Coach Carol/);
-  assert.match(ics, /Referee:\\n• Referee Rob/);
-  assert.doesNotMatch(ics, /Attending \(3\)/);
+  assert.match(description, /Attending:\n• Alice Attending/);
+  assert.match(description, /Maybe:\n• Charlie Maybe \(Not decided\)/);
+  assert.match(description, /Not attending:\n• Bob Not Attending \(Unavailable\)/);
+  assert.match(description, /Staff:\nCoach:\n• Coach Carol/);
+  assert.match(description, /Referee:\n• Referee Rob/);
+  assert.doesNotMatch(description, /Attending \(3\)/);
 });
