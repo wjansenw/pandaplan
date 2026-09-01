@@ -40,8 +40,13 @@ function createEvent(teamId, event) {
   `).get(id);
 }
 
+function unfoldIcs(ics) {
+  return ics.replace(/\r?\n[ \t]/g, '');
+}
+
 function getIcsDescription(ics) {
-  const line = ics.split(/\r?\n/).find((value) => value.startsWith('DESCRIPTION:'));
+  const unfolded = unfoldIcs(ics);
+  const line = unfolded.split(/\r?\n/).find((value) => value.startsWith('DESCRIPTION:'));
   assert.ok(line, 'ICS event should contain a DESCRIPTION');
   return line.slice('DESCRIPTION:'.length)
     .replace(/\\n/g, '\n')
@@ -95,8 +100,9 @@ test('Pandaplan event creation and ICS export preserve CET and CEST local times'
     assert.match(ics, /TZNAME:CEST/);
     assert.match(ics, /TZNAME:CET/);
 
-    assert.ok(ics.includes(`UID:${cetEvent.id}@pandaplan`));
-    assert.ok(ics.includes(`UID:${cestEvent.id}@pandaplan`));
+    const unfolded = unfoldIcs(ics);
+    assert.ok(unfolded.includes(`UID:${cetEvent.id}@pandaplan`));
+    assert.ok(unfolded.includes(`UID:${cestEvent.id}@pandaplan`));
   } finally {
     const db = getDb();
     db.transaction(() => {
