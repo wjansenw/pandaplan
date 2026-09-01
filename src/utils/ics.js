@@ -97,9 +97,9 @@ function buildCalendar(calName, events, categories, persons, attendanceByPerson,
     const summary = ev.subject || 'pandaplan event';
 
     const eventData = {
-      // ical-generator emits the event `id` as the iCalendar UID.
-      // Namespace it so IDs are unique outside Pandaplan as well.
-      id: `${ev.id}@pandaplan`,
+      // Keep the established UID format so existing calendar subscriptions
+      // continue to recognize previously synchronized events.
+      id: ev.id,
       summary,
       description: buildDescription(ev, categoryName, timeRange, attendance, staff),
       location: ev.location || undefined,
