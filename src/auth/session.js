@@ -23,7 +23,10 @@ function sessionMiddleware() {
 
 function requireAuthentication(req, res, next) {
   if (!req.session?.account) {
-    if (req.path.startsWith('/api/')) return res.status(401).json({ error: 'authentication required' });
+    // When this middleware is mounted at /api, Express strips the mount
+    // path from req.path. Use originalUrl so API callers receive JSON 401
+    // instead of being redirected to the OIDC login page.
+    if (req.originalUrl.startsWith('/api/')) return res.status(401).json({ error: 'authentication required' });
     return res.redirect('/oidc');
   }
   next();

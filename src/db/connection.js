@@ -19,4 +19,10 @@ function getDb() {
   return db;
 }
 
-module.exports = { getDb };
+function closeDb() {
+  if (!db) return;
+  db.close();
+  db = null;
+}
+
+module.exports = { getDb, closeDb };
