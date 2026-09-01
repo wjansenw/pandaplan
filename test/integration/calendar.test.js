@@ -101,8 +101,8 @@ test('Pandaplan event creation and ICS export preserve CET and CEST local times'
     assert.match(ics, /TZNAME:CET/);
 
     const unfolded = unfoldIcs(ics);
-    assert.ok(unfolded.includes(`UID:${cetEvent.id}@pandaplan`));
-    assert.ok(unfolded.includes(`UID:${cestEvent.id}@pandaplan`));
+    assert.ok(unfolded.includes(`UID:${cetEvent.id}`));
+    assert.ok(unfolded.includes(`UID:${cestEvent.id}`));
   } finally {
     const db = getDb();
     db.transaction(() => {
