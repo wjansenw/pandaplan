@@ -1,3 +1,8 @@
+const { default: ical } = require('ical-generator');
+const { getVtimezoneComponent } = require('@touch4it/ical-timezones');
+const { DateTime } = require('luxon');
+const config = require('../config');
+
 function icsEscape(s) {
   return String(s || '')
     .replace(/\\/g, '\\\\')
@@ -6,107 +11,124 @@ function icsEscape(s) {
     .replace(/\r?\n/g, '\\n');
 }
 
-// RFC 5545 line folding: continuation lines start with a single space.
-function foldLine(line) {
-  if (line.length <= 75) return line;
-  let out = line.slice(0, 75);
-  let rest = line.slice(75);
-  while (rest.length > 0) {
-    out += '\r\n ' + rest.slice(0, 74);
-    rest = rest.slice(74);
-  }
-  return out;
+function formatRole(role) {
+  return String(role || '')
+    .replace(/-/g, ' ')
+    .replace(/\b\w/g, (c) => c.toUpperCase());
 }
 
-function icsDateOnly(dateStr) {
-  return dateStr.replace(/-/g, '');
-}
-
-function icsDateTime(dateStr, timeStr) {
-  const [hh, mm] = timeStr.split(':');
-  return `${icsDateOnly(dateStr)}T${hh}${mm}00`;
-}
-
-function addDaysToIsoDate(dateStr, days) {
-  const d = new Date(dateStr + 'T00:00:00Z');
-  d.setUTCDate(d.getUTCDate() + days);
-  return icsDateOnly(d.toISOString().slice(0, 10));
-}
-
-function buildDescription(ev, categoryName, timeRange, attendeeNames) {
+function buildDescription(ev, categoryName, timeRange, attendance, staff) {
   const sections = [];
-
   const details = [];
   if (categoryName) details.push(categoryName);
   if (timeRange) details.push(timeRange);
   if (ev.location) details.push(ev.location);
   if (details.length) sections.push(details.join('  •  '));
-
   if (ev.description) sections.push(ev.description);
 
-  sections.push(
-    attendeeNames.length
-      ? `Attending (${attendeeNames.length}): ${attendeeNames.join(', ')}`
-      : 'Attending: no one registered yet'
-  );
+  const attendanceSections = [
+    ['Attending', attendance.yes],
+    ['Maybe', attendance.maybe],
+    ['Not attending', attendance.no],
+  ];
+  const attendanceText = attendanceSections
+    .filter(([, names]) => names.length)
+    .map(([label, names]) => `${label}:\n${names.map((name) => `• ${name}`).join('\n')}`)
+    .join('\n\n');
+  if (attendanceText) sections.push(attendanceText);
+
+  const staffText = Object.entries(staff)
+    .filter(([, names]) => names.length)
+    .map(([role, names]) => `${formatRole(role)}:\n${names.map((name) => `• ${name}`).join('\n')}`)
+    .join('\n\n');
+  if (staffText) sections.push(`Staff:\n${staffText}`);
 
   return sections.join('\n\n');
 }
 
-function buildVEvent(ev, categoryName, attendeeNames) {
-  const lines = [];
-  lines.push('BEGIN:VEVENT');
-  lines.push(`UID:${ev.id}@pandaplan`);
-  lines.push(`DTSTAMP:${new Date().toISOString().replace(/[-:]/g, '').split('.')[0]}Z`);
-
-  if (ev.startTime) {
-    lines.push(`DTSTART:${icsDateTime(ev.date, ev.startTime)}`);
-    lines.push(`DTEND:${icsDateTime(ev.date, ev.endTime || ev.startTime)}`);
-  } else {
-    lines.push(`DTSTART;VALUE=DATE:${icsDateOnly(ev.date)}`);
-    lines.push(`DTEND;VALUE=DATE:${addDaysToIsoDate(ev.date, 1)}`);
-  }
-
-  const timeRange = ev.startTime ? `${ev.startTime}${ev.endTime ? '–' + ev.endTime : ''}` : '';
-  const summary = categoryName ? `${categoryName}${ev.location ? ' · ' + ev.location : ''}` : (ev.location || 'pandaplan event');
-  lines.push(`SUMMARY:${icsEscape(summary)}`);
-  if (ev.location) lines.push(`LOCATION:${icsEscape(ev.location)}`);
-  lines.push(`DESCRIPTION:${icsEscape(buildDescription(ev, categoryName, timeRange, attendeeNames))}`);
-  if (categoryName) lines.push(`CATEGORIES:${icsEscape(categoryName)}`);
-  lines.push('END:VEVENT');
-  return lines.map(foldLine).join('\r\n');
+function localDateTime(date, time) {
+  return DateTime.fromISO(`${date}T${time}`, {
+    zone: config.EVENT_TIMEZONE,
+  });
 }
 
-function buildCalendar(calName, events, categories, persons, attendanceByPerson) {
+function buildCalendar(calName, events, categories, persons, attendanceByPerson, staffByEvent = {}) {
   const catName = (id) => (categories.find((c) => c.id === id) || {}).name || '';
-  const attendeesFor = (eventId) =>
-    persons
-      .filter((p) => attendanceByPerson[p.id] && attendanceByPerson[p.id][eventId])
-      .map((p) => {
-        const entry = attendanceByPerson[p.id][eventId];
-        const note = (entry && entry.note) || '';
-        return note ? `${p.name} (${note})` : p.name;
-      });
-  const body = [
-    'BEGIN:VCALENDAR',
-    'VERSION:2.0',
-    'PRODID:-//pandaplan//EN',
-    'CALSCALE:GREGORIAN',
-    'METHOD:PUBLISH',
-    foldLine(`X-WR-CALNAME:${icsEscape(calName)}`),
-    ...events.map((ev) => buildVEvent(ev, catName(ev.categoryId), attendeesFor(ev.id))),
-    'END:VCALENDAR',
-  ];
-  return body.join('\r\n') + '\r\n';
+  const attendeesFor = (eventId) => {
+    const result = { yes: [], maybe: [], no: [] };
+    persons.forEach((p) => {
+      const entry = attendanceByPerson[p.id] && attendanceByPerson[p.id][eventId];
+      if (!entry || !result[entry.status]) return;
+      const note = entry.note || '';
+      result[entry.status].push(note ? `${p.name} (${note})` : p.name);
+    });
+    return result;
+  };
+  const staffFor = (eventId) => {
+    const assignments = staffByEvent[eventId] || {};
+    return Object.fromEntries(
+      Object.entries(assignments).map(([role, personIds]) => [
+        role,
+        personIds.map((personId) => {
+          const person = persons.find((p) => p.id === personId);
+          return person ? person.name : personId;
+        }),
+      ])
+    );
+  };
+
+  const calendar = ical({
+    name: calName,
+    prodId: '//pandaplan//EN',
+    method: 'PUBLISH',
+    timezone: {
+      name: config.EVENT_TIMEZONE,
+      generator: getVtimezoneComponent,
+    },
+  });
+
+  events.forEach((ev) => {
+    const categoryName = catName(ev.categoryId);
+    const attendance = attendeesFor(ev.id);
+    const staff = staffFor(ev.id);
+    const timeRange = ev.startTime
+      ? `${ev.startTime}${ev.endTime ? '–' + ev.endTime : ''}`
+      : '';
+    const summary = ev.subject || 'pandaplan event';
+
+    const eventData = {
+      id: ev.id,
+      uid: `${ev.id}@pandaplan`,
+      summary,
+      description: buildDescription(ev, categoryName, timeRange, attendance, staff),
+      location: ev.location || undefined,
+      categories: categoryName ? [{ name: categoryName }] : [],
+      status: 'CONFIRMED',
+      transparency: 'OPAQUE',
+      sequence: 0,
+      stamp: DateTime.utc(),
+      lastModified: DateTime.utc(),
+      timezone: config.EVENT_TIMEZONE,
+    };
+
+    if (ev.startTime) {
+      eventData.start = localDateTime(ev.date, ev.startTime);
+      eventData.end = localDateTime(ev.date, ev.endTime || ev.startTime);
+    } else {
+      eventData.start = localDateTime(ev.date, '00:00');
+      eventData.end = localDateTime(ev.date, '00:00').plus({ days: 1 });
+      eventData.allDay = true;
+    }
+
+    calendar.createEvent(eventData);
+  });
+
+  return calendar.toString();
 }
 
 module.exports = {
   icsEscape,
-  foldLine,
-  icsDateOnly,
-  icsDateTime,
-  addDaysToIsoDate,
+  localDateTime,
   buildDescription,
-  buildVEvent,
   buildCalendar,
 };
