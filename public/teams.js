@@ -67,12 +67,3 @@ Object.assign(MESSAGES["nl-BE"], {
   teamDataActionFailed: "Teamactie kon niet worden uitgevoerd.",
   noTeams: "Nog geen teams.",
 });
-
-// Bootstrap the shared hierarchical navigation on the Teams page.
-const navigationCss = document.createElement("link");
-navigationCss.rel = "stylesheet";
-navigationCss.href = "/navigation.css";
-document.head.appendChild(navigationCss);
-const navigationScript = document.createElement("script");
-navigationScript.src = "/navigation.js";
-document.body.appendChild(navigationScript);
