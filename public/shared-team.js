@@ -1,15 +1,10 @@
 // Shared Team-page infrastructure.
 function getTeamSlug() {
-  const prefix = window.pandaplanFrontendPrefix || "";
-  const pathname = prefix && location.pathname.startsWith(prefix)
-    ? location.pathname.slice(prefix.length)
-    : location.pathname;
-  return decodeURIComponent(pathname.split("/")[2] || "");
+  return decodeURIComponent(location.pathname.split("/")[2] || "");
 }
 
 function teamBaseUrl(slug = getTeamSlug()) {
-  const prefix = window.pandaplanFrontendPrefix || "";
-  return prefix + "/team/" + encodeURIComponent(slug);
+  return "/team/" + encodeURIComponent(slug);
 }
 
 function teamModeUrl(url) {
