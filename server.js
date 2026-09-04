@@ -33,6 +33,23 @@ function createApp(options = {}) {
 
   app.use('/oidc', require('./src/oidc'));
 
+  // V2 is an isolated frontend entry point. It uses the same API, session and
+  // database as the normal frontend; existing production URLs are untouched.
+  const v2Pages = {
+    teams: 'teams.html',
+    about: 'about.html',
+  };
+  Object.entries(v2Pages).forEach(([page, file]) => {
+    app.get(`/v2/${page}.html`, requireAuthentication, (req, res) =>
+      res.sendFile(path.join(__dirname, 'public', file)),
+    );
+  });
+  Object.entries(teamPages).forEach(([page, file]) => {
+    app.get(`/v2/team/:slug/${page}`, requireAuthentication, (req, res) =>
+      res.sendFile(path.join(__dirname, 'public', file)),
+    );
+  });
+
   app.get('/', requireAuthentication, (req, res) => res.redirect('/teams.html'));
   app.get('/team/:slug', requireAuthentication, (req, res) => {
     res.redirect(`/team/${encodeURIComponent(req.params.slug)}/overview`);
