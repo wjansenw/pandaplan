@@ -194,6 +194,7 @@
 
     try {
       await window.pandaplanAuthReady;
+      if (!auth.authenticated) return;
       const teams = typeof api === "function" ? await api("/api/teams") : await (await fetch("/api/teams")).json();
       render(teams);
     } catch (error) {
