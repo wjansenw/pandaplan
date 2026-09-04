@@ -1,4 +1,5 @@
 const express = require('express');
+const fs = require('fs');
 const path = require('path');
 const config = require('./src/config');
 const AppError = require('./src/errors');
@@ -48,6 +49,17 @@ function createApp(options = {}) {
     app.get(`/v2/team/:slug/${page}`, requireAuthentication, (req, res) =>
       res.sendFile(path.join(__dirname, 'public', file)),
     );
+  });
+
+  // team-events.js still contains a small amount of legacy route construction.
+  // Generate the V2 variant at request time so the source file remains shared
+  // with the normal frontend.
+  app.get('/v2/team-events.js', requireAuthentication, (req, res) => {
+    const source = fs.readFileSync(path.join(__dirname, 'public', 'team-events.js'), 'utf8');
+    const v2 = source
+      .replace('const slug = decodeURIComponent(location.pathname.split("/")[2] || "");', 'const v2Path = location.pathname.slice((window.pandaplanFrontendPrefix || "").length);\nconst slug = decodeURIComponent(v2Path.split("/")[2] || "");')
+      .replace('const base = "/team/" + encodeURIComponent(pageState.team.slug);', 'const base = (window.pandaplanFrontendPrefix || "") + "/team/" + encodeURIComponent(pageState.team.slug);');
+    res.type('application/javascript').send(v2);
   });
 
   app.get('/', requireAuthentication, (req, res) => res.redirect('/teams.html'));
