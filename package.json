@@ -1,6 +1,6 @@
 {
   "name": "pandaplan",
-  "version": "0.0.4",
+  "version": "0.0.5",
   "description": "Self-hosted event attendance roster",
   "main": "server.js",
   "engines": {
