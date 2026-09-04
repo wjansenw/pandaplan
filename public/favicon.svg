@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="PandaPlan">
+  <rect width="64" height="64" rx="14" fill="#fff"/>
+  <circle cx="32" cy="34" r="22" fill="#111"/>
+  <ellipse cx="19" cy="22" rx="9" ry="11" fill="#111" transform="rotate(-28 19 22)"/>
+  <ellipse cx="45" cy="22" rx="9" ry="11" fill="#111" transform="rotate(28 45 22)"/>
+  <ellipse cx="24" cy="32" rx="7" ry="10" fill="#fff" transform="rotate(32 24 32)"/>
+  <ellipse cx="40" cy="32" rx="7" ry="10" fill="#fff" transform="rotate(-32 40 32)"/>
+  <circle cx="25" cy="32" r="2.5" fill="#111"/>
+  <circle cx="39" cy="32" r="2.5" fill="#111"/>
+  <ellipse cx="32" cy="42" rx="6" ry="4.5" fill="#fff"/>
+  <path d="M29 42c1.5 2 4.5 2 6 0" fill="none" stroke="#111" stroke-width="2" stroke-linecap="round"/>
+</svg>

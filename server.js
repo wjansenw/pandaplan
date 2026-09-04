@@ -55,6 +55,13 @@ function createApp(options = {}) {
     if (req.path.endsWith('.html') && !publicHtml.has(req.path)) return requireAuthentication(req, res, next);
     next();
   });
+
+  // Browsers request /favicon.ico automatically. Serve the same PandaPlan
+  // SVG icon under that conventional URL so it is available before any
+  // frontend JavaScript runs.
+  app.get('/favicon.ico', (req, res) =>
+    res.sendFile(path.join(__dirname, 'public', 'favicon.svg')),
+  );
   app.use(express.static(path.join(__dirname, 'public')));
 
   app.get('/api/version', (req, res) => res.json({ version: packageJson.version }));
