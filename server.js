@@ -15,9 +15,6 @@ function createApp(options = {}) {
   app.use(express.json());
   app.use(sessionMiddleware());
 
-  // Test-only hook: integration tests can inject a session account without
-  // depending on an external OIDC provider. It is only installed when the
-  // caller explicitly supplies testAccountProvider.
   if (typeof options.testAccountProvider === 'function') {
     app.use((req, res, next) => {
       req.session.account = options.testAccountProvider(req);
@@ -40,20 +37,17 @@ function createApp(options = {}) {
     teams: 'teams.html',
     about: 'about.html',
   };
+  function sendV2Page(file, res) {
+    const source = fs.readFileSync(path.join(__dirname, 'public', file), 'utf8');
+    res.type('html').send(source.replace(/<script src="\/app\.js"><\/script>/g, '<script src="/v2/app.js"></script>'));
+  }
   Object.entries(v2Pages).forEach(([page, file]) => {
-    app.get(`/v2/${page}.html`, requireAuthentication, (req, res) =>
-      res.sendFile(path.join(__dirname, 'public', file)),
-    );
+    app.get(`/v2/${page}.html`, requireAuthentication, (req, res) => sendV2Page(file, res));
   });
   Object.entries(teamPages).forEach(([page, file]) => {
-    app.get(`/v2/team/:slug/${page}`, requireAuthentication, (req, res) =>
-      res.sendFile(path.join(__dirname, 'public', file)),
-    );
+    app.get(`/v2/team/:slug/${page}`, requireAuthentication, (req, res) => sendV2Page(file, res));
   });
 
-  // team-events.js still contains a small amount of legacy route construction.
-  // Generate the V2 variant at request time so the source file remains shared
-  // with the normal frontend.
   app.get('/v2/team-events.js', requireAuthentication, (req, res) => {
     const source = fs.readFileSync(path.join(__dirname, 'public', 'team-events.js'), 'utf8');
     const v2 = source
@@ -85,9 +79,6 @@ function createApp(options = {}) {
     next();
   });
 
-  // Browsers request /favicon.ico automatically. Serve the same PandaPlan
-  // SVG icon under that conventional URL so it is available before any
-  // frontend JavaScript runs.
   app.get('/favicon.ico', (req, res) =>
     res.sendFile(path.join(__dirname, 'public', 'favicon.svg')),
   );
@@ -105,10 +96,6 @@ function createApp(options = {}) {
   app.use('/api/teams/:slug/events', requireTeamReadWrite('team:view', 'events:manage'), require('./src/routes/teamEventsRoutes'));
   app.use('/api/teams/:slug/attendance', requireTeamReadWrite('team:view', 'roster:manage'), require('./src/routes/teamAttendanceRoutes'));
   app.use('/api/teams/:slug/staffAssignments', requireTeamReadWrite('team:view', 'roster:manage'), require('./src/routes/teamStaffAssignmentsRoutes'));
-  // Deliberately no requireAuthentication here: calendar feed URLs are
-  // consumed by external calendar apps that can't send our session cookie.
-  // Each route validates its own unguessable :token instead — see
-  // src/routes/calendarRoutes.js.
   app.use('/calendar', require('./src/routes/calendarRoutes'));
 
   app.use((err, req, res, next) => {
