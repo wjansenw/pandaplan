@@ -39,7 +39,8 @@ function createApp(options = {}) {
   };
   function sendV2Page(file, res) {
     const source = fs.readFileSync(path.join(__dirname, 'public', file), 'utf8');
-    res.type('html').send(source.replace(/<script src="\/app\.js"><\/script>/g, '<script src="/v2/app.js"></script>'));
+    const withoutExternalScripts = source.replace(/\s*<script\s+src="[^"]+"[^>]*><\/script>/g, '');
+    res.type('html').send(withoutExternalScripts.replace('</body>', '    <script src="/v2/app.js"></script>\n  </body>'));
   }
   Object.entries(v2Pages).forEach(([page, file]) => {
     app.get(`/v2/${page}.html`, requireAuthentication, (req, res) => sendV2Page(file, res));
