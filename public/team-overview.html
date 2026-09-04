@@ -24,121 +24,40 @@
       <div class="page-head">
         <div>
           <h1 id="title" data-i18n="teamOverview">Team overview</h1>
-          <p class="sub" id="subtitle" data-i18n="teamOverviewSubtitle">
-            Attendance and staff assignments for this Team.
-          </p>
+          <p class="sub" id="subtitle" data-i18n="teamOverviewSubtitle">Attendance and staff assignments for this Team.</p>
         </div>
         <div class="page-actions">
-          <button
-            id="editRoster"
-            type="button"
-            class="btn secondary"
-            data-i18n="editRoster"
-          >
-            Edit
-          </button>
+          <button id="editRoster" type="button" class="btn secondary" data-i18n="editRoster">Edit</button>
         </div>
       </div>
       <div class="card calendar-section">
-        <h2
-          id="calendarToggle"
-          class="calendar-header"
-          role="button"
-          tabindex="0"
-          aria-expanded="false"
-        >
-          <span data-i18n="calendar">Calendar</span
-          ><span class="calendar-expand-hint"
-            ><span class="calendar-chevron" aria-hidden="true">▸</span
-            ><span data-i18n="clickToExpand">Click to expand</span></span
-          >
+        <h2 id="calendarToggle" class="calendar-header" role="button" tabindex="0" aria-expanded="false">
+          <span data-i18n="calendar">Calendar</span><span class="calendar-expand-hint"><span class="calendar-chevron" aria-hidden="true">▸</span><span data-i18n="clickToExpand">Click to expand</span></span>
         </h2>
         <div id="calendarContent" hidden>
-          <p data-i18n="subscribeTeamEvents">
-            Subscribe to this Team's events in your calendar app.
-          </p>
+          <p data-i18n="subscribeTeamEvents">Subscribe to this Team's events in your calendar app.</p>
           <div class="subscribe-row">
-            <input
-              id="calendarUrl"
-              type="text"
-              readonly
-              onclick="this.select()"
-            /><button
-              id="copyCalendar"
-              type="button"
-              class="btn secondary"
-              data-i18n="copy"
-            >
-              Copy
-            </button>
+            <input id="calendarUrl" type="text" readonly onclick="this.select()" /><button id="copyCalendar" type="button" class="btn secondary" data-i18n="copy">Copy</button>
           </div>
-          <div class="subscribe-hint" data-i18n="syncHint">
-            Paste this link into your calendar app's "subscribe by URL" option
-            to keep it in sync automatically.
-          </div>
+          <div class="subscribe-hint" data-i18n="syncHint">Paste this link into your calendar app's "subscribe by URL" option to keep it in sync automatically.</div>
           <hr />
-          <p>
-            <strong data-i18n="subscribePersonEvents"
-              >Subscribe to a person's events</strong
-            >
-          </p>
-          <p data-i18n="personCalendarHint">
-            Select a person to get a calendar containing events where that
-            person is going or is assigned as staff.
-          </p>
+          <p><strong data-i18n="subscribePersonEvents">Subscribe to a person's events</strong></p>
+          <p data-i18n="personCalendarHint">Select a person to get a calendar containing events where that person is going or is assigned as staff.</p>
           <div class="subscribe-row">
-            <select id="personCalendar">
-              <option value="" data-i18n="selectPersonOption">
-                Select a person…
-              </option></select
-            ><input
-              id="personCalendarUrl"
-              type="text"
-              readonly
-              onclick="this.select()"
-              placeholder="Select a person first"
-              data-i18n-placeholder="selectPersonFirst"
-            /><button
-              id="copyPersonCalendar"
-              type="button"
-              class="btn secondary"
-              disabled
-              data-i18n="copy"
-            >
-              Copy
-            </button>
+            <select id="personCalendar"><option value="" data-i18n="selectPersonOption">Select a person…</option></select>
+            <input id="personCalendarUrl" type="text" readonly onclick="this.select()" placeholder="Select a person first" data-i18n-placeholder="selectPersonFirst" />
+            <button id="copyPersonCalendar" type="button" class="btn secondary" disabled data-i18n="copy">Copy</button>
           </div>
-          <div class="subscribe-hint" data-i18n="syncHint">
-            Paste this link into your calendar app's "subscribe by URL" option
-            to keep it in sync automatically.
-          </div>
+          <div class="subscribe-hint" data-i18n="syncHint">Paste this link into your calendar app's "subscribe by URL" option to keep it in sync automatically.</div>
         </div>
       </div>
       <div class="card overview-filters">
-        <div class="filter-block">
-          <strong data-i18n="fromDate">From</strong
-          ><input id="dateFrom" type="date" />
-        </div>
-        <div class="filter-block">
-          <strong data-i18n="toDate">To</strong
-          ><input id="dateTo" type="date" />
-        </div>
-        <div class="filter-block">
-          <strong data-i18n="category">Category</strong>
-          <div class="chip-row" id="categoriesFilter"></div>
-        </div>
+        <div class="filter-block"><strong data-i18n="fromDate">From</strong><input id="dateFrom" type="date" /></div>
+        <div class="filter-block"><strong data-i18n="toDate">To</strong><input id="dateTo" type="date" /></div>
+        <div class="filter-block"><strong data-i18n="category">Category</strong><div class="chip-row" id="categoriesFilter"></div></div>
       </div>
       <div id="events"></div>
     </div>
-    <script src="/shared.js"></script>
-    <script src="/about-nav.js"></script>
-    <script src="/navigation.js"></script>
-    <script src="/shared-api.js"></script>
-    <script src="/shared-team.js"></script>
-    <script src="/team-overview-api.js"></script>
-    <script src="/team-overview-staff.js"></script>
-    <script src="/bulk-attendance.js"></script>
-    <script src="/team-overview-render.js"></script>
-    <script src="/team-overview.js"></script>
+    <script src="/app.js"></script>
   </body>
 </html>
