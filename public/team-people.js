@@ -88,7 +88,7 @@ async function addExistingPerson() {
   const select = document.getElementById("existing-person");
   const note = document.getElementById("existing-note");
   if (!select.value || !peoplePageState.selectedExistingRoles.size) {
-    note.textContent = t("personAndRoleRequired");
+    note.textContent = t("roleRequired");
     return;
   }
   try {
