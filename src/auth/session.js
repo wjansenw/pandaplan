@@ -1,6 +1,12 @@
 const session = require('express-session');
 
 const SESSION_SECRET = process.env.OIDC_SESSION_SECRET || process.env.SESSION_SECRET;
+const DEFAULT_SESSION_MAX_AGE = 30 * 24 * 60 * 60 * 1000;
+
+function getSessionMaxAge() {
+  const configured = Number(process.env.OIDC_SESSION_MAX_AGE);
+  return Number.isFinite(configured) && configured > 0 ? configured : DEFAULT_SESSION_MAX_AGE;
+}
 
 function sessionMiddleware() {
   if (!SESSION_SECRET) {
@@ -12,11 +18,12 @@ function sessionMiddleware() {
     secret: SESSION_SECRET,
     resave: false,
     saveUninitialized: false,
+    rolling: true,
     cookie: {
       httpOnly: true,
       sameSite: 'lax',
       secure: process.env.NODE_ENV === 'production',
-      maxAge: 8 * 60 * 60 * 1000,
+      maxAge: getSessionMaxAge(),
     },
   });
 }
@@ -32,4 +39,4 @@ function requireAuthentication(req, res, next) {
   next();
 }
 
-module.exports = { sessionMiddleware, requireAuthentication };
+module.exports = { sessionMiddleware, requireAuthentication, getSessionMaxAge };
