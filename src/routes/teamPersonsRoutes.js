@@ -9,6 +9,13 @@ const { sanitizeRoles } = require('../utils/roles');
 const router = express.Router({ mergeParams: true });
 
 router.get('/', (req, res) => res.json(teamsRepository.findMembers(teamService.getBySlug(req.params.slug).id)));
+router.get('/available', (req, res) => {
+  const team = teamService.getBySlug(req.params.slug);
+  const memberIds = new Set(teamsRepository.findMembers(team.id).map((person) => person.id));
+  res.json(personsRepository.findAll()
+    .filter((person) => !memberIds.has(person.id))
+    .map(({ id, name }) => ({ id, name })));
+});
 router.post('/', (req, res) => {
   const team = teamService.getBySlug(req.params.slug);
   const name = (req.body.name || '').trim();
@@ -19,6 +26,11 @@ router.post('/', (req, res) => {
   personsRepository.create({ id, name });
   teamsRepository.addMember(team.id, id, roles);
   res.status(201).json(teamsRepository.findMembers(team.id));
+});
+router.post('/:personId', (req, res) => {
+  const roles = req.body.roles === undefined ? [config.PARTICIPANT_ROLE] : sanitizeRoles(req.body.roles, config.ALL_ROLE_IDS);
+  if (!roles || !roles.length) throw new AppError(400, 'at least one role is required');
+  res.json(teamService.addExistingMember(req.params.slug, req.params.personId, roles));
 });
 router.put('/:personId', (req, res) => {
   const team = teamService.getBySlug(req.params.slug);
