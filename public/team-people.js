@@ -1,7 +1,9 @@
 const peoplePageState = {
   slug: getTeamSlug(),
   team: null,
+  available: [],
   selectedRoles: new Set(["participant"]),
+  selectedExistingRoles: new Set(["participant"]),
   adminMode: false,
 };
 function applyPageTranslations() {
@@ -13,26 +15,33 @@ function applyPageTranslations() {
 async function loadPeople() {
   if (window.pandaplanAuthReady) await window.pandaplanAuthReady;
   peoplePageState.adminMode = isTeamAdminMode();
-  return peopleApi.load(peoplePageState.slug).then((team) => {
-    peoplePageState.team = team;
-    setTeamNavigation(peoplePageState.slug, peoplePageState.adminMode);
-    applyPageTranslations();
-    document.getElementById("title").textContent =
-      team.name + " · " + t("peopleNav");
-    renderPeople(peoplePageState);
-    renderSelectedRoles(peoplePageState.selectedRoles);
-  });
+  const [team, available] = await Promise.all([
+    peopleApi.load(peoplePageState.slug),
+    peopleApi.available(peoplePageState.slug),
+  ]);
+  peoplePageState.team = team;
+  peoplePageState.available = available;
+  setTeamNavigation(peoplePageState.slug, peoplePageState.adminMode);
+  applyPageTranslations();
+  document.getElementById("title").textContent =
+    team.name + " · " + t("peopleNav");
+  renderPeople(peoplePageState);
+  renderSelectedRoles(peoplePageState.selectedRoles);
+  renderExistingPeople(peoplePageState);
+  renderSelectedExistingRoles(peoplePageState.selectedExistingRoles);
 }
 function handlePeopleClick(event) {
   const target = event.target.closest("button");
   if (!target) return;
   const action = target.dataset.action;
-  if (action === "new-role") {
+  if (action === "new-role" || action === "existing-role") {
+    const selected = action === "new-role"
+      ? peoplePageState.selectedRoles
+      : peoplePageState.selectedExistingRoles;
     const role = target.dataset.role;
-    peoplePageState.selectedRoles.has(role)
-      ? peoplePageState.selectedRoles.delete(role)
-      : peoplePageState.selectedRoles.add(role);
-    renderSelectedRoles(peoplePageState.selectedRoles);
+    selected.has(role) ? selected.delete(role) : selected.add(role);
+    if (action === "new-role") renderSelectedRoles(selected);
+    else renderSelectedExistingRoles(selected);
     return;
   }
   if (action === "role") {
@@ -75,9 +84,28 @@ async function addPerson() {
     note.textContent = e.message;
   }
 }
+async function addExistingPerson() {
+  const select = document.getElementById("existing-person");
+  const note = document.getElementById("existing-note");
+  if (!select.value || !peoplePageState.selectedExistingRoles.size) {
+    note.textContent = t("personAndRoleRequired");
+    return;
+  }
+  try {
+    await peopleApi.addExisting(peoplePageState.slug, select.value, [
+      ...peoplePageState.selectedExistingRoles,
+    ]);
+    note.textContent = t("added");
+    await loadPeople();
+  } catch (e) {
+    note.textContent = e.message;
+  }
+}
 document.getElementById("list").onclick = handlePeopleClick;
 document.getElementById("roles").onclick = handlePeopleClick;
+document.getElementById("existing-roles").onclick = handlePeopleClick;
 document.getElementById("add").onclick = addPerson;
+document.getElementById("add-existing").onclick = addExistingPerson;
 loadPeople().catch((e) => {
   document.getElementById("note").textContent = e.message;
 });
