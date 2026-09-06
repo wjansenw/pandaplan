@@ -195,6 +195,22 @@ A typical setup exposes the application through the configured HTTP port and sto
 
 The database should be kept on persistent storage so that it survives container recreation.
 
+The container reads its environment from the `.env` file referenced by `docker-compose.yml`. For example:
+
+```yaml
+services:
+  pandaplan:
+    env_file: ".env"
+```
+
+To configure the authentication session lifetime, add the following to `.env`:
+
+```dotenv
+OIDC_SESSION_MAX_AGE=2592000000
+```
+
+The value is in **milliseconds**. The example above sets the PandaPlan session lifetime to 30 days. Sessions are rolling, so activity refreshes the session cookie and extends its lifetime.
+
 ## Configuration
 
 The application supports configuration through environment variables.
@@ -204,6 +220,7 @@ Important settings include:
 - `PORT` — HTTP port used by the application
 - `DATA_DIR` — location for persistent application data and the SQLite database
 - `EVENT_TIMEZONE` — IANA timezone name (e.g. `Europe/Brussels`, `America/New_York`) used to convert UTC-based ICS import times to local wall-clock time. Defaults to `Europe/Brussels`. Only affects ICS feeds whose times are expressed in UTC (ending in `Z`); feeds that already use local/floating time are unaffected.
+- `OIDC_SESSION_MAX_AGE` — PandaPlan authentication session lifetime in milliseconds. Defaults to 30 days (`2592000000`). The session is rolling, so activity refreshes the session cookie.
 
 The default application port can be overridden through `PORT`.
 
