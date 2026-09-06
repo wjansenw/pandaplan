@@ -69,11 +69,15 @@ function remove(slug) {
   })();
 }
 
-function addExistingMember(slug, personId) {
+function addExistingMember(slug, personId, roles) {
   const team = getBySlug(slug);
   if (!personsRepository.findById(personId)) throw new AppError(404, 'person not found');
   if (teamsRepository.isMember(team.id, personId)) throw new AppError(409, 'person is already a member of this team');
-  teamsRepository.addMember(team.id, personId, [config.PARTICIPANT_ROLE]);
+  const cleanRoles = roles === undefined
+    ? [config.PARTICIPANT_ROLE]
+    : sanitizeRoles(roles, config.ALL_ROLE_IDS);
+  if (!cleanRoles || !cleanRoles.length) throw new AppError(400, 'at least one role is required');
+  teamsRepository.addMember(team.id, personId, cleanRoles);
   return teamsRepository.findMembers(team.id);
 }
 
