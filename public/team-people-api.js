@@ -2,10 +2,19 @@ const peopleApi = {
   load(slug) {
     return apiRequest(teamApiUrl("", slug));
   },
+  available(slug) {
+    return apiRequest(teamApiUrl("available", slug));
+  },
   add(slug, name, roles) {
     return apiRequest(teamApiUrl("persons", slug), {
       method: "POST",
       body: JSON.stringify({ name, roles }),
+    });
+  },
+  addExisting(slug, personId, roles) {
+    return apiRequest(teamApiUrl(`persons/${encodeURIComponent(personId)}`, slug), {
+      method: "POST",
+      body: JSON.stringify({ roles }),
     });
   },
   updateRoles(slug, personId, roles) {
