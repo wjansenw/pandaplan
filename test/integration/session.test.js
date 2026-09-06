@@ -7,9 +7,10 @@ const sessionModule = require('../../src/auth/session');
 
 const THIRTY_DAYS = 30 * 24 * 60 * 60 * 1000;
 
-function request(server, headers = {}) {
+function request(server, path, headers = {}) {
   return new Promise((resolve, reject) => {
-    const req = http.request(server.address(), { headers }, (res) => {
+    const address = server.address();
+    const req = http.request({ hostname: address.address, port: address.port, path, headers }, (res) => {
       let body = '';
       res.on('data', (chunk) => { body += chunk; });
       res.on('end', () => resolve({ statusCode: res.statusCode, headers: res.headers, body }));
@@ -19,6 +20,11 @@ function request(server, headers = {}) {
   });
 }
 
+function restoreEnv(name, value) {
+  if (value === undefined) delete process.env[name];
+  else process.env[name] = value;
+}
+
 test('session max age defaults to 30 days', () => {
   const previous = process.env.OIDC_SESSION_MAX_AGE;
   delete process.env.OIDC_SESSION_MAX_AGE;
@@ -26,8 +32,7 @@ test('session max age defaults to 30 days', () => {
   try {
     assert.equal(sessionModule.getSessionMaxAge(), THIRTY_DAYS);
   } finally {
-    if (previous === undefined) delete process.env.OIDC_SESSION_MAX_AGE;
-    else process.env.OIDC_SESSION_MAX_AGE = previous;
+    restoreEnv('OIDC_SESSION_MAX_AGE', previous);
   }
 });
 
@@ -38,8 +43,7 @@ test('session max age can be configured', () => {
   try {
     assert.equal(sessionModule.getSessionMaxAge(), 1234567);
   } finally {
-    if (previous === undefined) delete process.env.OIDC_SESSION_MAX_AGE;
-    else process.env.OIDC_SESSION_MAX_AGE = previous;
+    restoreEnv('OIDC_SESSION_MAX_AGE', previous);
   }
 });
 
@@ -60,20 +64,20 @@ test('session middleware uses a rolling cookie with the configured max age', asy
   const server = http.createServer(app);
 
   try {
-    await new Promise((resolve) => server.listen(0, resolve));
-    const first = await request(server, {});
-    assert.equal(first.statusCode, 404);
+    await new Promise((resolve) => server.listen(0, '127.0.0.1', resolve));
 
-    const created = await request(server, { Cookie: '' });
-    assert.equal(created.statusCode, 404);
+    const first = await request(server, '/set');
+    assert.equal(first.statusCode, 200);
+    assert.match(first.headers['set-cookie'][0], /Max-Age=60/);
 
-    const setResponse = await request(server, {});
-    assert.equal(setResponse.statusCode, 404);
+    const cookie = first.headers['set-cookie'][0].split(';')[0];
+    const second = await request(server, '/check', { Cookie: cookie });
+    assert.equal(second.statusCode, 200);
+    assert.equal(second.body, 'ok');
+    assert.match(second.headers['set-cookie'][0], /Max-Age=60/);
   } finally {
     await new Promise((resolve) => server.close(resolve));
-    if (previousSecret === undefined) delete process.env.OIDC_SESSION_SECRET;
-    else process.env.OIDC_SESSION_SECRET = previousSecret;
-    if (previousMaxAge === undefined) delete process.env.OIDC_SESSION_MAX_AGE;
-    else process.env.OIDC_SESSION_MAX_AGE = previousMaxAge;
+    restoreEnv('OIDC_SESSION_SECRET', previousSecret);
+    restoreEnv('OIDC_SESSION_MAX_AGE', previousMaxAge);
   }
 });
