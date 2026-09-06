@@ -19,3 +19,19 @@ function renderSelectedRoles(selected) {
       `<button type="button" class="chip ${selected.has(r.id) ? "active" : ""}" data-action="new-role" data-role="${escapeHtml(r.id)}">${escapeHtml(r.label)}</button>`,
   ).join("");
 }
+function renderExistingPeople(pageState) {
+  const select = document.getElementById("existing-person");
+  const current = select.value;
+  select.innerHTML = `<option value="">${escapeHtml(t("selectPerson"))}</option>` +
+    pageState.available
+      .map((p) => `<option value="${escapeHtml(p.id)}">${escapeHtml(p.name)}</option>`)
+      .join("");
+  if (pageState.available.some((p) => p.id === current)) select.value = current;
+}
+function renderSelectedExistingRoles(selected) {
+  const box = document.getElementById("existing-roles");
+  box.innerHTML = ALL_ROLES.map(
+    (r) =>
+      `<button type="button" class="chip ${selected.has(r.id) ? "active" : ""}" data-action="existing-role" data-role="${escapeHtml(r.id)}">${escapeHtml(r.label)}</button>`,
+  ).join("");
+}
