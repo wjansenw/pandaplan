@@ -1,6 +1,6 @@
 const peopleApi = {
   load(slug) {
-    return apiRequest(teamApiUrl("persons", slug));
+    return apiRequest(teamApiUrl("", slug));
   },
   available(slug) {
     return apiRequest(teamApiUrl("persons/available", slug));
