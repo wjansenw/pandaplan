@@ -67,6 +67,21 @@ function handlePeopleClick(event) {
     else renderSelectedExistingRoles(selected);
     return;
   }
+  if (action === "save-name") {
+    const person = peoplePageState.team.members.find(
+      (p) => p.id === target.dataset.person,
+    );
+    const row = target.closest(".person-admin-item");
+    const input = row?.querySelector(".person-name");
+    if (!person || !input) return;
+    const name = input.value.trim();
+    if (!name) return alert(t("nameRequired"));
+    peopleApi
+      .updateName(peoplePageState.slug, person.id, name)
+      .then(loadPeople)
+      .catch((e) => alert(e.message));
+    return;
+  }
   if (action === "role") {
     const person = peoplePageState.team.members.find(
       (p) => p.id === target.dataset.person,
