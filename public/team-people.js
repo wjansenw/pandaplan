@@ -12,13 +12,31 @@ function applyPageTranslations() {
     .querySelectorAll("[data-i18n]")
     .forEach((el) => (el.textContent = t(el.dataset.i18n)));
 }
+function isPeopleManager(team) {
+  const account = window.pandaplanAuth?.account;
+  return Boolean(
+    window.pandaplanAuth?.authenticated &&
+      account &&
+      (account.isSiteAdmin ||
+        (account.teamRoles || []).some(
+          (membership) =>
+            membership.teamId === team.id && membership.role === "team_manager",
+        )),
+  );
+}
 async function loadPeople() {
   if (window.pandaplanAuthReady) await window.pandaplanAuthReady;
-  peoplePageState.adminMode = isTeamAdminMode();
-  const [team, available] = await Promise.all([
-    peopleApi.load(peoplePageState.slug),
-    peopleApi.available(peoplePageState.slug),
-  ]);
+  const team = await peopleApi.load(peoplePageState.slug);
+  peoplePageState.adminMode = isPeopleManager(team);
+  let available = [];
+  let availableError = null;
+  if (peoplePageState.adminMode) {
+    try {
+      available = await peopleApi.available(peoplePageState.slug);
+    } catch (error) {
+      availableError = error;
+    }
+  }
   peoplePageState.team = team;
   peoplePageState.available = available;
   setTeamNavigation(peoplePageState.slug, peoplePageState.adminMode);
@@ -29,6 +47,11 @@ async function loadPeople() {
   renderSelectedRoles(peoplePageState.selectedRoles);
   renderExistingPeople(peoplePageState);
   renderSelectedExistingRoles(peoplePageState.selectedExistingRoles);
+  const management = document.getElementById("people-management");
+  if (management) management.hidden = !peoplePageState.adminMode;
+  if (availableError) {
+    document.getElementById("existing-note").textContent = availableError.message;
+  }
 }
 function handlePeopleClick(event) {
   const target = event.target.closest("button");
