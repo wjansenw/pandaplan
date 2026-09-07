@@ -6,14 +6,22 @@ services:
     ports:
       - "3000:3000"
     volumes:
-      - ./data:/app/data
-    # Optional: EVENT_TIMEZONE defaults to Europe/Brussels and is only used
-    # for ICS feeds whose event times are in UTC. To override it, uncomment:
-    #   environment:
-    #     - EVENT_TIMEZONE=Europe/Brussels
+    # Optional environment settings. Values can also be supplied through .env.
+    # EVENT_TIMEZONE defaults to Europe/Brussels and is only used for ICS feeds
+    # whose event times are in UTC.
+    # OIDC_SESSION_MAX_AGE is in milliseconds and defaults to 30 days.
+    # Sessions are rolling, so activity refreshes the session cookie.
+    # environment:
+    #   - EVENT_TIMEZONE=Europe/Brussels
+    #   - OIDC_SESSION_MAX_AGE=2592000000
+      - data:/app/data
     networks:
       - swag
     env_file: ".env"
+
+volumes:
+  data:
+
 networks:
   swag:
     name: swag_network
