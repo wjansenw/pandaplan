@@ -50,6 +50,7 @@ function renderEvents() {
     const c = pageState.categories.find((x) => x.id === e.categoryId);
     const card = document.createElement("div");
     card.className = "card";
+    card.id = "event-" + e.id;
     card.dataset.eventId = e.id;
     card.innerHTML =
       '<div class="card-head"><div><h2>' +
@@ -72,4 +73,16 @@ function renderEvents() {
     form.querySelector(".edit-category").value = e.categoryId || "";
     box.appendChild(card);
   });
+
+  const eventId = location.hash.startsWith("#event-")
+    ? decodeURIComponent(location.hash.slice("#event-".length))
+    : null;
+  if (eventId) {
+    const target = document.getElementById("event-" + eventId);
+    if (target) {
+      target.scrollIntoView({ block: "start" });
+      target.setAttribute("tabindex", "-1");
+      target.focus({ preventScroll: true });
+    }
+  }
 }
