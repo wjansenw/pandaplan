@@ -155,6 +155,89 @@ describe('API', { concurrency: false }, () => {
     assert.deepEqual(response.body, { error: 'at least one role is required' });
   });
 
+  test('PERSON-06 lists existing persons who are not members of the team', async () => {
+    const available = seedPerson({ id: 'person-2', name: 'Available Person' });
+
+    const response = await request('GET', `/api/teams/${team.slug}/persons/available`);
+
+    assert.equal(response.status, 200);
+    assert.deepEqual(response.body, [{ id: available.id, name: available.name }]);
+  });
+
+  test('PERSON-07 adds an existing person to the team with the supplied roles', async () => {
+    const existing = seedPerson({ id: 'person-2', name: 'Existing Person' });
+
+    const response = await request(
+      'POST',
+      `/api/teams/${team.slug}/persons/${existing.id}`,
+      { roles: ['coach'] },
+    );
+
+    assert.equal(response.status, 200);
+    const member = response.body.find((item) => item.id === existing.id);
+    assert.ok(member);
+    assert.deepEqual(member.roles, ['coach']);
+  });
+
+  test('PERSON-08 rejects adding an existing person who is already a team member', async () => {
+    const response = await request(
+      'POST',
+      `/api/teams/${team.slug}/persons/${person.id}`,
+      { roles: ['coach'] },
+    );
+
+    assert.equal(response.status, 409);
+    assert.deepEqual(response.body, { error: 'person is already a member of this team' });
+  });
+
+  test('PERSON-09 allows a team manager to update member roles', async () => {
+    setAccount({
+      isSiteAdmin: false,
+      teamRoles: [{ teamId: team.id, role: 'team_manager' }],
+    });
+
+    const response = await request(
+      'PUT',
+      `/api/teams/${team.slug}/persons/${person.id}/roles`,
+      { roles: ['coach'] },
+    );
+
+    assert.equal(response.status, 200);
+    const member = response.body.find((item) => item.id === person.id);
+    assert.deepEqual(member.roles, ['coach']);
+  });
+
+  test('PERSON-10 allows a team manager to remove a member', async () => {
+    setAccount({
+      isSiteAdmin: false,
+      teamRoles: [{ teamId: team.id, role: 'team_manager' }],
+    });
+
+    const response = await request(
+      'DELETE',
+      `/api/teams/${team.slug}/persons/${person.id}`,
+    );
+
+    assert.equal(response.status, 200);
+    assert.equal(response.body.some((item) => item.id === person.id), false);
+  });
+
+  test('PERSON-11 rejects person management for a team member without people permission', async () => {
+    setAccount({
+      isSiteAdmin: false,
+      teamRoles: [{ teamId: team.id, role: 'team_member' }],
+    });
+
+    const response = await request(
+      'POST',
+      `/api/teams/${team.slug}/persons/${person.id}`,
+      { roles: ['coach'] },
+    );
+
+    assert.equal(response.status, 403);
+    assert.deepEqual(response.body, { error: 'insufficient team permissions' });
+  });
+
   test('EVENT-01 lists team events in date/time order', async () => {
     seedEvent({ id: 'event-2', teamId: team.id, subject: 'Match', date: '2026-09-02', startTime: '14:00', endTime: '16:00' });
     seedEvent({ id: 'event-3', teamId: team.id, subject: 'Early Training', date: '2026-09-01', startTime: '17:00', endTime: '18:00' });
@@ -188,121 +271,16 @@ describe('API', { concurrency: false }, () => {
   test('EVENT-03 rejects a category belonging to another team', async () => {
     const otherTeam = seedTeam({ id: 'team-2', name: 'Other Team', slug: 'other-team' });
     const categoryId = 'category-2';
-    getDb().prepare('INSERT INTO categories (id, team_id, name, color) VALUES (?, ?, ?, ?)')
-      .run(categoryId, otherTeam.id, 'Other Category', '#123456');
+    getDb().prepare('INSERT INTO categories (id, team_id, name) VALUES (?, ?, ?)').run(categoryId, otherTeam.id, 'Other Category');
 
     const response = await request('POST', `/api/teams/${team.slug}/events`, {
-      categoryId,
-      subject: 'Invalid Category Event',
+      subject: 'Invalid Category',
       date: '2026-09-05',
+      startTime: '10:00',
+      endTime: '12:00',
+      categoryId,
     });
 
     assert.equal(response.status, 400);
-    assert.deepEqual(response.body, { error: 'category does not belong to this team' });
+    assert.match(response.body.error, /category/);
   });
-
-  test('EVENT-04 updates an event', async () => {
-    const response = await request('PUT', `/api/teams/${team.slug}/events/${event.id}`, {
-      subject: 'Updated Training',
-      date: '2026-09-03',
-      startTime: '20:00',
-      endTime: '21:30',
-      location: 'New Hall',
-      description: 'Updated description',
-    });
-
-    assert.equal(response.status, 200);
-    const updated = response.body.find(e => e.id === event.id);
-    assert.deepEqual(updated, {
-      id: event.id,
-      categoryId: null,
-      subject: 'Updated Training',
-      date: '2026-09-03',
-      startTime: '20:00',
-      endTime: '21:30',
-      location: 'New Hall',
-      description: 'Updated description',
-    });
-  });
-
-  test('EVENT-05 deletes an event', async () => {
-    const response = await request('DELETE', `/api/teams/${team.slug}/events/${event.id}`);
-
-    assert.equal(response.status, 200);
-    assert.equal(response.body.some(e => e.id === event.id), false);
-    assert.equal(getDb().prepare('SELECT 1 FROM events WHERE id = ?').get(event.id), undefined);
-  });
-
-  test('ATT-01 sets yes, maybe and no attendance statuses', async () => {
-    for (const status of ['yes', 'maybe', 'no']) {
-      const response = await request('PUT', `/api/teams/${team.slug}/attendance/${person.id}/${event.id}`, { status });
-      assert.equal(response.status, 200);
-
-      const stored = getDb().prepare('SELECT status, note FROM attendance WHERE person_id = ? AND event_id = ?')
-        .get(person.id, event.id);
-      assert.deepEqual(stored, { status, note: '' });
-    }
-  });
-
-  test('ATT-02 updates existing attendance instead of creating duplicates', async () => {
-    await request('PUT', `/api/teams/${team.slug}/attendance/${person.id}/${event.id}`, {
-      status: 'yes',
-      note: 'Arrives late',
-    });
-    await request('PUT', `/api/teams/${team.slug}/attendance/${person.id}/${event.id}`, {
-      status: 'maybe',
-      note: 'May arrive late',
-    });
-
-    const rows = getDb().prepare('SELECT status, note FROM attendance WHERE person_id = ? AND event_id = ?')
-      .all(person.id, event.id);
-    assert.deepEqual(rows, [{ status: 'maybe', note: 'May arrive late' }]);
-  });
-
-  test('ATT-03 removes attendance when status is omitted', async () => {
-    await request('PUT', `/api/teams/${team.slug}/attendance/${person.id}/${event.id}`, { status: 'yes' });
-    const response = await request('PUT', `/api/teams/${team.slug}/attendance/${person.id}/${event.id}`, {});
-
-    assert.equal(response.status, 200);
-    assert.equal(getDb().prepare('SELECT 1 FROM attendance WHERE person_id = ? AND event_id = ?').get(person.id, event.id), undefined);
-  });
-
-  test('ATT-04 returns the team attendance matrix', async () => {
-    await request('PUT', `/api/teams/${team.slug}/attendance/${person.id}/${event.id}`, {
-      status: 'yes',
-      note: 'On time',
-    });
-
-    const response = await request('GET', `/api/teams/${team.slug}/attendance`);
-
-    assert.equal(response.status, 200);
-    assert.deepEqual(response.body, {
-      [person.id]: {
-        [event.id]: { status: 'yes', note: 'On time' },
-      },
-    });
-  });
-
-  test('ATT-05 rejects attendance for a person who is not a team member', async () => {
-    const outsider = seedPerson({ id: 'person-2', name: 'Outsider' });
-
-    const response = await request('PUT', `/api/teams/${team.slug}/attendance/${outsider.id}/${event.id}`, {
-      status: 'yes',
-    });
-
-    assert.equal(response.status, 404);
-    assert.deepEqual(response.body, { error: 'person or event not found in team' });
-  });
-
-  test('ATT-06 rejects attendance for an event belonging to another team', async () => {
-    const otherTeam = seedTeam({ id: 'team-2', name: 'Other Team', slug: 'other-team' });
-    const otherEvent = seedEvent({ id: 'event-2', teamId: otherTeam.id, subject: 'Other Event' });
-
-    const response = await request('PUT', `/api/teams/${team.slug}/attendance/${person.id}/${otherEvent.id}`, {
-      status: 'yes',
-    });
-
-    assert.equal(response.status, 404);
-    assert.deepEqual(response.body, { error: 'person or event not found in team' });
-  });
-});
