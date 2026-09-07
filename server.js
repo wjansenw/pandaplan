@@ -37,6 +37,10 @@ function createApp(options = {}) {
   app.get('/team/:slug', requireAuthentication, (req, res) => {
     res.redirect(`/team/${encodeURIComponent(req.params.slug)}/overview`);
   });
+  app.get('/team/:slug/event/:eventId', requireAuthentication, (req, res) => {
+    const mode = req.query.mode === 'admin' ? '?mode=admin' : '';
+    res.redirect(`/team/${encodeURIComponent(req.params.slug)}/events${mode}#event-${encodeURIComponent(req.params.eventId)}`);
+  });
   Object.entries(teamPages).forEach(([page, file]) => {
     app.get(`/team/:slug/${page}`, requireAuthentication, (req, res) =>
       res.sendFile(path.join(__dirname, 'public', file)),
