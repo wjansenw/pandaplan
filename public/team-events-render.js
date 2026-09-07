@@ -52,10 +52,18 @@ function renderEvents() {
     card.className = "card";
     card.id = "event-" + e.id;
     card.dataset.eventId = e.id;
+    const eventUrl =
+      "/team/" +
+      encodeURIComponent(pageState.team.slug) +
+      "/event/" +
+      encodeURIComponent(e.id) +
+      (pageState.adminMode ? "?mode=admin" : "");
     card.innerHTML =
-      '<div class="card-head"><div><h2>' +
+      '<div class="card-head"><div><h2><a href="' +
+      eventUrl +
+      '">' +
       escapeHtml(e.subject || et("untitledEvent")) +
-      '</h2><div class="sub">' +
+      '</a></h2><div class="sub">' +
       escapeHtml(e.date) +
       (e.startTime ? " · " + escapeHtml(e.startTime) : "") +
       (e.endTime ? " – " + escapeHtml(e.endTime) : "") +
