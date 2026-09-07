@@ -64,17 +64,39 @@ test('session middleware uses a rolling cookie with the configured max age', asy
   const server = http.createServer(app);
 
   try {
-    await new Promise((resolve) => server.listen(0, '127.0.0.1', resolve));
-
-    const first = await request(server, '/set');
+    await new Promise((resolve) => server.listen(0, '127.0.0.1', resolve));const first = await request(server, '/set');
     assert.equal(first.statusCode, 200);
-    assert.match(first.headers['set-cookie'][0], /Max-Age=60/);
 
-    const cookie = first.headers['set-cookie'][0].split(';')[0];
+    const firstCookie = first.headers['set-cookie'][0];
+    assert.match(firstCookie, /Expires=/);
+
+    const firstExpires = new Date(firstCookie.match(/Expires=([^;]+)/)[1]).getTime();
+    const firstNow = Date.now();
+
+    assert.ok(
+       firstExpires >= firstNow + 55000 &&
+       firstExpires <= firstNow + 65000,
+       `expected cookie expiry about 60 seconds from now, got ${firstCookie}`
+    );
+
+    const cookie = firstCookie.split(';')[0];
+
     const second = await request(server, '/check', { Cookie: cookie });
     assert.equal(second.statusCode, 200);
     assert.equal(second.body, 'ok');
-    assert.match(second.headers['set-cookie'][0], /Max-Age=60/);
+
+    const secondCookie = second.headers['set-cookie'][0];
+    assert.match(secondCookie, /Expires=/);
+
+    const secondExpires = new Date(secondCookie.match(/Expires=([^;]+)/)[1]).getTime();
+    const secondNow = Date.now();
+
+    assert.ok(
+       secondExpires >= secondNow + 55000 &&
+       secondExpires <= secondNow + 65000,
+       `expected rolling cookie expiry about 60 seconds from now, got ${secondCookie}`
+    );
+
   } finally {
     await new Promise((resolve) => server.close(resolve));
     restoreEnv('OIDC_SESSION_SECRET', previousSecret);
