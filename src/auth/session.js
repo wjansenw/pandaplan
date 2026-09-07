@@ -1,6 +1,5 @@
 const session = require('express-session');
 
-const SESSION_SECRET = process.env.OIDC_SESSION_SECRET || process.env.SESSION_SECRET;
 const DEFAULT_SESSION_MAX_AGE = 30 * 24 * 60 * 60 * 1000;
 
 function getSessionMaxAge() {
@@ -9,13 +8,15 @@ function getSessionMaxAge() {
 }
 
 function sessionMiddleware() {
-  if (!SESSION_SECRET) {
+  const sessionSecret = process.env.OIDC_SESSION_SECRET || process.env.SESSION_SECRET;
+
+  if (!sessionSecret) {
     throw new Error('OIDC_SESSION_SECRET or SESSION_SECRET must be configured');
   }
 
   return session({
     name: 'pandaplan_oidc',
-    secret: SESSION_SECRET,
+    secret: sessionSecret,
     resave: false,
     saveUninitialized: false,
     rolling: true,
