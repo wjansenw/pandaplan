@@ -1,9 +1,9 @@
 const peopleApi = {
   load(slug) {
-    return apiRequest(teamApiUrl("", slug));
+    return apiRequest(teamApiUrl("persons", slug));
   },
   available(slug) {
-    return apiRequest(teamApiUrl("available", slug));
+    return apiRequest(teamApiUrl("persons/available", slug));
   },
   add(slug, name, roles) {
     return apiRequest(teamApiUrl("persons", slug), {
@@ -19,13 +19,13 @@ const peopleApi = {
   },
   updateRoles(slug, personId, roles) {
     return apiRequest(
-      teamApiUrl(`members/${encodeURIComponent(personId)}/roles`, slug),
+      teamApiUrl(`persons/${encodeURIComponent(personId)}/roles`, slug),
       { method: "PUT", body: JSON.stringify({ roles }) },
     );
   },
   remove(slug, personId) {
     return apiRequest(
-      teamApiUrl(`members/${encodeURIComponent(personId)}`, slug),
+      teamApiUrl(`persons/${encodeURIComponent(personId)}`, slug),
       { method: "DELETE" },
     );
   },
