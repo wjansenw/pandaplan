@@ -17,6 +17,12 @@ const peopleApi = {
       body: JSON.stringify({ roles }),
     });
   },
+  updateName(slug, personId, name) {
+    return apiRequest(
+      teamApiUrl(`persons/${encodeURIComponent(personId)}`, slug),
+      { method: "PUT", body: JSON.stringify({ name }) },
+    );
+  },
   updateRoles(slug, personId, roles) {
     return apiRequest(
       teamApiUrl(`persons/${encodeURIComponent(personId)}/roles`, slug),
