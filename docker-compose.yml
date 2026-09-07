@@ -6,7 +6,6 @@ services:
     ports:
       - "3000:3000"
     volumes:
-      - ./data:/app/data
     # Optional environment settings. Values can also be supplied through .env.
     # EVENT_TIMEZONE defaults to Europe/Brussels and is only used for ICS feeds
     # whose event times are in UTC.
@@ -15,9 +14,14 @@ services:
     # environment:
     #   - EVENT_TIMEZONE=Europe/Brussels
     #   - OIDC_SESSION_MAX_AGE=2592000000
+      - data:/app/data
     networks:
       - swag
     env_file: ".env"
+
+volumes:
+  data:
+
 networks:
   swag:
     name: swag_network
