@@ -26,29 +26,31 @@
       <div class="card">
         <div id="list"></div>
 
-        <div class="field">
-          <label data-i18n="name">Name</label><input id="name" />
-        </div>
-        <div class="field">
-          <label data-i18n="rolesLabel">Roles</label>
-          <div id="roles" class="chip-row"></div>
-        </div>
-        <button class="btn" id="add" data-i18n="addPerson">Add person</button>
-        <div id="note" class="saved-note"></div>
+        <div id="people-management" data-admin-only>
+          <div class="field">
+            <label data-i18n="name">Name</label><input id="name" />
+          </div>
+          <div class="field">
+            <label data-i18n="rolesLabel">Roles</label>
+            <div id="roles" class="chip-row"></div>
+          </div>
+          <button class="btn" id="add" data-i18n="addPerson">Add person</button>
+          <div id="note" class="saved-note"></div>
 
-        <hr />
-        <div class="field">
-          <label data-i18n="addExistingPerson">Add existing person</label>
-          <select id="existing-person">
-            <option value="" data-i18n="selectPerson">Select person…</option>
-          </select>
+          <hr />
+          <div class="field">
+            <label data-i18n="addExistingPerson">Add existing person</label>
+            <select id="existing-person">
+              <option value="" data-i18n="selectPerson">Select person…</option>
+            </select>
+          </div>
+          <div class="field">
+            <label data-i18n="rolesLabel">Roles</label>
+            <div id="existing-roles" class="chip-row"></div>
+          </div>
+          <button class="btn" id="add-existing" data-i18n="addPerson">Add person</button>
+          <div id="existing-note" class="saved-note"></div>
         </div>
-        <div class="field">
-          <label data-i18n="rolesLabel">Roles</label>
-          <div id="existing-roles" class="chip-row"></div>
-        </div>
-        <button class="btn" id="add-existing" data-i18n="addPerson">Add person</button>
-        <div id="existing-note" class="saved-note"></div>
       </div>
     </div>
     <script src="/shared.js"></script>
