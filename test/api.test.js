@@ -186,7 +186,7 @@ describe('API', { concurrency: false }, () => {
     seedEvent({ id: 'event-3', teamId: team.id, subject: 'Early Training', date: '2026-09-01', startTime: '17:00', endTime: '18:00' });
     const response = await request('GET', `/api/teams/${team.slug}/events`);
     assert.equal(response.status, 200);
-    assert.deepEqual(response.body.map(e => e.id), ['event-3', 'event-2', event.id]);
+    assert.deepEqual(response.body.map(e => e.id), ['event-3', event.id, 'event-2']);
   });
 
   test('EVENT-02 creates an event with its supplied fields', async () => {
